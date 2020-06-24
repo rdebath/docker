@@ -10,16 +10,7 @@ main() {
 
     [ "$#" = 1 ] && {
 	case "$1" in
-	alpine ) do_alpine ; exit ;;
-	centos ) do_centos ; exit ;;
-	fedora ) do_fedora ; exit ;;
-	debian ) do_debian ; exit ;;
-	debian:* ) do_one_debian "${1#debian:}" "deb-${1#debian:}-bf" ; exit ;;
-	ubuntu ) do_one_debian "$1" "$1-bf" ; exit ;;
-	ubuntu:16.04 ) do_one_debian "$1" "ubuntu-1604-bf" ; exit ;;
-
-	-?* ) echo >&2 Unknown option "$1" ; exit 1 ;;
-
+	-?* ) ;;
 	* ) make_dockerrun "$1" ; exit ;;
 	esac
     }
@@ -33,10 +24,9 @@ main() {
 
     [[ "$#" = 3 && "$1" = -cp ]] && { docker_cpi "$2" "$3" ; exit ; }
     [[ "$#" = 2 && "$1" = -r ]] && { make_docker_runcmd "$2" ; exit ; }
+    [[ "$#" -gt 1 && "$1" = -f ]] && { shift ; make_docker_files "$@" ; exit ; }
 
     case "$1" in
-    -f ) shift ; make_docker_files "$@" ; exit ;;
-
     -h ) Usage ; exit 1 ;;
     -?* ) echo >&2 Unknown option "$1" ; exit 1 ;;
     * ) Usage ; exit 1 ;; 
@@ -46,13 +36,6 @@ main() {
 Usage() {
     cat >&2 <<!
 Usage: ...
-
-Make dev images ...
-    $0 alpine
-    $0 centos
-    $0 debian
-    $0 debian:stretch
-    $0 ubuntu
 
 Copy image to flattened image
     $0 -cp fromimage:fat toimage:squished
@@ -75,49 +58,64 @@ Make a dockerfile from scripts, files and directories
 
 make_dockerrun() {
     # Limit per "run" is library exec arg length (approx 128k)
-    local bscript script scriptfile scriptargs sc
-    local NL lines dlines tailstr runopen
-    local sname="install"
+    local scriptfile scriptargs sc
+    local sname="${2:-install}"
 
-    script="$1"
-    shift
-    case "$script" in
-    -|/dev/*|/tmp/* ) bscript='' ;;
-    * ) bscript=": $(basename "$script" .sh);" ;;
-    esac
+    scriptfile="$(cat "$1")"
+    scriptargs="$(echo "$scriptfile" | sed -n 's/^#DOCKER://p')"
 
-    scriptfile="$(cat "$script")"
-    scriptargs="$(echo "$scriptfile" | sed -n '/^#DOCKER:/p')"
-    sc=$(echo "$scriptargs" |
-	sed -n 's/^#DOCKER:\(COMMIT\|BEGIN\|SAVE\)//p' |
-	wc -l)
-
-    # Simple version without multiple or additional scripts.
+    # Simple version without multiple parts
+    sc=$(echo "$scriptargs" | sed -n 's/^\(COMMIT\|BEGIN\|SAVE\)//p' | wc -l)
     if [ "$sc" -eq 0 ]
     then
-	# Only first FILE before. USER is only after.
-	# Eveything after second FILE stays after.
-	# Order is not changed, position for run must be chosen.
-	# This means a "USER" puts evething after it after this.
-	# Use "USER root" (or second WORKDIR) to force this.
+	# Keep 1*FROM, 1*WORKDIR, n*ARG, n*ENV, n*LABEL
 
-	echo "$scriptargs" | sed -n 's/^#DOCKER://p' |
-	awk '/^FILE/ && fc!=1 { fc=1; print ; next; }
-	    /^FILE|^USER/ { exit ; }
-	    {print;}'
+	# FROM		Only first
+	# ENV		Probably needed
+	# ARG		Probably needed
+	# WORKDIR	Only first
+	# LABEL		Not significant
 
-	echo "RUN $bscript"'set -eu; e() { echo "$@";};\'
+	# RUN		Embed if needed
+	# USER		Will break installer
+	# SHELL		Will break installer
+
+	# ADD		Run added script (Two layers)
+	# COPY		Run added script (Two layers)
+
+	# CMD		Only used by container
+	# EXPOSE	Only used by container
+	# ENTRYPOINT	Only used by container
+	# VOLUME	Only used by container
+	# MAINTAINER	Deprecated
+	# ONBUILD	Only used later
+	# STOPSIGNAL	Only used by container
+	# HEALTHCHECK	Only used by container
+
+	echo "$scriptargs" |
+	awk '
+	    /^FROM / && fc!=1 { fc=1; print ; next; }
+	    /^WORKDIR / && wd!=1 { wd=1; print ; next; }
+	    /^ARG|^ENV|^LABEL|^#/ { print; next ; }
+	    {exit;}'
+
+	echo 'RUN set -eu; e() { echo "$@";};\'
 	string_base64 "$(echo "$scriptfile"|sed '/^#DOCKER:/d')" "/tmp/$sname"
 	echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
 
-	echo "$scriptargs" | sed -n 's/^#DOCKER://p' |
-	awk '/^FILE/ && fc!=1 { fc=1; next; }
-	    /^FILE|^USER/ { t=1; }
-	    t==1 {print;}'
+	echo "$scriptargs" |
+	awk '
+	    /^FROM / && fc!=1 { fc=1; next; }
+	    /^WORKDIR / && wd!=1 { wd=1; next; }
+	    /^ARG|^ENV|^LABEL|^#/ && t!=1 { next ; }
+	    {fc=1;wd=1;t=1;print;}'
+
 	return 0
     fi
 
     # More complex version
+    local NL lines dlines tailstr runopen
+
     # Everything (non-dockerfile) outside BEGIN..COMMIT is for the host.
     NL='
 '
@@ -140,8 +138,7 @@ make_dockerrun() {
 	"#DOCKER:COMMIT" )
 	    [ "${#lines[*]}" -gt 0 ] && {
 		[ "$runopen" = 0 ] && {
-		    echo "RUN $bscript"'set -eu; e() { echo "$@";};\'
-		    bscript=''
+		    echo 'RUN set -eu; e() { echo "$@";};\'
 		}
 		string_base64 "$(IFS="$NL" ; echo "${lines[*]}")" "$nfile"
 		runopen=1
@@ -159,8 +156,7 @@ make_dockerrun() {
 	"#DOCKER:SAVE"* )
 	    [ "${#lines[*]}" -gt 0 ] && {
 		[ "$runopen" = 0 ] && {
-		    echo "RUN $bscript"'set -eu; e() { echo "$@";};\'
-		    bscript=''
+		    echo 'RUN set -eu; e() { echo "$@";};\'
 		}
 		string_base64 "$(IFS="$NL" ; echo "${lines[*]}")" "/tmp/$sname"
 		runopen=1
@@ -199,22 +195,18 @@ string_base64() {
 
 make_docker_files() {
     # Limit per "run" is library exec arg length (approx 128k)
-    local bscript script scriptfile scriptargs f
+    local script scriptfile scriptargs f
     local sname="install"
 
     script="$1"
     shift
-    case "$script" in
-    -|/dev/*|/tmp/* ) bscript='' ;;
-    * ) bscript=": $(basename "$script" .sh);" ;;
-    esac
 
     scriptfile="$(cat "$script")"
     scriptargs="$(echo "$scriptfile" | sed -n '/^#DOCKER:/p')"
     echo "$scriptargs" | sed -n 's/^#DOCKER:FROM\>/FROM/p'
     f="$(echo "$scriptfile" | sed '/^#DOCKER:/d')"
 
-    echo "RUN $bscript"'set -eu; e() { echo "$@";};\'
+    echo 'RUN set -eu; e() { echo "$@";};\'
     echo '(\'
     echo "$f" | gzip -n9 | base64 -w 72 | sed 's/.*/e &;\\/'
     echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
@@ -226,9 +218,8 @@ make_docker_files() {
 	run:*|RUN:* )
 	    echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
 	    script="${file#*:}"
-	    bscript=": $(basename "$script" .sh);"
 
-	    echo "RUN $bscript"'set -eu; e() { echo "$@";};\'
+	    echo 'RUN set -eu; e() { echo "$@";};\'
 	    echo '(\'
 	    gzip -cn9 "$script" | base64 -w 72 | sed 's/.*/e &;\\/'
 	    echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
@@ -268,99 +259,6 @@ make_docker_files() {
 
 ################################################################################
 
-do_debian() {
-    for i in unstable testing buster stretch jessie wheezy wheezy-i386 squeeze
-    do do_one_debian $i "deb-$i-bf"
-    done
-}
-
-do_one_debian() {
-    case $1 in 
-    wheezy-i386 )
-	do_debian_wheezy i386/debian:wheezy "$2" ;;
-    wheezy )
-	do_debian_wheezy debian:"$1" "$2" ;;
-    squeeze )
-	do_debian_squeeze debian:"$1" "$2" ;;
-
-    *:* ) do_debian_working "$1" "$2" ;;
-    * ) do_debian_working debian:"$1" "$2" ;;
-    esac
-}
-
-do_debian_working() {
-    {
-	echo "FROM $1"
-	make_docker_runcmd "bfi/x-deb-get.sh"
-	echo 'RUN adduser' "$USER" \
-	    --uid "$(id -u)" \
-	    --home "'/home/$USER'" \
-	    --gecos '""' \
-	    --disabled-password
-
-	echo 'WORKDIR /home/'"$USER"
-	echo "USER $USER:$USER"
-	echo 'CMD ["bash", "-l"]'
-    } | docker build -t "$2" -
-}
-
-do_debian_wheezy() {
-    {
-	echo "FROM $1"
-
-	make_docker_runcmd <(cat<<\!
-cat <<\@ > /etc/apt/apt.conf.d/99unauthenticated
-Acquire::Check-Valid-Until false;
-// Acquire::AllowInsecureRepositories true;
-// APT::Get::AllowUnauthenticated yes;
-@
-cat <<\@ > /etc/apt/sources.list
-deb http://archive.debian.org/debian wheezy main contrib non-free
-deb http://archive.debian.org/debian-security wheezy/updates main contrib non-free
-@
-!
-)
-
-	make_docker_runcmd "bfi/x-deb-get.sh"
-	echo 'RUN useradd' "$USER" \
-	    --uid "$(id -u)" \
-	    --home "'/home/$USER'"
-
-	echo 'WORKDIR /home/'"$USER"
-	echo "USER $USER:$USER"
-	echo 'CMD ["bash", "-l"]'
-    } | docker build -t "$2" -
-}
-
-do_debian_squeeze() {
-    {
-	echo "FROM $1"
-
-	make_docker_runcmd <(cat<<\!
-cat <<\@ > /etc/apt/apt.conf.d/99unauthenticated
-Acquire::Check-Valid-Until false;
-Acquire::AllowInsecureRepositories true;
-APT::Get::AllowUnauthenticated yes;
-@
-cat <<\@ > /etc/apt/sources.list
-deb http://archive.debian.org/debian squeeze main contrib non-free
-deb http://archive.debian.org/debian squeeze-lts main contrib non-free
-deb http://archive.debian.org/debian-security squeeze/updates main contrib non-free
-@
-!
-)
-
-	make_docker_runcmd "bfi/x-deb-get.sh"
-	echo 'RUN useradd' "$USER" \
-	    --uid "$(id -u)" \
-	    --home "'/home/$USER'"
-
-	echo 'WORKDIR /home/'"$USER"
-	echo "USER $USER:$USER"
-	echo 'CMD ["bash", "-l"]'
-    } | docker build -t "$2" -
-}
-
 make_docker_runcmd() {
     # Limit per "run" is library exec arg length (approx 128k)
     local script="$1" sname="install"
@@ -371,68 +269,6 @@ make_docker_runcmd() {
     echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
     # Run the script
     echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
-}
-
-################################################################################
-
-do_alpine() {
-    {
-	cat <<-\!
-	FROM alpine:latest
-	RUN apk add --no-cache -t build-packages \
-		build-base bison flex lua gmp-dev openssl-dev cmake gcc-gnat
-	!
-
-	# RUN apk add --no-cache --repositories-file /dev/null \
-	#   -X "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" tcc
-
-	# echo "VOLUME /home/$USER"
-	# echo "LABEL BuildTime \"$(date)\""
-
-	echo 'RUN adduser -D' "$USER"
-	echo 'WORKDIR /home/'"$USER"
-	echo "USER $USER:$USER"
-	echo 'CMD ["sh", "-l"]'
-    } | docker build -t alpine-bf -
-}
-
-################################################################################
-
-do_centos() {
-    {
-	echo 'FROM centos:latest'
-	echo 'RUN yum groupinstall -y "Development Tools" \'
-	echo '&&  yum install -y which gmp-devel openssl-devel clang cmake \'
-	echo '&&  yum clean all'
-
-	echo 'RUN adduser -U ' "$USER" \
-	    --uid "$(id -u)" \
-	    --home "'/home/$USER'"
-
-	echo 'WORKDIR /home/'"$USER"
-	echo "USER $USER:$USER"
-	echo 'CMD ["bash", "-l"]'
-    } | docker build -t centos-bf -
-}
-
-################################################################################
-
-do_fedora() {
-    {
-	echo 'FROM fedora:latest'
-	echo 'RUN yum groupinstall -y "C Development Tools and Libraries" \'
-	echo '&&  yum install -y which gmp-devel openssl-devel clang cmake \'
-	echo '&&  yum install -y diffutils \'
-	echo '&&  yum clean all'
-
-	echo 'RUN adduser -U ' "$USER" \
-	    --uid "$(id -u)" \
-	    --home "'/home/$USER'"
-
-	echo 'WORKDIR /home/'"$USER"
-	echo "USER $USER:$USER"
-	echo 'CMD ["bash", "-l"]'
-    } | docker build -t fedora-bf -
 }
 
 ################################################################################
