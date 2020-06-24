@@ -5,7 +5,9 @@ set -e
 
 doit() {
     I=$(echo "$1"-bf | tr ':/' '--' | tr -d . | \
-	sed -e 's/^debian-/deb-/' -e 's/i386-debian/deb-i386/' )
+	sed -e 's/-latest-/-/' \
+	    -e 's/^debian-/deb-/' \
+	    -e 's/i386-debian/deb-i386/' )
 
     ./build.sh devenv.sh | sed 's;^FROM.*;FROM '"$1"';' |
 	docker build - -t "$I" &
