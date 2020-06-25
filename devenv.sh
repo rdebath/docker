@@ -10,18 +10,20 @@ main() {
 }
 
 add_userid() {
-    if [ -f /etc/debian_version ]
-    then
-	if [ -x /usr/sbin/adduser ]
-	then adduser user --uid 1000 --home /home/user --gecos '' --disabled-password
-	else useradd user --uid 1000 --home /home/user
-	fi
-    fi
-    [ -f /etc/redhat-release ] &&
-	adduser user --uid 1000 --home /home/user -U
-    [ -f /etc/alpine-release ] &&
-	adduser -D -h /home/user user
-    return 0
+    [ -x /usr/sbin/useradd ] && {
+	useradd user --uid 1000 --home /home/user
+	return 0
+    }
+    [ -f /etc/alpine-release ] && {
+	adduser user --uid 1000 --home /home/user -D
+	return 0
+    }
+    [ -x /usr/sbin/adduser ] && {
+	adduser user --uid 1000 --home /home/user
+	return 0
+    }
+
+    useradd user --uid 1000 --home /home/user
 }
 
 install_os() {
@@ -42,10 +44,11 @@ install_os() {
     fedora ) install_fedora; return ;;
     debian ) install_debian; return ;;
     ubuntu ) install_apt; return ;;
+    opensuse*) install_opensuse; return ;;
+    arch )   install_arch; return ;;
     esac
 
     echo >&2 "OS not supported: $PRETTY_NAME"
-    exit 2
 }
 
 install_alpine() {
@@ -68,8 +71,20 @@ install_fedora() {
     yum clean all
 }
 
+install_opensuse() {
+    echo >&2 "Installing packages with zypper for $PRETTY_NAME"
+    zypper install -y --type pattern devel_basis
+    zypper clean -a
+}
+
+install_arch() {
+    pacman -Syy --noconfirm --needed base-devel
+    find /var/cache/pacman/pkg/ -type f -delete
+}
+
 install_debian() {
     case "$VERSION_ID" in
+    5* ) fix_debian_lenny ;;
     6* ) fix_debian_squeeze ;;
     7* ) fix_debian_wheezy ;;
     esac
@@ -99,6 +114,18 @@ cat <<\@ > /etc/apt/sources.list
 deb http://archive.debian.org/debian squeeze main contrib non-free
 deb http://archive.debian.org/debian squeeze-lts main contrib non-free
 deb http://archive.debian.org/debian-security squeeze/updates main contrib non-free
+@
+}
+
+fix_debian_lenny() {
+cat <<\@ > /etc/apt/apt.conf.d/99unauthenticated
+Acquire::Check-Valid-Until false;
+Acquire::AllowInsecureRepositories true;
+APT::Get::AllowUnauthenticated yes;
+@
+cat <<\@ > /etc/apt/sources.list
+deb http://archive.debian.org/debian/ lenny contrib main non-free
+deb http://archive.debian.org/debian-security/ lenny/updates contrib main non-free
 @
 }
 

@@ -9,8 +9,23 @@ doit() {
 	    -e 's/^debian-/deb-/' \
 	    -e 's/i386-debian/deb-i386/' )
 
-    ./build.sh devenv.sh | sed 's;^FROM.*;FROM '"$1"';' |
-	docker build - -t "$I" &
+    case "$1" in
+    *suse* ) 
+        DFILE=$(./build.sh devenv.sh | sed '/^FROM.*/d')
+	DFILE=$(
+	    echo "FROM $1"
+	    echo 'RUN [ -e /bin/gzip ] || { [ -e /usr/bin/zypper ] && { \'
+	    echo 'echo >&2 WARNING: gzip not installed in SUSE -- WTF ; \'
+	    echo 'zypper install -y gzip ; zypper clean -a ; } ; }'
+	    echo "$DFILE"
+	)
+
+	;;
+    * ) DFILE=$(./build.sh devenv.sh | sed 's;^FROM.*;FROM '"$1"';') ;;
+    esac
+
+    echo "build $1 -> $I"
+    echo "$DFILE" | docker build - -t "$I" &
 
     cnt=$((cnt + 1))
     if [ "$cnt" -gt 3 ]
@@ -18,18 +33,15 @@ doit() {
     fi
 }
 
-doit alpine
-doit centos:latest
-doit debian:buster
-doit debian:jessie
-doit debian:squeeze
-doit debian:stretch
-doit debian:testing
-doit debian:unstable
-doit debian:wheezy
-doit fedora:latest
-doit i386/debian:jessie
-doit i386/debian:wheezy
-doit ubuntu:16.04
-doit ubuntu:latest
-wait
+# doit archlinux ; wait ; exit
+
+for base in \
+    debian:buster debian:jessie debian:squeeze debian:stretch \
+    debian:testing debian:unstable debian:wheezy i386/debian:jessie \
+    i386/debian:wheezy jfcoz/lenny:latest ubuntu:16.04 ubuntu:latest \
+    alpine centos:latest fedora:latest opensuse/leap opensuse/tumbleweed \
+    archlinux
+do doit $base
+done
+
+wait ; exit
