@@ -1,42 +1,99 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC1003,SC2001
+if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
+set -e
+
+host_main() {
+    docker_init
+    case "$1" in
+    # Verbose, include the script in the dockerfile image
+    -v ) VERBOSE=yes ; shift ;;
+    # Runnable, output a shell script runnable in the guest
+    -r ) RUNNOW=yes ; shift ;;
+    # Build, feed the dockerfile into docker build
+    -b ) BUILD=yes ; shift ;;
+    esac
+
+    grep -q vsyscall /proc/cmdline ||
+	echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
+
+    # $1 is the FROM image.
+    if [ "$1" != '' ]||[ "$RUNNOW" = yes ]
+    then build_one "$1" ; wait
+    else
+
+	for base in \
+	    debian:buster ubuntu:latest alpine centos:latest fedora:latest \
+	    opensuse/leap opensuse/tumbleweed archlinux \
+	    \
+	    debian:unstable debian:testing ubuntu:16.04 \
+	    \
+	    debian:stretch debian:jessie debian:squeeze debian:wheezy \
+	    i386/debian:jessie i386/debian:wheezy jfcoz/lenny:latest
+
+	do build_one $base
+	done
+	wait
+    fi
+}
+
+build_one() {
+    I=$(echo "$1"-bf | tr ':/' '--' | tr -d . | \
+	sed -e 's/-latest-/-/' \
+	    -e 's/^debian-/deb-/' \
+	    -e 's/i386-debian/deb-i386/' )
+
+    if [ "$BUILD" = yes ]
+    then
+	echo "# Build $1 -> $I"
+	guest_script "$1" | docker build -q - -t "$I" &
+
+	cnt=$((cnt + 1))
+	if [ "$cnt" -gt 3 ]
+	then wait -n && cnt=$((cnt - 1)) ;:
+	fi
+    else
+	echo "# Script to build $I from $1"
+	guest_script "$1"
+	echo
+    fi
+}
+
+################################################################################
+# shellcheck disable=SC1091,SC2086
+guest_script() {
+
+    docker_cmd FROM "$1"
+
+    case "$1" in
+    *suse* )
+	docker_cmd RUN \
+	    '[ -e /bin/gzip ] || { [ -e /usr/bin/zypper ] && { ' \
+	    'echo >&2 "WARNING: gzip not installed in SUSE!" ; ' \
+	    'zypper install -y gzip ; zypper clean -a ; } ; }'
+	;;
+    esac
+
+docker_start || {
 #!/bin/sh -
-#DOCKER:FROM debian
-#DOCKER:USER user
-#DOCKER:WORKDIR /home/user
-#DOCKER:CMD ["bash"]
 
 main() {
     install_os
-    add_userid
-}
-
-add_userid() {
-    [ -x /usr/sbin/useradd ] && {
-	useradd user --uid 1000 --home /home/user
-	return 0
-    }
-    [ -f /etc/alpine-release ] && {
-	adduser user --uid 1000 --home /home/user -D
-	return 0
-    }
-    [ -x /usr/sbin/adduser ] && {
-	adduser user --uid 1000 --home /home/user
-	return 0
-    }
-
-    useradd user --uid 1000 --home /home/user
 }
 
 install_os() {
     set -e
 
     ID=unknown
-    [ -f /etc/os-release ] && . /etc/os-release || {
+    if [ -f /etc/os-release ]
+    then . /etc/os-release
+    else
 	[ -f /etc/debian_version ] && {
 	    ID=debian
 	    VERSION_ID=$(cat /etc/debian_version)
 	    PRETTY_NAME="${PRETTY_NAME:-$ID $VERSION_ID}"
 	}
-    }
+    fi
 
     case "$ID" in
     alpine ) install_alpine; return ;;
@@ -144,10 +201,10 @@ install_apt() {
     apt-get update || exit
 
     # Howto update the keyring ...
-    KV=`dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}'`
+    KV=$(dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}')
     apt-get install debian-archive-keyring ||:
     apt-mark auto debian-archive-keyring ||:
-    [ "$KV" != "`dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}'`" ] &&
+    [ "$KV" != "$(dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}')" ] &&
 	apt-get update
 
     # Make sure we're up to date.
@@ -176,7 +233,7 @@ install_apt() {
 	    PKGLIST="$PKGLIST ${PKG%%=*}"
     done
 
-    FOUND=`apt-cache show $PKGLIST | sed -n 's/^Package: //p' 2>/dev/null`
+    FOUND=$(apt-cache show $PKGLIST | sed -n 's/^Package: //p' 2>/dev/null)
 
     # Simple way ...
     # apt-get install -y $FOUND
@@ -198,7 +255,7 @@ Description: A list of build tools
  .
 @
     equivs-build control
-    dpkg -i --force-depends *.deb 2>/dev/null # It complains about the force
+    dpkg -i --force-depends packagelist-local*.deb 2>/dev/null # It complains about the force
     apt-get install -f -y
     cd
     rm -rf /tmp/build
@@ -206,7 +263,7 @@ Description: A list of build tools
     apt-get autoremove --purge -y
 
     [ -d /usr/lib/ccache ] &&
-	echo export PATH=/usr/lib/ccache:$PATH
+	echo "NOTE: export PATH=/usr/lib/ccache:$PATH"
 
     clean_apt
     return 0
@@ -227,10 +284,10 @@ instver() {
 
     [ "$minversion" = "" ] && minversion="0"
     V=0
-    for version in `apt-cache policy $pkgname 2>/dev/null |
-		    awk '/^  Candidate:/ {print $2;}'`; do
-	if dpkg --compare-versions $version ge $minversion; then
-	    if dpkg --compare-versions $version gt $V; then
+    for version in $(apt-cache policy "$pkgname" 2>/dev/null |
+		    awk '/^  Candidate:/ {print $2;}'); do
+	if dpkg --compare-versions "$version" ge "$minversion"; then
+	    if dpkg --compare-versions "$version" gt "$V"; then
 		V=$version
 	    fi
 	else
@@ -243,3 +300,98 @@ instver() {
 
 main "$@"
 
+} ; docker_commit "Install devenv"
+
+docker_start || {
+#!/bin/sh -
+
+main() {
+    add_userid
+}
+
+add_userid() {
+    [ -x /usr/sbin/useradd ] && {
+	useradd user --uid 1000 --home /home/user
+	return 0
+    }
+    [ -f /etc/alpine-release ] && {
+	adduser user --uid 1000 --home /home/user -D
+	return 0
+    }
+    [ -x /usr/sbin/adduser ] && {
+	adduser user --uid 1000 --home /home/user
+	return 0
+    }
+
+    useradd user --uid 1000 --home /home/user
+}
+
+main "$@"
+
+} ; docker_commit "Create User"
+
+    docker_cmd USER user
+    docker_cmd WORKDIR /home/user
+    docker_cmd CMD '["bash"]'
+}
+
+################################################################################
+# Dockerfile building scriptlets
+#
+docker_init() {
+    RUNNOW=
+    VERBOSE=
+    BUILD=
+}
+
+docker_start() { START_LINE=$((BASH_LINENO[0]+1)) ; }
+docker_commit() {
+    END_LINE=$((BASH_LINENO[0]-1))
+    TEXT=$(sed -n < "${BASH_SOURCE[1]}" "${START_LINE},${END_LINE}p")
+
+    test "$VERBOSE" && echo
+    test "$VERBOSE" && echo "$TEXT" | sed 's/^/# /'
+    echo "$TEXT" | make_docker_runcmd "$1"
+    test "$VERBOSE" && echo
+    return 0
+}
+
+docker_cmd() {
+    [ "$RUNNOW" != yes ] && { echo "$@" ; return 0; }
+
+    case "$1" in
+    ENV )
+        shift;
+        case "$1" in
+        *=* ) echo export "$@" ;;
+        * ) V="$1" ; shift ; echo export "$V=\"$*\"" ;;
+        esac
+        ;;
+    ARG ) echo "export \"$1\"" ;;
+    WORKDIR ) echo "mkdir -p \"$2\"" ; echo "cd \"$2\"" ;;
+
+    * ) echo "# $*" ;;
+    esac
+}
+
+make_docker_runcmd() {
+    [ "$RUNNOW" = yes ] && {
+        echo ; echo '('
+        cat -
+        echo ')' ; echo
+        return 0
+    }
+    # Limit per "run" is library exec arg length (approx 128k)
+    local sname="install"
+    # Encode the script
+    echo "RUN ${1:+: $1 ;}"'set -eu; e() { echo "$@";};\'
+    echo '(\'
+    gzip -cn9 | base64 -w 72 | sed 's/.*/e &;\\/'
+    echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
+    # Run the script
+    echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
+}
+
+################################################################################
+
+host_main "$@"
