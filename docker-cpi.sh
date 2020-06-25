@@ -21,7 +21,7 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 # }
 
 docker_cpi() {
-    # docker_cpi "src image" "dest image"
+    # docker_cpi "src image" "dest image" "ssh host"
     local ID CLIST CFLG c i JSTR CFLG2 MAINTAINER ENTRY
 
     CLIST=()
@@ -40,9 +40,13 @@ docker_cpi() {
 
     CFLG=$(docker inspect "$1" --format '{{.Author}}')
     [ "$CFLG" != '' ] && {
-	# echo "Maintainer '$CFLG' is not on docker whitelist, converting to LABEL"
-	# CLIST+=(-c "LABEL Maintainer $CFLG")
-	MAINTAINER="$CFLG"
+	if [ "$3" != '' ]
+	then
+	    echo "Maintainer '$CFLG' is not on docker whitelist, converting to LABEL"
+	    CLIST+=(-c "LABEL Maintainer $CFLG")
+	else
+	    MAINTAINER="$CFLG"
+	fi
     }
 
     c=$(docker inspect "$1" --format '{{ len .Config.Env}}')
@@ -125,12 +129,18 @@ docker_cpi() {
 
     # awk 'BEGIN{for(i=1; i<ARGC; i++) {printf "\047%s\047\n", ARGV[i]; delete ARGV[i]; }; }' "${CLIST[@]}"
 
-    [ "$1" = "$2" ] ||
+    [[ "$1" != "$2" && "$3" = '' ]] && {
 	docker rmi "$2" 2>/dev/null ||:
+    }
 
     ID=$(docker create "$1" true)
-    docker export "$ID" | docker import "${CLIST[@]}" - "$2"
-    docker rm "$ID" >/dev/null
+    if [ "$3" = '' ]
+    then docker export "$ID" | docker import "${CLIST[@]}" - "$2"
+    else docker export "$ID" |
+	pv | gzip |
+	ssh "$3" docker import "${CLIST[@]@Q}" - "${2@Q}"
+    fi
+    docker rm "$ID" >/dev/null ||:
 
     [ "$MAINTAINER" = '' ] ||
 	echo -e "FROM $2\\nMAINTAINER $MAINTAINER" | docker build -t "$2" -
