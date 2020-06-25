@@ -46,7 +46,10 @@ build_one() {
     if [ "$BUILD" = yes ]
     then
 	echo "# Build $1 -> $I"
-	guest_script "$1" | docker build -q - -t "$I" &
+	(
+	    NEWID=$(guest_script "$1" | docker build -q - -t "$I")
+	    echo "# Done $1 -> $I = $NEWID"
+	) &
 
 	cnt=$((cnt + 1))
 	if [ "$cnt" -gt 3 ]
@@ -328,7 +331,7 @@ add_userid() {
 
 main "$@"
 
-} ; docker_commit "Create User"
+} ; docker_commit "Create user"
 
     docker_cmd USER user
     docker_cmd WORKDIR /home/user

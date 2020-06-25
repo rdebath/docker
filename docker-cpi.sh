@@ -24,6 +24,7 @@ docker_cpi() {
     # docker_cpi "src image" "dest image" "ssh host"
     local ID CLIST CFLG c i JSTR CFLG2 MAINTAINER ENTRY
 
+    printf ' Opening and inspecting ...\r'
     CLIST=()
 
     CFLG=$(docker inspect "$1" --format '{{.Comment}}')
@@ -115,8 +116,8 @@ docker_cpi() {
     }
     [ "$(docker inspect "$1" --format '{{len .Config.Labels }}')" -gt 0 ] && {
 	# These have no use as they are difficult to view.
-	# docker inspect "$1" --format '{{printf "%#v" .Config.Labels }}'
-	# docker inspect alpine-build | jq .[0].Config.Labels
+	# docker inspect "$1" --format '{{json .Config.Labels}}'
+	# docker inspect "$1 | jq .[0].Config.Labels
 
 	JSTR="$(docker inspect "$1" | jq .[0].Config.Labels\|keys)"
 	c="$(echo "$JSTR" | jq length)"
@@ -127,18 +128,20 @@ docker_cpi() {
 	done
     }
 
-    # awk 'BEGIN{for(i=1; i<ARGC; i++) {printf "\047%s\047\n", ARGV[i]; delete ARGV[i]; }; }' "${CLIST[@]}"
+    # printf '%s\n' "${CLIST[@]@Q}" ; exit
 
     [[ "$1" != "$2" && "$3" = '' ]] && {
 	docker rmi "$2" 2>/dev/null ||:
     }
 
+    SIZE=$(docker inspect --format "{{.Size}}" "$1")
     ID=$(docker create "$1" true)
     if [ "$3" = '' ]
     then docker export "$ID" | docker import "${CLIST[@]}" - "$2"
     else docker export "$ID" |
-	pv | gzip |
-	ssh "$3" docker import "${CLIST[@]@Q}" - "${2@Q}"
+	    pv -s "$SIZE" |
+	    gzip |
+	    ssh "$3" docker import "${CLIST[@]@Q}" - "${2@Q}"
     fi
     docker rm "$ID" >/dev/null ||:
 
