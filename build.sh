@@ -36,8 +36,8 @@ Usage() {
     cat >&2 <<!
 Usage: ...
 
-Copy image to flattened image
-    $0 -cp fromimage:fat toimage:squished
+Forward to docker build
+    $0 -b ImageName ...
 
 Make a run command
     $0 -r shell_script.sh
