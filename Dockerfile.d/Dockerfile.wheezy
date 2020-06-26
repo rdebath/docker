@@ -5,9 +5,11 @@ RUN apk add perl debootstrap
 # FROM debian AS unpack
 # RUN apt-get update ; apt-get install -y debootstrap
 
+ARG ARCH=amd64
+
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --arch=amd64 --variant=minbase --foreign \
+RUN debootstrap --arch=$ARCH --variant=minbase --foreign \
     wheezy chroot http://archive.debian.org/debian
 
 #------------------------------------------------------------------------------#
