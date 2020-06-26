@@ -206,7 +206,6 @@ install_apt() {
     # Howto update the keyring ...
     KV=$(dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}')
     apt-get install debian-archive-keyring ||:
-    apt-mark auto debian-archive-keyring ||:
     [ "$KV" != "$(dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}')" ] &&
 	apt-get update
 
@@ -238,15 +237,18 @@ install_apt() {
 
     FOUND=$(apt-cache show $PKGLIST | sed -n 's/^Package: //p' 2>/dev/null)
 
-    # Simple way ...
-    # apt-get install -y $FOUND
+    if ! apt-mark auto debian-archive-keyring 2>/dev/null
+    then
+	# Simple way ...
+	apt-get install -y $FOUND
 
-    apt-get install -y equivs
+    else
+	apt-get install -y equivs
 
-    mkdir /tmp/build
-    cd /tmp/build
+	mkdir /tmp/build
+	cd /tmp/build
 
-    cat > control <<@
+	cat > control <<@
 Section: misc
 Priority: optional
 Standards-Version: 3.9.2
@@ -258,13 +260,14 @@ Description: A list of build tools
  .
  .
 @
-    equivs-build control
-    dpkg --unpack packagelist-local*.deb
-    apt-get install -f -y
-    cd
-    rm -rf /tmp/build
-    apt-get remove --purge -y equivs
-    apt-get autoremove --purge -y
+	equivs-build control
+	dpkg --unpack packagelist-local*.deb
+	apt-get install -f -y
+	cd
+	rm -rf /tmp/build
+	apt-get remove --purge -y equivs
+	apt-get autoremove --purge -y
+    fi
 
     [ -d /usr/lib/ccache ] &&
 	echo "NOTE: export PATH=/usr/lib/ccache:$PATH"
