@@ -7,13 +7,8 @@ RUN apk add perl debootstrap
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --arch=amd64 --variant=minbase --foreign \
-    --exclude=systemd,systemd-sysv --include=sysvinit-core \
-    jessie chroot
-
-# Systemd is unpacked ready to install even if we say we hate it.
-# So break the chroot such that it doesn't actually get installed.
-RUN sed -i -e '/systemd\>.*/d' chroot/debootstrap/required
+RUN debootstrap --arch=i386 --variant=minbase --foreign \
+    wheezy chroot http://archive.debian.org/debian
 
 #------------------------------------------------------------------------------#
 FROM scratch AS stage2
@@ -69,23 +64,9 @@ e Qb6VOhyN8m9jcO9wRLnaYwjTNF2tfjPM2pqa+Ki5buIxp4m2gALI9yikJ+NJOgBMkiRJkiRJ;\
 e kiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiTJH1f+DWq7tGMAUAAA;\
 )|base64 -d|gzip -d|tar xvf -
 
-# Systemd leaves a mess, unpack it again so dpkg can remove it.
-RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb
-# Sigh this breaks sysvinit ...
-RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd-sysv_*.deb
-# Remove them
-RUN dpkg --purge --force-depends systemd ||:
-RUN dpkg --purge --force-depends systemd-sysv ||:
-# Oh, and fix sysvinit
-RUN dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb
-
-# Remove packages that are not essential
-RUN apt-mark auto -qq $(apt-mark showmanual) \
-&&  apt-get autoremove --purge -y
-
 # Clean up the divert I put in to stop sysvinit trying to restart itself
-RUN rm /usr/bin/ischroot \
-&&  dpkg-divert --local --rename --remove /usr/bin/ischroot
+RUN rm /usr/bin/ischroot
+RUN dpkg-divert --local --rename --remove /usr/bin/ischroot
 
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null

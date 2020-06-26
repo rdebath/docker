@@ -18,7 +18,11 @@ RUN sed -i -e '/systemd\>.*/d' chroot/debootstrap/required
 #------------------------------------------------------------------------------#
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
-RUN /bin/bash /debootstrap/debootstrap --second-stage
+
+# init uses ischroot to disable restarting.
+RUN dpkg-divert --local --rename --add /usr/bin/ischroot \
+&&  ln -s /bin/true /usr/bin/ischroot \
+&&  /debootstrap/debootstrap --second-stage
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -26,45 +30,46 @@ ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /
 RUN set -eu; e() { echo "$@";};\
 (\
-e H4sIAAAAAAACA+1ZbY8btxG+z/oV0zUQO4G00uneXDkI4MRwcUAbGLaDfCkQULujXVa75Ibk;\
-e Spab/vc+Q67OuvOlTYH4jCIi7k4ncXY4fHmeeTjqvZv6pTbTzja62E1ckZcnv3OboV1dXMRX;\
-e tLuvs7Orq5PTs8vLq9n8Kn5+enY+Oz2h2ckDtN4H5YhOnLXhP9n9t/7/0/boT1PZfV+PRo/o;\
-e pXXUWh/ohS3W7Kj37PyYMtWFScWBtMFiNU1G1jQ7qlXXsfFU9k6birIyPbTsdVNmY7jb1uyY;\
-e ZH2DGMDZRheMByx78zjQ1ro1KVOSXQU2tFK68RiD6r61zvaetmrnc3pbaw9vneMNm+Ap1NZz;\
-e tO4dvC13GMJ2nQwRav4wzMrZllQI3HZx/GBTLPloxO90oNPZ6ejkj944FFNsr/zmhTWrvJym;\
-e fZwUDSvzu+H/8vz81/A/n8/v4v/ibH52xP+D4J/eaFMATvdDv1PFWlW8R74fQC8ovY13QIs7;\
-e L6gHBnfE3gOrGo/saMmFbcVFqTe67FVDjdrBO4iDBZQCWiB9P3INRmhYEB/NgNwx3HVcJG+9;\
-e Fyx/Z3+klYbZDuO2IAn6sVYBrrSnFufWxwmBQrTwhQopLipUUXP6hJ6/ektrRtDEoKC+o3/g;\
-e KCAQn8gKM5eYB7ZJEY+pVWv0wpvt3X4avTEMvvHKacTXKIf1enIQsY8LvOXHTUPGujZ+aEBm;\
-e cZVTZP4mNlUpjCqsuNV4QBaeVZmCu7PkH0wRFpOipcMbODS8Jd1i377MhdavS5Yxx8NAW9s3;\
-e g8OlTHFj15G/9ywfgZ+NMYowfpxp4LgqaXuxdlgxjmu2ZHm02BUQDylopsoGnIa+WCNNyCo/;\
-e 9tQg7jF5G7t52KdVb+CvcKyCtiY6hunhyUmTvh1XPnrxal0tFq9wWCfXEjzTPylzLU1WNN0o;\
-e N40LmUjNFbXesJ9+lZe8/NXeThKUau63+ipHfqRffqHges6e0b+ejTCnxeKHrlSBP2scoxfa;\
-e LRbficli0a2raExZ9uxWh3fFrT6s+fc2cNpI7EdpCVvQ6PectkXH3Cxo0XJuIjSB0tLG7nHc;\
-e ZYW8rhpJzwIFIQRYLBm51pHvq0qOiwUIn9QhdH4xnVY61P0SGaadYm49O8c27Dq+805737PH;\
-e qT05ts+d/42dNMpUPWjEf9L8Pzs/vbiT/y8vTy+P+f9h8v+1GTLvOLGBoD8JcsMgeSGC7C0S;\
-e i28iT/ssJd6Bzh+DCQ4Tp2QIjWwvLJFyKPR5abemsaocJHqbSCSxjan1UoeUk5HGX9pBeyR+;\
-e Km1MZykOPKclRSik1LZrGGkvMo6wEzccBgKT8OIAN5mjj1yd5bT4cjR6Xvzcawdi/Ov+dFNm;\
-e rAGnjo74P8C/6oN13NoNTwZK958G/4D+/Db+5/LPEf8Pqf8PZX9M741NslB0dLxWi27FIaDO;\
-e eq+XgNhKG8iDqDN91JaA6so2jd3Kc9yyE2wpwSu07o6Q/FvovC6C1ixEiBC9/uF7ug1T+nvs;\
-e kPbFF3Sn9ECTHX09XEr8N7dNv4ZE8XLTwECdTmwVawzf3O+y60Wpw+EknvVJOuwH7iXCb8Fe;\
-e vFJ9E8bxxhBFuSpCHwXqT3KB+Gl/S/L7KEFXG63otVx8WmhlT9bB1wvu4hu9Aj1ZLJi7uV+9;\
-e GRA20JxUOiKFYW+aPvImHpJtGB7YC3HrdCXbgFgKhc1LPJnU2EE0YMU0uxIU+wY6LTGxXI6E;\
-e YLOVajxnkPU+llRu7kcwwH3P2c5p7AwGUVUFAw+5SmppcUGIbgdelyLNzUoEUiUuCfECsleB;\
-e WHkd+pJzyE3MX2SuVia3rhLSmbKZFvVs7mcX+Mnr0DaPhJJ09Rw79hxb9DrR0X6xrtvOuqBM;\
-e GMFgsfhgsVh8ZLKf47OjtPyN/F+9190El3Z+96n139X56Uf67/yo/z4f/6caS3YPN9/PyHme;\
-e Z3ifShnaDc6iTBwEZXUg0ZBbtFBd6leQmm6rXOmj/twKVgcOgz+wGBJIzD3yz03usWZSan9T;\
-e U+B3XaMLHcBQjn/uJU0lDutCrPFEj1JsQGYQ/gIlDh4wjL0pstgVotzb7MVqvq+MS4dy2lsj;\
-e +vUjdZnKQUgQoRZijOyKBKQI5CnSWOgxS4y32NbM73cZLZXnlEFFP1M2/3P+9Cn97dtsPBTP;\
-e xdsglKPEjpV3cfQ0n1+diWV+oGj/AsheJ8RSluoEo9+A/7JbV/FPXqyqAwGI+fkO2rvvPvH9;\
-e b3Z2F/8XV0f8PxD+X/5vld/7v+3BcdVFjYO5/24HQmIjKqGzW1g1wG3UM8CLSJH4PQxAGEt6;\
-e BxQAm11ttwLrSCZSzdVGFOiW1ZoqKZNJVVeR0SCt4XTSk7Yv6viRE8j5ThsjQQrAY03aLjfa;\
-e 9r7ZSUEUirbgSW+8WvFE26MgOLZjO7ZjO7ZjO7ZjO7Y/Tvs3C2SmygAoAAA=;\
+e H4sIAAAAAAACA+1abY8btxG+z/oV0zUQO4HedSe5chDAiZHigDYwbAf5UiCgdqkVe7vkhuRK;\
+e lpv+9z5Dru50F5+LFD2dg3Jg+7xL7nDI4TzzDHnS56OzB5YxZHFxEX5C7v4M/5/M5ouL8/HF;\
+e eDo9G0/Gs9nsjC7OTiCt88ISnVlj/Kf6/af2P6hI+F80fvR5+R+ySP4/pf/xd5gbvR4Wo0f1;\
+e /2TM/p9hIyT/P5L/C5NfSTvIKyn0/8z/8/Pz+/w/nZ7PbuJ/PoH/L2ZTxP84+f/BZTSit0rn;\
+e ktbGUm2cp1fB/dQ6aV2fGpFfiVKS0linqnK0EU0jNZ4pixuFVq2qioycl43r96DQb+SepHNS;\
+e e4Vv9rSSualZR6G2qmhFRZXYQz0VrSRv+APaif1h6I3QRSUdqwr9lC770NfIPKprHd7Qd+Yn;\
+e Wiv022Pk2g2JftoID13KUY2t68KUWkd49mjpLKNc5BsZX9HL1+/oSsJukrqgtqF/YDvAFOd5;\
+e BIfJs9Xoa5zsbO5TLa7QyupMaw8zabWWOeYsrIKFlbBYs2dHNruwyDv5tKpIG1uHl1pu40p3;\
+e trlr60QpMC7WgXYKX/DqS1FE8+6s+01XGCZJ0MrigTVquSNVw3tfDnv8fFlIHrbfDbUzbdWp;\
+e XPE0t4bnRRmgYFBKTwEAsj7G8bwIPFkvw8p0XsYCYtlkWLiV5G/zfV6pPNotqTQeu6LNr8ho;\
+e XuqnjiqY3idnQrPsvLVuNSvMrRReGR00o+/xDooTv23ZsPfq9VW5XL7Grh1csvmS/kmZrWmw;\
+e ptFW2FFYzAhvNt+orXSjr4aFXN3b2gjLA36811fDFZbh11/J21ZmL+hfL3qY1HL5Y1MILx/V;\
+e jt4rZZfL77jLctlclaEzZdmLWw3O5rfaeNF/MF5GV8IjhSH4oFIfZHSMcvqpD0GjeOuEGEW4;\
+e FiY094OfhcWeq9AS4tUwNqDLSnqPLerasuQtYxCNzzbeN245GpXKb9oVsk09wuxaaa00ft/I;\
+e O0/KuVY6bN2zJI+R/7UZVEKXLfDDPWj+H59Pj/j/Au8n8zlepfx/mvx/qbvE248YwDFv1h6B;\
+e rCXAncM/e4ec4qoAzy6LabeD8aeI/+OsGVKDQrZncIgZdLWH1p2ujCg4SUBhHbEjgozeqJXy;\
+e MSMji39vOvIRYakwMZVFS/Ch4twgkFDrppLIeQFoGJVkJX0HXGxgGOE6ZbQBpLMhLb/s9V7m;\
+e v7TKAhH/etjglGmjAaa9FP+H+BetN1bWZisHHYy7h4n/yWwxP4p/1InT8WyS4v+0/P+Y9oek;\
+e XpnIB5lFMwY45qzYBdQY59QKAbZWGqQgMEwXSCVH6tpUldnxh7KWlkNLcLiC6O4JKb8Gv2tC;\
+e zOplICBEb378gW6HKf09trB88cV1Y1eD0GBPX3d1ifvmTt+vQU4cFxsYq1ERscB07dU39yht;\
+e WqbqUDkIO34Qt/zRAMHKbwFhci3ayvdD0RBYuch9G9jpz1xD/HyoldzBUEDWVgl6w9VPDabs;\
+e yFhW9ko24UmtgVEG62avy6y3XaR1WIf6IFJ7uKhqA3riI/ZG98E1ETdWlewOWJMLODGiZaRi;\
+e R/YAG+MECyDtW5C0CMhcIgWczdaicjIDr3etPa6S0AOFnzWNVXAQRhFliQ4OdJXEyqBECHo7;\
+e fGdVN6vhSRQoE2IRcmCBWH/l20IOwTexBkx0ldBDY0sGoJHUo3wznrrxBf4MN76unjA8qfIl;\
+e /PYSjnoToemwYJd1Y6wX2vfQYbm86bFc/qbLYZYvErX8BP6XH1QzQMku3z80/1tc3D3/m88v;\
+e Ev4/Iv7HE5bsI8j8cTgeDocZnrtjDGU7bYEndoyyPGJoSC6KQS62C3BNuxO2cIGA7jhCO/Bi;\
+e hcAvZJCQffg/19nH6EGh3PVpgnzfVCpXHtBk5S8tJ6oIXo0PRzxBZThmQGJg5AIadiowkLk+;\
+e YjFr2Hnoc6CrEbqYmXKLsMoZzRT2N/wyHgchPfgNY2JAViQgQcBNpscBGbOIdcvdRsoP+4xW;\
+e wsmYRplEUzb98/D5c/rbtxnWA8lBBnUdWQ48GyqrfdD0fDhdzLjr8IjV/gWRexkDl7J4SND7;\
+e VPwXzVX5kBdA/8X9z3Sezv9Phv/B//zPMF+XD3AB9Lvufxbh/meySPe/j+b/QwEIaHMNCu+2;\
+e eeDzn/Hsjv/n83G6/zmJPAlZ7Xdc/BStDdzg1iUEJyqVb3pPkOxlODRG+bDl2qAxO/SqkLRD;\
+e HYNUyRUIr7lHAg4H+UcEAH32G7PjnA5d8SpHaS5Ad1JcUcmH43ylI0grcJZud9Kzus034ZXl;\
+e bOsapTUbycnd9aHJrLbKtK7a800ICtpcDlrtxFoOlPn/LgJaZz/L3/9ZTBL+n8r/bqX0Z8b/;\
+e ZtPz5P+T+r8xKJ/2A5sPi1P7f7ZYsP/ni/F0Ed5PZufjScr/J8n/fxqx992m17uXCmR3Kv4s;\
+e 1J8dIXD3MAKoi8VryPXh1ykkKEEeDgQiR+Bj2cAK4m3TWqiKz05p09bGIl3zfbMb0jvQAGhD;\
+e Qb6VOhyN8m9jcO9wRLnaYwjTNF2tfjPM2pqa+Ki5buIxp4m2gALI9yikJ+NJOgBMkiRJkiRJ;\
+e kiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiTJH1f+DWq7tGMAUAAA;\
 )|base64 -d|gzip -d|tar xvf -
 
 # Systemd leaves a mess, unpack it again so dpkg can remove it.
-RUN dpkg-divert --local --rename --add /usr/bin/ischroot
-RUN ln -s /bin/true /usr/bin/ischroot
 RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb
 # Sigh this breaks sysvinit ...
 RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd-sysv_*.deb
@@ -73,13 +78,14 @@ RUN dpkg --purge --force-depends systemd ||:
 RUN dpkg --purge --force-depends systemd-sysv ||:
 # Oh, and fix sysvinit
 RUN dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb
-# Clean up the divert I put in to stop sysvinit trying to restart itself
-RUN rm /usr/bin/ischroot
-RUN dpkg-divert --local --rename --remove /usr/bin/ischroot
 
 # Remove packages that are not essential
-RUN apt-mark auto -qq $(apt-mark showmanual)
-RUN apt-get autoremove --purge -y
+RUN apt-mark auto -qq $(apt-mark showmanual) \
+&&  apt-get autoremove --purge -y
+
+# Clean up the divert I put in to stop sysvinit trying to restart itself
+RUN rm /usr/bin/ischroot \
+&&  dpkg-divert --local --rename --remove /usr/bin/ischroot
 
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
