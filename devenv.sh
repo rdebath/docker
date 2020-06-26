@@ -251,6 +251,7 @@ Section: misc
 Priority: optional
 Standards-Version: 3.9.2
 Package: packagelist-local
+Maintainer: Your Name <yourname@example.com>
 Depends: $(echo "$FOUND" | sed -e ':b;$!{;N;b b;};s/^[ \n\t]\+//;s/[ \n\t]\+$//;s/[ \n\t]\+/, /g')
 Description: A list of build tools
  A list of build tools
@@ -258,7 +259,7 @@ Description: A list of build tools
  .
 @
     equivs-build control
-    dpkg -i --force-depends packagelist-local*.deb 2>/dev/null # It complains about the force
+    dpkg --unpack packagelist-local*.deb
     apt-get install -f -y
     cd
     rm -rf /tmp/build
