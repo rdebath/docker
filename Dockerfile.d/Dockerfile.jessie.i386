@@ -1,0 +1,97 @@
+# We can use any Linux that has debootstrap as a package.
+FROM alpine AS unpack
+RUN apk add perl debootstrap
+
+# FROM debian AS unpack
+# RUN apt-get update ; apt-get install -y debootstrap
+
+WORKDIR /opt
+# Chroot under Docker is unreliable; use --foreign as a workaround.
+RUN debootstrap --arch=i386 --variant=minbase --foreign \
+    --exclude=systemd,systemd-sysv --include=sysvinit-core \
+    jessie chroot
+
+# Systemd is unpacked ready to install even if we say we hate it.
+# So break the chroot such that it doesn't actually get installed.
+RUN sed -i -e '/systemd\>.*/d' chroot/debootstrap/required
+
+#------------------------------------------------------------------------------#
+FROM scratch AS stage2
+COPY --from=unpack /opt/chroot /
+RUN /bin/bash /debootstrap/debootstrap --second-stage
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Configure apt and dpkg for docker (copied from official Debian)
+WORKDIR /
+RUN set -eu; e() { echo "$@";};\
+(\
+e H4sIAAAAAAACA+1ZbY8btxG+z/oV0zUQO4G00uneXDkI4MRwcUAbGLaDfCkQULujXVa75Ibk;\
+e Spab/vc+Q67OuvOlTYH4jCIi7k4ncXY4fHmeeTjqvZv6pTbTzja62E1ckZcnv3OboV1dXMRX;\
+e tLuvs7Orq5PTs8vLq9n8Kn5+enY+Oz2h2ckDtN4H5YhOnLXhP9n9t/7/0/boT1PZfV+PRo/o;\
+e pXXUWh/ohS3W7Kj37PyYMtWFScWBtMFiNU1G1jQ7qlXXsfFU9k6birIyPbTsdVNmY7jb1uyY;\
+e ZH2DGMDZRheMByx78zjQ1ro1KVOSXQU2tFK68RiD6r61zvaetmrnc3pbaw9vneMNm+Ap1NZz;\
+e tO4dvC13GMJ2nQwRav4wzMrZllQI3HZx/GBTLPloxO90oNPZ6ejkj944FFNsr/zmhTWrvJym;\
+e fZwUDSvzu+H/8vz81/A/n8/v4v/ibH52xP+D4J/eaFMATvdDv1PFWlW8R74fQC8ovY13QIs7;\
+e L6gHBnfE3gOrGo/saMmFbcVFqTe67FVDjdrBO4iDBZQCWiB9P3INRmhYEB/NgNwx3HVcJG+9;\
+e Fyx/Z3+klYbZDuO2IAn6sVYBrrSnFufWxwmBQrTwhQopLipUUXP6hJ6/ektrRtDEoKC+o3/g;\
+e KCAQn8gKM5eYB7ZJEY+pVWv0wpvt3X4avTEMvvHKacTXKIf1enIQsY8LvOXHTUPGujZ+aEBm;\
+e cZVTZP4mNlUpjCqsuNV4QBaeVZmCu7PkH0wRFpOipcMbODS8Jd1i377MhdavS5Yxx8NAW9s3;\
+e g8OlTHFj15G/9ywfgZ+NMYowfpxp4LgqaXuxdlgxjmu2ZHm02BUQDylopsoGnIa+WCNNyCo/;\
+e 9tQg7jF5G7t52KdVb+CvcKyCtiY6hunhyUmTvh1XPnrxal0tFq9wWCfXEjzTPylzLU1WNN0o;\
+e N40LmUjNFbXesJ9+lZe8/NXeThKUau63+ipHfqRffqHges6e0b+ejTCnxeKHrlSBP2scoxfa;\
+e LRbficli0a2raExZ9uxWh3fFrT6s+fc2cNpI7EdpCVvQ6PectkXH3Cxo0XJuIjSB0tLG7nHc;\
+e ZYW8rhpJzwIFIQRYLBm51pHvq0qOiwUIn9QhdH4xnVY61P0SGaadYm49O8c27Dq+805737PH;\
+e qT05ts+d/42dNMpUPWjEf9L8Pzs/vbiT/y8vTy+P+f9h8v+1GTLvOLGBoD8JcsMgeSGC7C0S;\
+e i28iT/ssJd6Bzh+DCQ4Tp2QIjWwvLJFyKPR5abemsaocJHqbSCSxjan1UoeUk5HGX9pBeyR+;\
+e Km1MZykOPKclRSik1LZrGGkvMo6wEzccBgKT8OIAN5mjj1yd5bT4cjR6Xvzcawdi/Ov+dFNm;\
+e rAGnjo74P8C/6oN13NoNTwZK958G/4D+/Db+5/LPEf8Pqf8PZX9M741NslB0dLxWi27FIaDO;\
+e eq+XgNhKG8iDqDN91JaA6so2jd3Kc9yyE2wpwSu07o6Q/FvovC6C1ixEiBC9/uF7ug1T+nvs;\
+e kPbFF3Sn9ECTHX09XEr8N7dNv4ZE8XLTwECdTmwVawzf3O+y60Wpw+EknvVJOuwH7iXCb8Fe;\
+e vFJ9E8bxxhBFuSpCHwXqT3KB+Gl/S/L7KEFXG63otVx8WmhlT9bB1wvu4hu9Aj1ZLJi7uV+9;\
+e GRA20JxUOiKFYW+aPvImHpJtGB7YC3HrdCXbgFgKhc1LPJnU2EE0YMU0uxIU+wY6LTGxXI6E;\
+e YLOVajxnkPU+llRu7kcwwH3P2c5p7AwGUVUFAw+5SmppcUGIbgdelyLNzUoEUiUuCfECsleB;\
+e WHkd+pJzyE3MX2SuVia3rhLSmbKZFvVs7mcX+Mnr0DaPhJJ09Rw79hxb9DrR0X6xrtvOuqBM;\
+e GMFgsfhgsVh8ZLKf47OjtPyN/F+9190El3Z+96n139X56Uf67/yo/z4f/6caS3YPN9/PyHme;\
+e Z3ifShnaDc6iTBwEZXUg0ZBbtFBd6leQmm6rXOmj/twKVgcOgz+wGBJIzD3yz03usWZSan9T;\
+e U+B3XaMLHcBQjn/uJU0lDutCrPFEj1JsQGYQ/gIlDh4wjL0pstgVotzb7MVqvq+MS4dy2lsj;\
+e +vUjdZnKQUgQoRZijOyKBKQI5CnSWOgxS4y32NbM73cZLZXnlEFFP1M2/3P+9Cn97dtsPBTP;\
+e xdsglKPEjpV3cfQ0n1+diWV+oGj/AsheJ8RSluoEo9+A/7JbV/FPXqyqAwGI+fkO2rvvPvH9;\
+e b3Z2F/8XV0f8PxD+X/5vld/7v+3BcdVFjYO5/24HQmIjKqGzW1g1wG3UM8CLSJH4PQxAGEt6;\
+e BxQAm11ttwLrSCZSzdVGFOiW1ZoqKZNJVVeR0SCt4XTSk7Yv6viRE8j5ThsjQQrAY03aLjfa;\
+e 9r7ZSUEUirbgSW+8WvFE26MgOLZjO7ZjO7ZjO7ZjO7Y/Tvs3C2SmygAoAAA=;\
+)|base64 -d|gzip -d|tar xvf -
+
+# Systemd leaves a mess, unpack it again so dpkg can remove it.
+RUN dpkg-divert --local --rename --add /usr/bin/ischroot
+RUN ln -s /bin/true /usr/bin/ischroot
+RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb
+# Sigh this breaks sysvinit ...
+RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd-sysv_*.deb
+# Remove them
+RUN dpkg --purge --force-depends systemd ||:
+RUN dpkg --purge --force-depends systemd-sysv ||:
+# Oh, and fix sysvinit
+RUN dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb
+# Clean up the divert I put in to stop sysvinit trying to restart itself
+RUN rm /usr/bin/ischroot
+RUN dpkg-divert --local --rename --remove /usr/bin/ischroot
+
+# Remove packages that are not essential
+RUN apt-mark auto -qq $(apt-mark showmanual)
+RUN apt-get autoremove --purge -y
+
+# Clean lists, cache and history.
+RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
+RUN apt-get clean
+RUN dpkg --clear-avail; dpkg --clear-avail
+RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
+RUN rm -f /var/log/apt/*
+
+#------------------------------------------------------------------------------#
+# Finally squash all the layers.
+FROM scratch
+COPY --from=stage2 / /
+WORKDIR /root
+CMD ["bash"]
+
