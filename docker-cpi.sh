@@ -127,6 +127,9 @@ docker_cpi() {
 	    CLIST+=(-c "LABEL $CFLG $CFLG2")
 	done
     }
+    SIZE=$(docker inspect --format "{{.Size}}" "$1")
+
+    printf '                           \r'
 
     # printf '%s\n' "${CLIST[@]@Q}" ; exit
 
@@ -134,7 +137,6 @@ docker_cpi() {
 	docker rmi "$2" 2>/dev/null ||:
     }
 
-    SIZE=$(docker inspect --format "{{.Size}}" "$1")
     ID=$(docker create "$1" true)
     if [ "$3" = '' ]
     then docker export "$ID" | docker import "${CLIST[@]}" - "$2"
