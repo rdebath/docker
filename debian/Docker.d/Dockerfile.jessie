@@ -5,13 +5,15 @@ RUN apk add perl debootstrap
 ARG RELEASE=jessie
 ARG ARCH=amd64
 ARG MIRROR=
+ARG DEBSCRIPT
+ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign \
+RUN debootstrap --foreign $DEBOPTIONS \
     --arch=$ARCH --variant=minbase \
     --exclude=systemd,systemd-sysv --include=sysvinit-core \
-    "$RELEASE" chroot $MIRROR
+    "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
 # Systemd is unpacked ready to install even if we don't want it.
 # So break the chroot such that it doesn't actually get installed.

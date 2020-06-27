@@ -10,7 +10,7 @@ ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign $DEBOPTIONS\
+RUN debootstrap --foreign $DEBOPTIONS \
     --arch=$ARCH --variant=minbase \
     "$RELEASE" chroot $MIRROR $DEBSCRIPT
 

@@ -5,12 +5,14 @@ RUN apk add perl debootstrap
 ARG RELEASE=woody
 ARG ARCH=i386
 ARG MIRROR=http://archive.debian.org/debian
+ARG DEBSCRIPT
+ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign \
+RUN debootstrap --foreign $DEBOPTIONS \
     --arch=$ARCH  \
-    "$RELEASE" chroot $MIRROR
+    "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
 WORKDIR /opt/chroot
 

@@ -33,7 +33,10 @@ build_images() {
 	    MIRROR=http://archive.debian.org/debian
 	    ;;
 	woody ) MIRROR=http://archive.debian.org/debian ;;
-	potato ) MIRROR=http://archive.debian.org/debian ;;
+	potato )
+	    MIRROR=http://archive.debian.org/debian
+	    DEBOPTIONS='--no-check-gpg'
+	    ;;
 	jessie ) DISTRO=debian ;; # Not Devuan
 
 	* ) ubuntu_versions

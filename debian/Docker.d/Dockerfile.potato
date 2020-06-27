@@ -1,17 +1,18 @@
-# We need an older linux because the current debootstrap is broken
-# on potato's old version of bash.
-FROM debian:stretch AS unpack
-RUN apt-get update ; apt-get install -y -qq debootstrap
+# We can use any Linux that has debootstrap as a package.
+FROM alpine AS unpack
+RUN apk add perl debootstrap
 
 ARG RELEASE=potato
 ARG ARCH=i386
 ARG MIRROR=http://archive.debian.org/debian
+ARG DEBSCRIPT
+ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign \
+RUN debootstrap --foreign $DEBOPTIONS \
     --arch=$ARCH  \
-    "$RELEASE" chroot $MIRROR
+    "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
 WORKDIR /opt/chroot
 
@@ -20,6 +21,9 @@ RUN sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
 
 # Defaults to wrong mirror
 RUN echo deb http://archive.debian.org/debian potato main > etc/apt/sources.list
+
+# Current debootstrap has bug
+RUN sed -i -e 's/echo \${USE_COMPONENTS}/echo "\{USE_COMPONENTS}"/' debootstrap/functions
 
 # Configure apt and dpkg for docker
 # Note: standard used "#" for comment not "//"
@@ -70,7 +74,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG RELEASE
 ARG ARCH
 
-RUN /debootstrap/debootstrap --second-stage ||:
+RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage
 
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
