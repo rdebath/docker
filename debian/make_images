@@ -1,0 +1,57 @@
+#!/bin/sh
+
+build_images() {
+
+    BASE=Docker.d/Dockerfile
+
+    for RELEASE in \
+	potato woody etch lenny squeeze wheezy \
+	jessie stretch buster bullseye unstable \
+	ascii
+    do
+	EXTN=minbase
+	MIRROR=
+	DISTRO=debian
+	case $RELEASE in
+	jessie|wheezy )
+	    EXTN=$RELEASE
+	    ;;
+	squeeze|lenny|etch )
+	    MIRROR=http://archive.debian.org/debian
+	    ;;
+	woody )
+	    EXTN=woody
+	    MIRROR=http://archive.debian.org/debian
+	    ;;
+	potato )
+	    EXTN=potato
+	    MIRROR=http://archive.debian.org/debian
+	    ;;
+
+	ascii )
+	    EXTN=$RELEASE
+	    DISTRO=devuan
+	    ;;
+
+	* ) ;;
+	esac
+
+	for ARCH in amd64 i386
+	do
+	    [ "$RELEASE" = potato -a "$ARCH" = amd64 ] && continue
+	    [ "$RELEASE" = woody -a "$ARCH" = amd64 ] && continue
+
+	    echo "Building $RELEASE $ARCH"
+	    (   set -x
+		DOCKERFILE="${BASE}.${EXTN}"
+		docker build -q -t rdb/$DISTRO:$RELEASE-$ARCH \
+		    --build-arg=RELEASE=$RELEASE \
+		    --build-arg=ARCH=$ARCH \
+		    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
+		    -< "$DOCKERFILE"
+	    )
+	done
+    done
+}
+
+build_images

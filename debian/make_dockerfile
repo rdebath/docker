@@ -1,0 +1,190 @@
+#!/bin/sh -
+
+main() {
+    if [ "$#" -gt 0 ]
+    then make_dockerfile "$@"
+    else default_list
+    fi
+}
+
+default_list() {
+    BASE=Docker.d/Dockerfile
+    mkdir -p Docker.d
+    make_dockerfile > $BASE.minbase
+    make_dockerfile jessie > $BASE.jessie
+    make_dockerfile wheezy > $BASE.wheezy
+    make_dockerfile woody > $BASE.woody
+    make_dockerfile potato > $BASE.potato
+    make_dockerfile ascii \
+	minbase http://deb.devuan.org/merged \
+	devuan-keyring --no-check-gpg \
+	> $BASE.ascii
+}
+
+make_dockerfile() {
+    local RELEASE="$1"
+    local VARIANT="${2:-minbase}"
+    local MIRROR="$3"
+    local INCLUDE="$4"
+    local FLAG="$5"
+    local ARCH
+
+    [ "$RELEASE" = potato ] && ARCH=i386 && unset VARIANT
+    [ "$RELEASE" = woody ] && ARCH=i386 && unset VARIANT
+    [ "$ARCH" = '' ] && ARCH=amd64
+
+    case "$RELEASE" in
+    potato|woody|wheezy)
+	MIRROR=http://archive.debian.org/debian
+	;;
+    esac
+
+    if [ "$RELEASE" != potato ]
+    then
+	cat <<\@
+# We can use any Linux that has debootstrap as a package.
+FROM alpine AS unpack
+RUN apk add perl debootstrap
+
+@
+
+    else
+	cat <<\@
+# We need an older linux because the current debootstrap is broken
+# on potato's old version of bash.
+FROM debian:stretch AS unpack
+RUN apt-get update ; apt-get install -y -qq debootstrap
+
+@
+    fi
+
+    echo ARG RELEASE=${RELEASE:-stable}
+    echo ARG ARCH=$ARCH
+    echo ARG MIRROR=$MIRROR
+    echo
+
+    echo WORKDIR /opt
+    echo '# Chroot under Docker is unreliable; use --foreign as a workaround.'
+
+    if [ "$RELEASE" != jessie ]
+    then
+	echo 'RUN debootstrap --foreign \'
+	echo '    --arch=$ARCH '"${VARIANT+--variant=$VARIANT}" '\'
+	[ "$INCLUDE" != '' ] &&
+	    echo "    --include=$INCLUDE \\"
+	[ "$FLAG" != '' ] &&
+	    echo "    $FLAG \\"
+	echo '    "$RELEASE" chroot $MIRROR'
+    else
+	echo 'RUN debootstrap --foreign \'
+	echo '    --arch=$ARCH '"${VARIANT:+--variant=$VARIANT}" '\'
+	echo '    --exclude=systemd,systemd-sysv --include=sysvinit-core \'
+	echo '    "$RELEASE" chroot $MIRROR'
+	echo 
+	echo '# Systemd is unpacked ready to install even if we don'\''t want it.'
+	echo '# So break the chroot such that it doesn'\''t actually get installed.'
+	echo 'RUN sed -i -e '\''/systemd\>.*/d'\'' chroot/debootstrap/required'
+
+    fi
+    echo
+    echo 'WORKDIR /opt/chroot'
+    echo
+
+    [ "$RELEASE" = potato ] && {
+	echo '# It tries to mount proc, nope!'
+	echo 'RUN sed -i -e '\''s/  setup_proc/#setup_proc/'\'' debootstrap/suite-script'
+	echo
+	echo '# Defaults to wrong mirror'
+	echo 'RUN echo deb' "$MIRROR $RELEASE" 'main > etc/apt/sources.list'
+	echo
+    }
+
+    echo '# Configure apt and dpkg for docker'
+    echo '# Note: standard used "#" for comment not "//"'
+    base64_extras
+    echo
+
+    echo '#------------------------------------------------------------------------------#'
+
+    echo 'FROM scratch AS stage2'
+    echo 'COPY --from=unpack /opt/chroot /'
+    echo 'ARG DEBIAN_FRONTEND=noninteractive'
+    echo
+
+    case "$RELEASE" in jessie|wheezy )
+	echo '# init uses ischroot to disable restarting.'
+	echo 'RUN dpkg-divert --local --rename --add /usr/bin/ischroot \'
+	echo '&&  ln -s /bin/true /usr/bin/ischroot \'
+	echo '&&  /debootstrap/debootstrap --second-stage'
+	;;
+    potato )
+	# Bad status, but seems to work anyway?
+	echo 'RUN /debootstrap/debootstrap --second-stage ||:'
+	;;
+    * ) echo 'RUN /debootstrap/debootstrap --second-stage' ;;
+    esac
+    echo
+
+    [ "$RELEASE" = jessie ] && {
+	echo '# Systemd leaves a mess, unpack it again so dpkg can remove it.'
+	echo 'RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb'
+	echo '# Sigh this breaks sysvinit ...'
+	echo 'RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd-sysv_*.deb'
+	echo '# Remove them'
+	echo 'RUN dpkg --purge --force-depends systemd ||:'
+	echo 'RUN dpkg --purge --force-depends systemd-sysv ||:'
+	echo '# Oh, and fix sysvinit'
+	echo 'RUN dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb'
+	echo ''
+	echo '# Remove packages that are not essential'
+	echo 'RUN apt-mark auto -qq $(apt-mark showmanual) \'
+	echo '&&  apt-get autoremove --purge -y'
+	echo
+    }
+
+    case "$RELEASE" in jessie|wheezy )
+	echo '# Clean up the divert I put in to stop sysvinit trying to restart itself'
+	echo 'RUN rm /usr/bin/ischroot \'
+	echo '&&  dpkg-divert --local --rename --remove /usr/bin/ischroot'
+	echo
+	;;
+    esac
+
+    echo '# Clean lists, cache and history.'
+    echo 'RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null'
+    echo 'RUN apt-get clean'
+    echo 'RUN dpkg --clear-avail; dpkg --clear-avail'
+    echo 'RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels'
+    echo 'RUN rm -f /var/log/apt/*'
+    echo
+
+    case "$RELEASE" in potato|woody )
+	echo '# clear-avail breaks dpkg'
+	echo 'RUN echo > /var/lib/dpkg/available ; rm -f /var/lib/dpkg/*-old'
+	echo
+	;;
+    esac
+
+    echo '#------------------------------------------------------------------------------#'
+    echo '# Finally squash all the layers.'
+    echo 'FROM scratch'
+    echo 'COPY --from=stage2 / /'
+    echo 'WORKDIR /root'
+    echo 'CMD ["bash"]'
+}
+
+base64_extras() {
+
+    tar c \
+	--owner=root --group=root \
+	--mode=og=u-w,ug-s \
+	--mtime=/etc/os-release \
+	-f - -- etc usr |
+    {
+	echo 'RUN set -eu; _() { echo "$@";};(\'
+	gzip -n9 | base64 -w 72 | sed 's/.*/_ &;\\/'
+	echo ')|base64 -d|gzip -d|tar xvf -'
+    }
+}
+
+main "$@"

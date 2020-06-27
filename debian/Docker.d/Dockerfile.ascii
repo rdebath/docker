@@ -2,69 +2,68 @@
 FROM alpine AS unpack
 RUN apk add perl debootstrap
 
-# FROM debian AS unpack
-# RUN apt-get update ; apt-get install -y debootstrap
-
 ARG RELEASE=ascii
 ARG ARCH=amd64
 ARG MIRROR=http://deb.devuan.org/merged
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --arch=$ARCH --variant=minbase --foreign \
-	--include=devuan-keyring --no-check-gpg \
-	"$RELEASE" chroot $MIRROR
+RUN debootstrap --foreign \
+    --arch=$ARCH --variant=minbase \
+    --include=devuan-keyring \
+    --no-check-gpg \
+    "$RELEASE" chroot $MIRROR
+
+WORKDIR /opt/chroot
+
+# Configure apt and dpkg for docker
+# Note: standard used "#" for comment not "//"
+RUN set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA+1abY/bNhLez/4VcwrQpIUte+19yTlFgbRBDwu0RZCk6JcDClqiZZ4lUiUp;\
+_ O861/73PkPLGu3k5XNH1pigHye7KpIZDDueZZ0hLX4xP7lgmkMvz8/Abcvt3+Pt0dnE+m01P;\
+_ J2dnJ5PTyWw2OaHzkyNI57ywRCfWGP+xfv+r/S8qEv4XrR9/Wv6HnCX/H9P/+J8XRi/zcvwJ;\
+_ +H82ObtI/r8n/5emWEs7Kmop9J/m/wv26/v9P52ezW75/xx/ndAk+f/OZTyml0oXkpbGUmOc;\
+_ p2fB/dQ5ad2QWlGsRSVJaaxTXTtaibaVGs+UxY1Ci07VZUbOy9YNB1DoV3JH0jmpvcI7O1rI;\
+_ wjSso1QbVXaiplrsoJ7KTpI3/AJtxW4/9ErospaOVYV+SldD6GtlEdV1Dp/QN+YnWir022Hk;\
+_ xuVEP62Ehy7lqMHWdWFKnSM8e7T0llEhipWMH9HT569oLWE3SV1S19J/sB1givM8gsPk2Wr0;\
+_ NU72Ng+pEWu0sjrT2f1MOq1lgTkLq2BhLSzW7NGBzS4s8lY+rGvSxjbhQy03caV729y1daIS;\
+_ GBfrQFuFN3j1pSijebfW/W1XGCZJ0MLigTVquSXVwHuf5wN+violDzvsh9qaru5VLniaG8Pz;\
+_ ogxQMKqkpwAA2RDjeF4EnqyXYWV6L2MBsWwyLNxC8rvFrqhVEe2WVBmPXdEVazKal/qhoxqm;\
+_ D8mZ0Cx7by07zQoLK4VXRgfN6Hu4g+LEb1qWD549X1fz+XPs2tEVmy/pv5TZhkZLGm+EHYfF;\
+_ jPBmi5XaSDf+Ii/l4oOtrbA84Pt7fZEvsAy//kredjJ7Qr89GWBS8/mPbSm8vFc7Bs+Unc+/;\
+_ 4S7zebuuQmfKsic3GpwtbrTxov9gvIyuhEdKQ/BBrd7I6Bjl9EMfgkbx1gkxinAtTWgeBj8L;\
+_ iz1XoyXEq2FsQJeF9B5b1HVVxVvGIBofrbxv3Xw8rpRfdQtkm2aM2XXSWmn8rpW3npRznXTY;\
+_ uidJ7iP/azOqha464Ie70/w/OZve5n8XF6fTlP+PlP+vdJ94hxEDOObN0iOQtQS4c/hnr5BT;\
+_ XB3g2WUx7fYw/hDxf5g1Q2pQyPYMDjGDLnbQutW1ESUnCShsInZEkNErtVA+ZmRk8W9NTz4i;\
+_ LJUmprJoCV5UnBsEEmrT1hI5LwANo5Kspe+Biw0MI1ynjC6AdJbT/PPB4GnxS6csEPG7/Qan;\
+_ TBsNMB2k+N/Hv+i8sbIxGznqYdzdTfyfzi4vbsb/dDK9PE/xf1T+f0j7Q1KvTeSDzKIZAxxz;\
+_ VuwCao1zaoEAWyoNUhAYpgukkiN1aerabPlF2UjLoSU4XEF0d4SU34DftSFm9TwQEKIXP/5A;\
+_ N8OU/h1bWD777Lqxr0FotKMv+7rEfXWr75cgJ46LDYzVqohYYLp2/dUHlLYdU3WoHIUdP4pb;\
+_ /mCAYOXXgDC5FF3th6FoCKxcFL4L7PRnriF+3tdKbm8oIGujBL3g6qcBU3ZkLCt7JtvwpJbA;\
+_ KIN1s9dl1ss+0nqsQ30QqT1cVHcBPfESe6N/4ZqIG6sqdgesKQScGNEyUrEDe4CNcYIlkPYl;\
+_ SFoEZC6RAs5mS1E7mYHXu84eVknogcLPmtYqOAijiKpCBwe6SmJhUCIEvT2+s6q3q+FJlCgT;\
+_ YhGyZ4FYf+W7Uubgm1gDJrpK6NzYigFoLPW4WE2mbnKOf/nKN/UDhidVPYXfnsJRLyI07Rfs;\
+_ qmmN9UL7ATrM5297zOfvdNnP8kmilh/B/+qNakco2eXru+Z/l+fv8j8+/0v4f1/4H09Ysvcg;\
+_ 8/vhOM/zDM/9MYayvbbAE3tGWR0wNCQXxSAX2wW4pt0KW7pAQLccoT14sULgFzJIyD78x3X2;\
+_ MXpUKnd9miBft7UqlAc0WflLx4kqglfrwxFPUBmOGZAYGLmAhr0KDGSuj1jMEnbu++zpaoQu;\
+_ ZqbcIqxyRjOFfYdfxuMgpAe/YkwMyIoEJAi4yfQ4IGMWsW6+XUn5ZpfRQjgZ0yiTaMqm/8wf;\
+_ P6bvv86wHkgOMqjryXLg2VBZ74Kmx/n0csZd8wNW+y9E7lUMXMriIcHgY/FftuvqLi+A/sD9;\
+_ zxTd0/n/kfA/+J9/5MWyuoMLoD9w/3N6MU3+vy//7wtAQJtrUXh37R2f/0xu3/9cnF+m/H8U;\
+_ eRCy2v9x8VN2NnCDG5cQnKhUsRo8QLKX4dAY5cOGa4PWbNGrRtIOdQxSJVcgvOYeCTgc5B8Q;\
+_ APTZrcyWczp0xascpbkA3UqxpooPx/lKR5BW4Cz97qRHTVeswkeWs61rldZsJCd3N4Qms9go;\
+_ 07l6xzchKGgLOeq0E0s5UubvXQR0zn6S3/+5SPf/R/O/Wyj9ifG/cP+f/H9E/7cG5dNuZIu8;\
+_ PLb/Z5eXt/nf2SR9/+M4+f8fY/a+Ww0GH6QC2a2KPwv1Z08I3AcYAdTF4jXk+vB1CglKUIQD;\
+_ gcgR+Fg2sIJ427QUquazU1p1jbFI13zf7HJ6BRoAbSjIN1KHo1H+Ngb3DkeUix2GMG3b1+pv;\
+_ h1la0xAfNTdtPOY00RZQAPkahfTp5DQdACZJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJ;\
+_ kiRJkiRJkiRJkuSvK78DrrpgNwBQAAA=;\
+)|base64 -d|gzip -d|tar xvf -
 
 #------------------------------------------------------------------------------#
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
-
-RUN /debootstrap/debootstrap --second-stage
-
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Configure apt and dpkg for docker (copied from official Debian; fixed comments)
-WORKDIR /
-RUN set -eu; e() { echo "$@";};\
-(\
-e H4sIAAAAAAACA+1abY8btxG+z/oV0zUQO4HedSe5chDAiZHigDYwbAf5UiCgdqkVe7vkhuRK;\
-e lpv+9z5Dru50F5+LFD2dg3Jg+7xL7nDI4TzzDHnS56OzB5YxZHFxEX5C7v4M/5/M5ouL8/HF;\
-e eDo9G0/Gs9nsjC7OTiCt88ISnVlj/Kf6/af2P6hI+F80fvR5+R+ySP4/pf/xd5gbvR4Wo0f1;\
-e /2TM/p9hIyT/P5L/C5NfSTvIKyn0/8z/8/Pz+/w/nZ7PbuJ/PoH/L2ZTxP84+f/BZTSit0rn;\
-e ktbGUm2cp1fB/dQ6aV2fGpFfiVKS0linqnK0EU0jNZ4pixuFVq2qioycl43r96DQb+SepHNS;\
-e e4Vv9rSSualZR6G2qmhFRZXYQz0VrSRv+APaif1h6I3QRSUdqwr9lC770NfIPKprHd7Qd+Yn;\
-e Wiv022Pk2g2JftoID13KUY2t68KUWkd49mjpLKNc5BsZX9HL1+/oSsJukrqgtqF/YDvAFOd5;\
-e BIfJs9Xoa5zsbO5TLa7QyupMaw8zabWWOeYsrIKFlbBYs2dHNruwyDv5tKpIG1uHl1pu40p3;\
-e trlr60QpMC7WgXYKX/DqS1FE8+6s+01XGCZJ0MrigTVquSNVw3tfDnv8fFlIHrbfDbUzbdWp;\
-e XPE0t4bnRRmgYFBKTwEAsj7G8bwIPFkvw8p0XsYCYtlkWLiV5G/zfV6pPNotqTQeu6LNr8ho;\
-e XuqnjiqY3idnQrPsvLVuNSvMrRReGR00o+/xDooTv23ZsPfq9VW5XL7Grh1csvmS/kmZrWmw;\
-e ptFW2FFYzAhvNt+orXSjr4aFXN3b2gjLA36811fDFZbh11/J21ZmL+hfL3qY1HL5Y1MILx/V;\
-e jt4rZZfL77jLctlclaEzZdmLWw3O5rfaeNF/MF5GV8IjhSH4oFIfZHSMcvqpD0GjeOuEGEW4;\
-e FiY094OfhcWeq9AS4tUwNqDLSnqPLerasuQtYxCNzzbeN245GpXKb9oVsk09wuxaaa00ft/I;\
-e O0/KuVY6bN2zJI+R/7UZVEKXLfDDPWj+H59Pj/j/Au8n8zlepfx/mvx/qbvE248YwDFv1h6B;\
-e rCXAncM/e4ec4qoAzy6LabeD8aeI/+OsGVKDQrZncIgZdLWH1p2ujCg4SUBhHbEjgozeqJXy;\
-e MSMji39vOvIRYakwMZVFS/Ch4twgkFDrppLIeQFoGJVkJX0HXGxgGOE6ZbQBpLMhLb/s9V7m;\
-e v7TKAhH/etjglGmjAaa9FP+H+BetN1bWZisHHYy7h4n/yWwxP4p/1InT8WyS4v+0/P+Y9oek;\
-e XpnIB5lFMwY45qzYBdQY59QKAbZWGqQgMEwXSCVH6tpUldnxh7KWlkNLcLiC6O4JKb8Gv2tC;\
-e zOplICBEb378gW6HKf09trB88cV1Y1eD0GBPX3d1ifvmTt+vQU4cFxsYq1ERscB07dU39yht;\
-e WqbqUDkIO34Qt/zRAMHKbwFhci3ayvdD0RBYuch9G9jpz1xD/HyoldzBUEDWVgl6w9VPDabs;\
-e yFhW9ko24UmtgVEG62avy6y3XaR1WIf6IFJ7uKhqA3riI/ZG98E1ETdWlewOWJMLODGiZaRi;\
-e R/YAG+MECyDtW5C0CMhcIgWczdaicjIDr3etPa6S0AOFnzWNVXAQRhFliQ4OdJXEyqBECHo7;\
-e fGdVN6vhSRQoE2IRcmCBWH/l20IOwTexBkx0ldBDY0sGoJHUo3wznrrxBf4MN76unjA8qfIl;\
-e /PYSjnoToemwYJd1Y6wX2vfQYbm86bFc/qbLYZYvErX8BP6XH1QzQMku3z80/1tc3D3/m88v;\
-e Ev4/Iv7HE5bsI8j8cTgeDocZnrtjDGU7bYEndoyyPGJoSC6KQS62C3BNuxO2cIGA7jhCO/Bi;\
-e hcAvZJCQffg/19nH6EGh3PVpgnzfVCpXHtBk5S8tJ6oIXo0PRzxBZThmQGJg5AIadiowkLk+;\
-e YjFr2Hnoc6CrEbqYmXKLsMoZzRT2N/wyHgchPfgNY2JAViQgQcBNpscBGbOIdcvdRsoP+4xW;\
-e wsmYRplEUzb98/D5c/rbtxnWA8lBBnUdWQ48GyqrfdD0fDhdzLjr8IjV/gWRexkDl7J4SND7;\
-e VPwXzVX5kBdA/8X9z3Sezv9Phv/B//zPMF+XD3AB9Lvufxbh/meySPe/j+b/QwEIaHMNCu+2;\
-e eeDzn/Hsjv/n83G6/zmJPAlZ7Xdc/BStDdzg1iUEJyqVb3pPkOxlODRG+bDl2qAxO/SqkLRD;\
-e HYNUyRUIr7lHAg4H+UcEAH32G7PjnA5d8SpHaS5Ad1JcUcmH43ylI0grcJZud9Kzus034ZXl;\
-e bOsapTUbycnd9aHJrLbKtK7a800ICtpcDlrtxFoOlPn/LgJaZz/L3/9ZTBL+n8r/bqX0Z8b/;\
-e ZtPz5P+T+r8xKJ/2A5sPi1P7f7ZYsP/ni/F0Ed5PZufjScr/J8n/fxqx992m17uXCmR3Kv4s;\
-e 1J8dIXD3MAKoi8VryPXh1ykkKEEeDgQiR+Bj2cAK4m3TWqiKz05p09bGIl3zfbMb0jvQAGhD;\
-e Qb6VOhyN8m9jcO9wRLnaYwjTNF2tfjPM2pqa+Ki5buIxp4m2gALI9yikJ+NJOgBMkiRJkiRJ;\
-e kiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiTJH1f+DWq7tGMAUAAA;\
-)|base64 -d|gzip -d|tar xvf -
+RUN /debootstrap/debootstrap --second-stage
 
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
@@ -79,4 +78,3 @@ FROM scratch
 COPY --from=stage2 / /
 WORKDIR /root
 CMD ["bash"]
-
