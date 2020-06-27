@@ -38,10 +38,14 @@ host_main() {
 }
 
 build_one() {
-    I=$(echo "$1"-bf | tr ':/' '--' | tr -d . | \
+    I="$(echo :"$1"- | tr ':/' '--' | tr -d . | \
 	sed -e 's/-latest-/-/' \
-	    -e 's/^debian-/deb-/' \
-	    -e 's/i386-debian/deb-i386/' )
+	    -e 's/-debian-/-/' \
+	    -e 's/-rdb-/-/' \
+	    -e 's/^-//' -e 's/-$//' )"
+
+    [ "$I" = '' ] && I="$1"
+    I="rdb/bfdev:$I"
 
     if [ "$BUILD" = yes ]
     then
@@ -73,7 +77,7 @@ guest_script() {
 	docker_cmd RUN \
 	    '[ -e /bin/gzip ] || { [ -e /usr/bin/zypper ] && { ' \
 	    'echo >&2 "WARNING: gzip not installed in SUSE!" ; ' \
-	    'zypper install -y gzip ; zypper clean -a ; } ; }'
+	    'zypper install -y gzip; zypper -q clean -a; } ; }'
 	;;
     esac
 
@@ -389,14 +393,14 @@ make_docker_runcmd() {
         return 0
     }
     # Limit per "run" is library exec arg length (approx 128k)
-    local sname="install"
     # Encode the script
-    echo "RUN ${1:+: $1 ;}"'set -eu; e() { echo "$@";};\'
-    echo '(\'
-    gzip -cn9 | base64 -w 72 | sed 's/.*/e &;\\/'
-    echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
-    # Run the script
-    echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
+    local sn="'/tmp/install'"
+    echo '# grep ^_<<\# | base64 -di | gzip -d'
+    echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'
+    gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
+    echo ')|base64 -d|gzip -d >'"$sn;sh $sn;rm -f $sn"
+    echo '#'
+    echo
 }
 
 ################################################################################
