@@ -96,9 +96,10 @@ RUN rm /usr/bin/ischroot \
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
 RUN apt-get clean
-RUN dpkg --clear-avail; dpkg --clear-avail
+RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
 RUN rm -f /var/log/apt/*
+RUN rm -f /var/lib/dpkg/*-old
 
 #------------------------------------------------------------------------------#
 # Finally squash all the layers.

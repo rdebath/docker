@@ -106,7 +106,8 @@ RUN apk add perl debootstrap
     esac
     echo
 
-    [ "$RELEASE" = jessie ] && {
+    if [ "$RELEASE" = jessie ]
+    then
 	echo '# Systemd leaves a mess, unpack it again so dpkg can remove it.'
 	echo 'RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb'
 	echo '# Sigh this breaks sysvinit ...'
@@ -121,7 +122,11 @@ RUN apk add perl debootstrap
 	echo 'RUN apt-mark auto -qq $(apt-mark showmanual) \'
 	echo '&&  apt-get autoremove --purge -y'
 	echo
-    }
+    else
+	echo '# Clear all the manual install flags'
+	echo 'RUN [ ! -f /usr/bin/apt-mark ] || apt-mark auto -qq $(apt-mark showmanual) ||:'
+	echo
+    fi
 
     case "$RELEASE" in jessie|wheezy )
 	echo '# Clean up the divert I put in to stop sysvinit trying to restart itself'
@@ -134,14 +139,15 @@ RUN apk add perl debootstrap
     echo '# Clean lists, cache and history.'
     echo 'RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null'
     echo 'RUN apt-get clean'
-    echo 'RUN dpkg --clear-avail; dpkg --clear-avail'
+    echo 'RUN dpkg --clear-avail'
     echo 'RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels'
     echo 'RUN rm -f /var/log/apt/*'
+    echo 'RUN rm -f /var/lib/dpkg/*-old'
     echo
 
     case "$RELEASE" in potato|woody )
 	echo '# clear-avail breaks dpkg'
-	echo 'RUN echo > /var/lib/dpkg/available ; rm -f /var/lib/dpkg/*-old'
+	echo 'RUN echo > /var/lib/dpkg/available'
 	echo
 	;;
     esac

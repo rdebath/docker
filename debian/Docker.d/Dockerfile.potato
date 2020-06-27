@@ -76,15 +76,19 @@ ARG ARCH
 
 RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage
 
+# Clear all the manual install flags
+RUN [ ! -f /usr/bin/apt-mark ] || apt-mark auto -qq $(apt-mark showmanual) ||:
+
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
 RUN apt-get clean
-RUN dpkg --clear-avail; dpkg --clear-avail
+RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
 RUN rm -f /var/log/apt/*
+RUN rm -f /var/lib/dpkg/*-old
 
 # clear-avail breaks dpkg
-RUN echo > /var/lib/dpkg/available ; rm -f /var/lib/dpkg/*-old
+RUN echo > /var/lib/dpkg/available
 
 #------------------------------------------------------------------------------#
 # Finally squash all the layers.
