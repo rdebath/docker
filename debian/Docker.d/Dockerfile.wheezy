@@ -60,6 +60,8 @@ _ kiRJkiRJkiRJkuSvK78DrrpgNwBQAAA=;\
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
 ARG DEBIAN_FRONTEND=noninteractive
+ARG RELEASE
+ARG ARCH
 
 # init uses ischroot to disable restarting.
 RUN dpkg-divert --local --rename --add /usr/bin/ischroot \

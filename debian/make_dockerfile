@@ -15,18 +15,12 @@ default_list() {
     make_dockerfile wheezy > $BASE.wheezy
     make_dockerfile woody > $BASE.woody
     make_dockerfile potato > $BASE.potato
-    make_dockerfile ascii \
-	minbase http://deb.devuan.org/merged \
-	devuan-keyring --no-check-gpg \
-	> $BASE.ascii
 }
 
 make_dockerfile() {
     local RELEASE="$1"
     local VARIANT="${2:-minbase}"
     local MIRROR="$3"
-    local INCLUDE="$4"
-    local FLAG="$5"
     local ARCH
 
     [ "$RELEASE" = potato ] && ARCH=i386 && unset VARIANT
@@ -61,6 +55,10 @@ RUN apt-get update ; apt-get install -y -qq debootstrap
     echo ARG RELEASE=${RELEASE:-stable}
     echo ARG ARCH=$ARCH
     echo ARG MIRROR=$MIRROR
+    [ "$RELEASE" = '' ] && {
+	echo ARG DEBSCRIPT
+	echo ARG DEBOPTIONS
+    }
     echo
 
     echo WORKDIR /opt
@@ -68,13 +66,16 @@ RUN apt-get update ; apt-get install -y -qq debootstrap
 
     if [ "$RELEASE" != jessie ]
     then
-	echo 'RUN debootstrap --foreign \'
-	echo '    --arch=$ARCH '"${VARIANT+--variant=$VARIANT}" '\'
-	[ "$INCLUDE" != '' ] &&
-	    echo "    --include=$INCLUDE \\"
-	[ "$FLAG" != '' ] &&
-	    echo "    $FLAG \\"
-	echo '    "$RELEASE" chroot $MIRROR'
+	if [ "$RELEASE" = '' ]
+	then
+	    echo 'RUN debootstrap --foreign $DEBOPTIONS\'
+	    echo '    --arch=$ARCH '"${VARIANT+--variant=$VARIANT}" '\'
+	    echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
+	else
+	    echo 'RUN debootstrap --foreign \'
+	    echo '    --arch=$ARCH '"${VARIANT+--variant=$VARIANT}" '\'
+	    echo '    "$RELEASE" chroot $MIRROR'
+	fi
     else
 	echo 'RUN debootstrap --foreign \'
 	echo '    --arch=$ARCH '"${VARIANT:+--variant=$VARIANT}" '\'
@@ -109,6 +110,8 @@ RUN apt-get update ; apt-get install -y -qq debootstrap
     echo 'FROM scratch AS stage2'
     echo 'COPY --from=unpack /opt/chroot /'
     echo 'ARG DEBIAN_FRONTEND=noninteractive'
+    echo 'ARG RELEASE'
+    echo 'ARG ARCH'
     echo
 
     case "$RELEASE" in jessie|wheezy )
@@ -121,7 +124,7 @@ RUN apt-get update ; apt-get install -y -qq debootstrap
 	# Bad status, but seems to work anyway?
 	echo 'RUN /debootstrap/debootstrap --second-stage ||:'
 	;;
-    * ) echo 'RUN /debootstrap/debootstrap --second-stage' ;;
+    * ) echo 'RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage' ;;
     esac
     echo
 

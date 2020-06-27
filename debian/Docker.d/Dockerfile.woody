@@ -60,8 +60,10 @@ _ kiRJkiRJkiRJkuSvK78DrrpgNwBQAAA=;\
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
 ARG DEBIAN_FRONTEND=noninteractive
+ARG RELEASE
+ARG ARCH
 
-RUN /debootstrap/debootstrap --second-stage
+RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage
 
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null

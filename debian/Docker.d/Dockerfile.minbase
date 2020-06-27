@@ -5,12 +5,14 @@ RUN apk add perl debootstrap
 ARG RELEASE=stable
 ARG ARCH=amd64
 ARG MIRROR=
+ARG DEBSCRIPT
+ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign \
+RUN debootstrap --foreign $DEBOPTIONS\
     --arch=$ARCH --variant=minbase \
-    "$RELEASE" chroot $MIRROR
+    "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
 WORKDIR /opt/chroot
 
@@ -60,8 +62,10 @@ _ kiRJkiRJkiRJkuSvK78DrrpgNwBQAAA=;\
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
 ARG DEBIAN_FRONTEND=noninteractive
+ARG RELEASE
+ARG ARCH
 
-RUN /debootstrap/debootstrap --second-stage
+RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage
 
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
