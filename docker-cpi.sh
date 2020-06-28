@@ -139,7 +139,7 @@ docker_cpi() {
 
     ID=$(docker create "$1" true)
     if [ "$3" = '' ]
-    then docker export "$ID" | docker import "${CLIST[@]}" - "$2"
+    then docker export "$ID" | pv -s "$SIZE" | docker import "${CLIST[@]}" - "$2"
     else docker export "$ID" |
 	    pv -s "$SIZE" |
 	    gzip |
