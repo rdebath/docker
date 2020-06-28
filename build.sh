@@ -3,38 +3,69 @@
 # shellcheck disable=SC1003,SC2001
 if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
-# TODO: if grep -qa /.\*/ /proc/1/cgroup ; then Guest ; else Host ; fi
+#########################################################
+# Dockerfile script command disposition                 #
+#                                                       #
+# FROM        - Only first                              #
+# ENV         - Probably needed                         #
+# ARG         - Probably needed                         #
+# WORKDIR     - Only first                              #
+# LABEL       - Not significant                         #
+#                                                       #
+# RUN         - Embed if needed                         #
+# USER        - Will break installer                    #
+# SHELL       - Will break installer                    #
+#                                                       #
+# ADD         - Run added script (Two layers)           #
+# COPY        - Run added script (Two layers)           #
+#                                                       #
+# CMD         - Only used by container                  #
+# EXPOSE      - Only used by container                  #
+# ENTRYPOINT  - Only used by container                  #
+# VOLUME      - Only used by container                  #
+# MAINTAINER  - Deprecated                              #
+# ONBUILD     - Only used later                         #
+# STOPSIGNAL  - Only used by container                  #
+# HEALTHCHECK - Only used by container                  #
+#########################################################
 
 main() {
     set -e
+    local rmode='' ar amode='f' arg=() barg=() bmode=''
 
-    [ "$#" = 1 ] && {
-	case "$1" in
-	-?* ) ;;
-	* ) make_dockerrun "$1" ; exit ;;
+    for ar
+    do  case "$ar" in
+	-b ) amode='b'; bmode=yes;;
+	-r|-f ) rmode="$ar" ;;
+	-h ) Usage ; exit 1 ;;
+	-?* ) echo >&2 "Unknown option '$1'; use -h for help" ; exit 1 ;;
+	* ) if [ "$amode" = f ] ; then arg+=("$ar")
+	    else barg+=("-t" "$ar")
+		 amode='f'
+	    fi
+	    ;;
 	esac
-    }
+    done
+    [ "${#arg}" -eq 0 ] && arg+=(-)
 
-    [[ "$1" = -b && "$#" -ge 3 ]] && {
-	BUILDNAME="$2"
-	shift 2
-	bash "$0" "$@" | docker build -t "$BUILDNAME" -
-	exit
-    }
-
-    [[ "$#" = 2 && "$1" = -r ]] && { make_docker_runcmd "$2" ; exit ; }
-    [[ "$#" -gt 1 && "$1" = -f ]] && { shift ; make_docker_files "$@" ; exit ; }
-
-    case "$1" in
-    -h ) Usage ; exit 1 ;;
-    -?* ) echo >&2 Unknown option "$1" ; exit 1 ;;
-    * ) Usage ; exit 1 ;; 
+    case "$bmode$rmode" in
+    -f ) make_docker_files "${arg[@]}" ;;
+    -r ) for ar in "${arg[@]}" ;do make_docker_runcmd "$ar" ; done ;;
+    "" ) for ar in "${arg[@]}" ;do make_dockerrun "$ar" ; done ;;
+    * )
+	ar=$(bash "$0" "${arg[@]}")
+	echo "$ar" | docker build -q "${barg[@]}" -
+	;;
     esac
+    exit
 }
 
 Usage() {
     cat >&2 <<!
 Usage: ...
+
+Make a dockerfile from script with #DOCKER: lines
+    $0 script
 
 Forward to docker build
     $0 -b ImageName ...
@@ -42,13 +73,21 @@ Forward to docker build
 Make a run command
     $0 -r shell_script.sh
 
-Make a dockerfile from one script.
-    $0 Combined_script
-
 Make a dockerfile from scripts, files and directories
     $0 -f main_script otherfile dest_location=file_or_directory.
 !
 
+}
+
+################################################################################
+# Simple routine to embed a nice scriptfile into a RUN command.
+
+make_docker_runcmd() {
+    # Limit per "run" is library exec arg length (approx 128k)
+    local script="$1" sname="/tmp/install"
+    echo 'RUN set -eu;_() { echo "$@";};(\'
+    gzip -cn9 "$script" | base64 -w 72 | sed 's/.*/_ &;\\/'
+    echo ")|base64 -d|gzip -d>$sname;sh $sname;rm -f $sname"
 }
 
 ################################################################################
@@ -58,60 +97,74 @@ Make a dockerfile from scripts, files and directories
 make_dockerrun() {
     # Limit per "run" is library exec arg length (approx 128k)
     local scriptfile scriptargs sc
-    local sname="${2:-install}"
-
     scriptfile="$(cat "$1")"
     scriptargs="$(echo "$scriptfile" | sed -n 's/^#DOCKER://p')"
 
-    # Simple version without multiple parts
+    # Check for file with multiple parts
     sc=$(echo "$scriptargs" | sed -n 's/^\(COMMIT\|BEGIN\|SAVE\)//p' | wc -l)
-    if [ "$sc" -eq 0 ]
-    then
-	# Keep 1*FROM, 1*WORKDIR, n*ARG, n*ENV, n*LABEL
+    [ "$sc" -ne 0 ] && {
+	make_dockerrun_ex "$scriptfile" "$2"
+	return
+    }
 
-	# FROM		Only first
-	# ENV		Probably needed
-	# ARG		Probably needed
-	# WORKDIR	Only first
-	# LABEL		Not significant
+    local sname="/tmp/install"
+    [ "$2" != '' ] && sname="'${2}'"
+    scriptfile=$(echo "$scriptfile"|sed '/^#DOCKER:/d')
 
-	# RUN		Embed if needed
-	# USER		Will break installer
-	# SHELL		Will break installer
+    # Keep 1*FROM, 1*WORKDIR, n*ARG, n*ENV, n*LABEL
+    echo "$scriptargs" |
+    awk '
+	/^FROM / && fc!=1 { fc=1; print ; next; }
+	/^WORKDIR / && wd!=1 { wd=1; print ; next; }
+	/^ARG|^ENV|^LABEL|^#/ { print; next ; }
+	/^INCLUDE/ {next;}
+	{exit;}'
 
-	# ADD		Run added script (Two layers)
-	# COPY		Run added script (Two layers)
+    echo 'RUN set -eu;_() { echo "$@";};\'
+    enc() { echo '(\';cat "$@"|gzip -cn9|base64 -w 72|sed 's/.*/_ &;\\/';}
 
-	# CMD		Only used by container
-	# EXPOSE	Only used by container
-	# ENTRYPOINT	Only used by container
-	# VOLUME	Only used by container
-	# MAINTAINER	Deprecated
-	# ONBUILD	Only used later
-	# STOPSIGNAL	Only used by container
-	# HEALTHCHECK	Only used by container
+    echo "$scriptargs" | sed -n 's/^INCLUDE[	 ]\+//p' |
+    while IFS= read -r line
+    do
+	src="${line%% *}" ; dst="${line#* }"
+	if [ -d "$src" ];then
+	    echo "mkdir -p $dst;\\"
+	    tar c --owner=root --group=root --mode=og=u-w,ug-s \
+		-f - -C "$src" . | enc
+	    echo ")|base64 -d|gzip -d|tar x -C $dst -f -;\\"
+	elif [ -e "$src" ];then
+	    enc "$src" ; echo ")|base64 -d|gzip -d>$dst;\\"
+	else
+	    echo >&2 "WARNING: Include file does not exist: '$src'"
+	fi
+    done
 
-	echo "$scriptargs" |
-	awk '
-	    /^FROM / && fc!=1 { fc=1; print ; next; }
-	    /^WORKDIR / && wd!=1 { wd=1; print ; next; }
-	    /^ARG|^ENV|^LABEL|^#/ { print; next ; }
-	    {exit;}'
+    echo "$scriptfile" | enc
+    echo ")|base64 -d|gzip -d>$sname;sh $sname;rm -f $sname"
 
-	echo 'RUN set -eu; e() { echo "$@";};\'
-	string_base64 "$(echo "$scriptfile"|sed '/^#DOCKER:/d')" "/tmp/$sname"
-	echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
+    sc=$(echo "$scriptargs" |
+    awk '
+	/^FROM / && fc!=1 { fc=1; next; }
+	/^WORKDIR / && wd!=1 { wd=1; next; }
+	/^ARG|^ENV|^LABEL|^#/ && t!=1 { next ; }
+	/^INCLUDE/ {next;}
+	{fc=1;wd=1;t=1;print;}' )
 
-	echo "$scriptargs" |
-	awk '
-	    /^FROM / && fc!=1 { fc=1; next; }
-	    /^WORKDIR / && wd!=1 { wd=1; next; }
-	    /^ARG|^ENV|^LABEL|^#/ && t!=1 { next ; }
-	    {fc=1;wd=1;t=1;print;}'
+    [ "$sc" != '' ] && echo "$sc"
+    return 0
+}
 
-	return 0
-    fi
+################################################################################
+# The input file is a shell script with docker commands in comments.
+# Docker commands use lines starting with "#DOCKER:"
+#
+# This variant uses BEGIN and COMMIT commands to split the input script.
 
+make_dockerrun_ex() {
+    local scriptfile="$1"
+    local sname="${2:-install}"
+
+    echo '#!/usr/bin/env docker-buildfile'
     # More complex version
     local NL lines dlines tailstr runopen
 
@@ -137,7 +190,7 @@ make_dockerrun() {
 	"#DOCKER:COMMIT" )
 	    [ "${#lines[*]}" -gt 0 ] && {
 		[ "$runopen" = 0 ] && {
-		    echo 'RUN set -eu; e() { echo "$@";};\'
+		    echo 'RUN set -eu;_() { echo "$@";};\'
 		}
 		string_base64 "$(IFS="$NL" ; echo "${lines[*]}")" "$nfile"
 		runopen=1
@@ -155,7 +208,7 @@ make_dockerrun() {
 	"#DOCKER:SAVE"* )
 	    [ "${#lines[*]}" -gt 0 ] && {
 		[ "$runopen" = 0 ] && {
-		    echo 'RUN set -eu; e() { echo "$@";};\'
+		    echo 'RUN set -eu;_() { echo "$@";};\'
 		}
 		string_base64 "$(IFS="$NL" ; echo "${lines[*]}")" "/tmp/$sname"
 		runopen=1
@@ -185,12 +238,14 @@ make_dockerrun() {
 string_base64() {
     local file="$1" nfile="$2" mode="$3"
     echo '(\'
-    echo "$file" | gzip -n9 | base64 -w 72 | sed 's/.*/e &;\\/'
+    echo "$file" | gzip -n9 | base64 -w 72 | sed 's/.*/_ &;\\/'
     echo ')|base64 -d|gzip -d >'"'$nfile'"';\'
     [ "$mode" = "" ] || echo "chmod $mode '$nfile'"';\'
 }
 
 ################################################################################
+# Take a list of commands and convert them to RUN commands.
+# Other docker commands are extracted from the first.
 
 make_docker_files() {
     # Limit per "run" is library exec arg length (approx 128k)
@@ -205,9 +260,9 @@ make_docker_files() {
     echo "$scriptargs" | sed -n 's/^#DOCKER:FROM\>/FROM/p'
     f="$(echo "$scriptfile" | sed '/^#DOCKER:/d')"
 
-    echo 'RUN set -eu; e() { echo "$@";};\'
+    echo 'RUN set -eu;_() { echo "$@";};\'
     echo '(\'
-    echo "$f" | gzip -n9 | base64 -w 72 | sed 's/.*/e &;\\/'
+    echo "$f" | gzip -n9 | base64 -w 72 | sed 's/.*/_ &;\\/'
     echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
 
     for file
@@ -218,9 +273,9 @@ make_docker_files() {
 	    echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
 	    script="${file#*:}"
 
-	    echo 'RUN set -eu; e() { echo "$@";};\'
+	    echo 'RUN set -eu;_() { echo "$@";};\'
 	    echo '(\'
-	    gzip -cn9 "$script" | base64 -w 72 | sed 's/.*/e &;\\/'
+	    gzip -cn9 "$script" | base64 -w 72 | sed 's/.*/_ &;\\/'
 	    echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
 	    continue
 	    ;;
@@ -231,7 +286,7 @@ make_docker_files() {
 	    if [ "$nfile" = '' ]
 	    then
 		echo '(\'
-		tar cf - "$file" | gzip -n9 | base64 -w 72 | sed 's/.*/e &;\\/'
+		tar cf - "$file" | gzip -n9 | base64 -w 72 | sed 's/.*/_ &;\\/'
 		echo ')|base64 -d|gzip -d|tar xf -;\'
 	    else
 		echo 'mkdir -p '"'$nfile'"';\'
@@ -239,13 +294,13 @@ make_docker_files() {
 		(cd "$file" &&
 		    tar c --owner=root --group=root --mode=og=u-w,ug-s \
 			-f - -- *)|
-		    gzip -n9 | base64 -w 72 | sed 's/.*/e &;\\/'
+		    gzip -n9 | base64 -w 72 | sed 's/.*/_ &;\\/'
 		echo ')|base64 -d|gzip -d|tar x -C '"'$nfile'"' -f -;\'
 	    fi
 	else
 	    [ "$nfile" = '' ] && nfile="/tmp/$fname"
 	    echo '(\'
-	    gzip -cn9 "$file" | base64 -w 72 | sed 's/.*/e &;\\/'
+	    gzip -cn9 "$file" | base64 -w 72 | sed 's/.*/_ &;\\/'
 	    echo ')|base64 -d|gzip -d >'"'$nfile'"';\'
 	    [ -x "$file" ] &&
 		echo 'chmod +x '"'$nfile'"';\'
@@ -257,20 +312,7 @@ make_docker_files() {
 }
 
 ################################################################################
-
-make_docker_runcmd() {
-    # Limit per "run" is library exec arg length (approx 128k)
-    local script="$1" sname="install"
-    # Encode the script
-    echo 'RUN set -eu; e() { echo "$@";};\'
-    echo '(\'
-    gzip -cn9 "$script" | base64 -w 72 | sed 's/.*/e &;\\/'
-    echo ')|base64 -d|gzip -d >'"'/tmp/$sname'"';\'
-    # Run the script
-    echo "sh '/tmp/$sname';rm -f '/tmp/$sname'"
-}
-
-################################################################################
+# Uninstall apk from alpine linux.
 
 docker_remove_apk() {
     # Remove apk
@@ -281,5 +323,7 @@ docker_remove_apk() {
 }
 
 ################################################################################
+#
+# TODO: if grep -qa /.\*/ /proc/1/cgroup ; then guest_main ; else main ; fi
 
 main "$@"
