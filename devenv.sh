@@ -349,12 +349,7 @@ main "$@"
 ################################################################################
 # Dockerfile building scriptlets
 #
-docker_init() {
-    RUNNOW=
-    VERBOSE=
-    BUILD=
-}
-
+docker_init() { RUNNOW= ; VERBOSE= ; BUILD= ; }
 docker_start() { START_LINE=$((BASH_LINENO[0]+1)) ; }
 docker_commit() {
     END_LINE=$((BASH_LINENO[0]-1))
