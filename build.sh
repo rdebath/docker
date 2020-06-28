@@ -36,7 +36,7 @@ main() {
     for ar
     do  case "$ar" in
 	-b ) amode='b'; bmode=yes;;
-	-r|-f ) rmode="$ar" ;;
+	-r|-f|-u ) rmode="$ar" ;;
 	-h ) Usage ; exit 1 ;;
 	-?* ) echo >&2 "Unknown option '$1'; use -h for help" ; exit 1 ;;
 	* ) if [ "$amode" = f ] ; then arg+=("$ar")
@@ -51,6 +51,7 @@ main() {
     case "$bmode$rmode" in
     -f ) make_docker_files "${arg[@]}" ;;
     -r ) for ar in "${arg[@]}" ;do make_docker_runcmd "$ar" ; done ;;
+    -u ) for ar in "${arg[@]}" ;do unmake_docker_runcmd "$ar" ; done ;;
     "" ) for ar in "${arg[@]}" ;do make_dockerrun "$ar" ; done ;;
     * )
 	ar=$(bash "$0" "${arg[@]}")
@@ -324,6 +325,10 @@ docker_remove_apk() {
 
 ################################################################################
 #
+unmake_docker_runcmd() {
+    grep ^_ "$1" | base64 -di | gzip -d
+}
+
 # TODO: if grep -qa /.\*/ /proc/1/cgroup ; then guest_main ; else main ; fi
 
 main "$@"
