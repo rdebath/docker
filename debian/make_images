@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -
 
 build_images() {
 
@@ -13,38 +13,13 @@ build_images() {
     [ "$#" -ge 1 -a "$1" = ubuntu ] &&
 	set -- groovy focal bionic xenial trusty
 
-    local BASE=Docker.d/Dockerfile
-    local EXTN
     local Q=-q
+    local RELEASE ARCH
 
     [ "$#" -eq 1 ] && Q=
 
     for RELEASE
     do
-	unset DEBSCRIPT
-	unset DEBOPTIONS
-	EXTN=minbase
-	MIRROR=
-	DISTRO=debian
-	[ -f "${BASE}.${RELEASE}" ] && EXTN="$RELEASE"
-
-	case $RELEASE in
-	squeeze|lenny|etch )
-	    MIRROR=http://archive.debian.org/debian
-	    ;;
-	woody ) MIRROR=http://archive.debian.org/debian ;;
-	potato )
-	    MIRROR=http://archive.debian.org/debian
-	    DEBOPTIONS='--no-check-gpg'
-	    ;;
-	jessie ) DISTRO=debian ;; # Not Devuan
-
-	* ) ubuntu_versions
-	    devuan_versions
-	    kali_versions
-	    ;;
-	esac
-
 	for ARCH in amd64 i386
 	do
 	    [ "$RELEASE" = potato -a "$ARCH" = amd64 ] && continue
@@ -52,23 +27,69 @@ build_images() {
 	    [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue # Humm.
 	    [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue # Humm.
 
-	    echo "Building $RELEASE $ARCH"
-	    (   set -x
-		DOCKERFILE="${BASE}.${EXTN}"
-		docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
-		    --build-arg=RELEASE=$RELEASE \
-		    --build-arg=ARCH=$ARCH \
-		    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
-		    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
-		    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
-		    -< "$DOCKERFILE"
-	    )
+	    build_image "$RELEASE" "$ARCH" $Q
 	done
+    done
+}
+
+build_image() {
+    local RELEASE="$1"
+    local ARCH="$2"
+    local Q="$3"
+    local BASE=Docker.d/Dockerfile
+    local EXTN
+
+    unset DEBSCRIPT
+    unset DEBOPTIONS
+    EXTN=minbase
+    MIRROR=
+    DISTRO=debian
+    [ -f "${BASE}.${RELEASE}" ] && EXTN="$RELEASE"
+
+    case $RELEASE in
+    squeeze|lenny|etch )
+	MIRROR=http://archive.debian.org/debian
+	;;
+    woody ) MIRROR=http://archive.debian.org/debian ;;
+    potato )
+	MIRROR=http://archive.debian.org/debian
+	DEBOPTIONS='--no-check-gpg'
+	;;
+    jessie ) DISTRO=debian ;; # Not Devuan
+
+    * ) ubuntu_versions "$RELEASE"
+	devuan_versions "$RELEASE"
+	kali_versions "$RELEASE"
+	;;
+    esac
+
+    echo "Building $RELEASE $ARCH"
+    DOCKERFILE="${BASE}.${EXTN}"
+    (   set -ex
+	docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
+	    --build-arg=RELEASE=$RELEASE \
+	    --build-arg=ARCH=$ARCH \
+	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
+	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
+	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
+	    -< "$DOCKERFILE"
+    )
+
+    for STAGE in $(sed -n 's/^FROM.*AS \+//p' "$DOCKERFILE")
+    do
+	docker build -q --target=$STAGE -t interim-deboot:$DISTRO-$RELEASE-$ARCH-$STAGE \
+	    --build-arg=RELEASE=$RELEASE \
+	    --build-arg=ARCH=$ARCH \
+	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
+	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
+	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
+	    -< "$DOCKERFILE"
     done
 }
 
 ubuntu_versions() {
 
+    local RELEASE="$1"
     local OLDUBUNTU=http://old-releases.ubuntu.com/ubuntu
     local UBUNTU=http://archive.ubuntu.com/ubuntu
     case "$RELEASE" in
@@ -243,6 +264,7 @@ ubuntu_versions() {
 }
 
 devuan_versions() {
+    local RELEASE="$1"
     case "$RELEASE" in
     jessie|ascii|beowulf|chimaera|ceres )
 	MIRROR=http://deb.devuan.org/merged
@@ -254,6 +276,7 @@ devuan_versions() {
 }
 
 kali_versions() {
+    local RELEASE="$1"
     case "$RELEASE" in
     kali-rolling|kali-last-snapshot|kali-dev )
 	MIRROR=http://http.kali.org/kali
