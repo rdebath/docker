@@ -330,8 +330,7 @@ devuan_versions() {
     jessie|ascii|beowulf|chimaera|ceres )
 	MIRROR=http://deb.devuan.org/merged
 	DISTRO=devuan
-	DEBSCRIPT=kali
-	DEBOPTIONS='--no-check-gpg --include=devuan-keyring'
+	DEBOPTIONS='--include=devuan-keyring'
 	;;
     esac
 }

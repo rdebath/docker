@@ -6,21 +6,9 @@
 FROM alpine AS unpack
 RUN apk add perl debootstrap
 
-# Add some more keyrings.
-# The download is secured by https and the ca-certificates package.
-RUN apk add git
-WORKDIR /root
-RUN git clone \
-	-b ubuntu/devel \
-	https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
-RUN cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
-RUN git clone \
-	https://git.devuan.org/devuan/devuan-keyring.git
-RUN cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
-
 ARG RELEASE=jessie
 ARG ARCH=amd64
-ARG MIRROR=
+ARG MIRROR
 ARG DEBSCRIPT
 ARG DEBOPTIONS
 
@@ -128,7 +116,7 @@ RUN apt-get clean
 RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
 RUN rm -f /var/lib/dpkg/*-old
-RUN :|find /var/log -type f ! -name bootstrap.log -exec tee {} \;
+RUN :|find /var/log -type f ! -exec tee {} \;
 RUN [ ! -x /usr/bin/dselect ] || dselect update
 
 #------------------------------------------------------------------------------#

@@ -18,9 +18,19 @@ RUN git clone \
 	https://git.devuan.org/devuan/devuan-keyring.git
 RUN cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
+# Fixup the Devuan scripts
+RUN set -e;\
+    sed < /usr/share/debootstrap/scripts/sid \
+	> /usr/share/debootstrap/scripts/devuan \
+    's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
+    ; ln -fs devuan /usr/share/debootstrap/scripts/ascii \
+    ; ln -fs devuan /usr/share/debootstrap/scripts/beowulf \
+    ; ln -fs devuan /usr/share/debootstrap/scripts/chimaera \
+    ; ln -fs devuan /usr/share/debootstrap/scripts/ceres
+
 ARG RELEASE=stable
 ARG ARCH=amd64
-ARG MIRROR=
+ARG MIRROR
 ARG DEBSCRIPT
 ARG DEBOPTIONS
 
@@ -112,7 +122,7 @@ RUN apt-get clean
 RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
 RUN rm -f /var/lib/dpkg/*-old
-RUN :|find /var/log -type f ! -name bootstrap.log -exec tee {} \;
+RUN :|find /var/log -type f ! -exec tee {} \;
 RUN [ ! -x /usr/bin/dselect ] || dselect update
 
 #------------------------------------------------------------------------------#
