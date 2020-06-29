@@ -1,6 +1,11 @@
-#!/bin/sh -
+#!/bin/bash -
+
+EX=
 
 build_images() {
+    local forkcount=8
+    (:&wait -n) >/dev/null 2>&1 || forkcount=0
+    [ "$EX" != '' ] && forkcount=0
 
     [ "$#" -eq 0 ] &&
 	set -- \
@@ -13,6 +18,9 @@ build_images() {
     [ "$#" -ge 1 -a "$1" = ubuntu ] &&
 	set -- groovy focal bionic xenial trusty
 
+    [ "$#" -ge 1 -a "$1" = lts ] &&
+	set -- dapper hardy lucid precise trusty xenial bionic focal
+
     [ "$#" -ge 1 -a "$1" = all ] &&
 	set -- \
 	    potato woody etch lenny squeeze wheezy \
@@ -20,8 +28,16 @@ build_images() {
 	    groovy focal bionic xenial trusty \
 	    cosmic ascii ceres kali-rolling
 
+    [ "$#" -ge 1 -a "$1" = allubuntu ] &&
+	set -- \
+	artful bionic breezy cosmic dapper disco edgy eoan feisty focal \
+	groovy gutsy hardy hoary intrepid jaunty karmic lucid maverick natty \
+	oneiric precise quantal raring saucy trusty utopic vivid warty wily \
+	xenial yakkety zesty
+
     local Q=-q
     local RELEASE ARCH
+    local runcount
 
     [ "$#" -eq 1 ] && Q=
 
@@ -34,9 +50,21 @@ build_images() {
 	    [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue # Humm.
 	    [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue # Humm.
 
-	    build_image "$RELEASE" "$ARCH" $Q
+	    if [ "$forkcount" -le 1 ]
+	    then
+		build_image "$RELEASE" "$ARCH" $Q
+	    else
+		build_image "$RELEASE" "$ARCH" $Q &
+
+		runcount=$((runcount + 1))
+		[ "$runcount" -ge "$forkcount" ] && {
+		    wait -n
+		    runcount=$((runcount - 1)) ;:
+		}
+	    fi
 	done
     done
+    [ "$forkcount" -ne 0 ] && wait
 }
 
 build_image() {
@@ -54,10 +82,10 @@ build_image() {
     [ -f "${BASE}.${RELEASE}" ] && EXTN="$RELEASE"
 
     case $RELEASE in
-    potato )
-	DEBOPTIONS='--no-check-gpg'
-	;;
-    woody|etch|lenny|squeeze|wheezy|jessie ) ;;
+    potato ) DEBOPTIONS='--no-check-gpg' ;;
+    wheezy ) MIRROR=http://archive.debian.org/debian ;;
+
+    potato|woody|etch|lenny|squeeze|wheezy|jessie ) ;;
     stretch|buster|bullseye|unstable ) ;;
 
     * ) ubuntu_versions "$RELEASE"
@@ -69,14 +97,17 @@ build_image() {
     echo "Building $RELEASE $ARCH"
     DOCKERFILE="${BASE}.${EXTN}"
     (   set -ex
-	docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
+	: "$DOCKERFILE"
+	$EX docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
 	    --build-arg=RELEASE=$RELEASE \
 	    --build-arg=ARCH=$ARCH \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
 	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
 	    -< "$DOCKERFILE"
-    )
+    ) || return 1
+
+    [ "$EX" != '' ] && return 0
 
     for STAGE in $(sed -n 's/^FROM.*AS \+//p' "$DOCKERFILE")
     do
@@ -88,179 +119,207 @@ build_image() {
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
 	    -< "$DOCKERFILE"
     done
+    echo "Done $RELEASE $ARCH"
 }
 
 ubuntu_versions() {
 
     local RELEASE="$1"
-    local OLDUBUNTU=http://old-releases.ubuntu.com/ubuntu
-    local UBUNTU=http://archive.ubuntu.com/ubuntu
     case "$RELEASE" in
     warty )
 	# 4.10 -- Warty Warthog
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     hoary )
 	# 5.04 -- Hoary Hedgehog
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     breezy )
 	# 5.10 -- Breezy Badger
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     dapper )
 	# 6.06 LTS -- Dapper Drake
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     edgy )
 	# 6.10 -- Edgy Eft
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     feisty )
 	# 7.04 -- Feisty Fawn
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     gutsy )
 	# 7.10 -- Gutsy Gibbon
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     hardy )
 	# 8.04 LTS -- Hardy Heron
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     intrepid )
 	# 8.10 -- Intrepid Ibex
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     jaunty )
 	# 9.04 -- Jaunty Jackalope
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     karmic )
 	# 9.10 -- Karmic Koala
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     lucid )
 	# 10.04 LTS -- Lucid Lynx
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     maverick )
 	# 10.10 -- Maverick Meerkat
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     natty )
 	# 11.04 -- Natty Narwhal
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     oneiric )
 	# 11.10 -- Oneiric Ocelot
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     precise )
 	# 12.04 LTS -- Precise Pangolin
-	MIRROR="${UBUNTU}"
+	MIRROR=ubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     quantal )
 	# 12.10 -- Quantal Quetzal
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     raring )
 	# 13.04 -- Raring Ringtail
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     saucy )
 	# 13.10 -- Saucy Salamander
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     trusty )
 	# 14.04 LTS -- Trusty Tahr
-	MIRROR="${UBUNTU}"
+	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     utopic )
 	# 14.10 -- Utopic Unicorn
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     vivid )
 	# 15.04 -- Vivid Vervet
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     wily )
 	# 15.10 -- Wily Werewolf
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     xenial )
 	# 16.04 LTS -- Xenial Xerus
-	MIRROR="${UBUNTU}"
+	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     yakkety )
 	# 16.10 -- Yakkety Yak
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     zesty )
 	# 17.04 -- Zesty Zapus
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     artful )
 	# 17.10 -- Artful Aardvark
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     bionic )
 	# 18.04 LTS -- Bionic Beaver
-	MIRROR="${UBUNTU}"
+	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     cosmic )
 	# 18.10 -- Cosmic Cuttlefish
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     disco )
 	# 19.04 -- Disco Dingo
-	MIRROR="${OLDUBUNTU}"
+	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     eoan )
 	# 19.10 -- Eoan Ermine
-	MIRROR="${UBUNTU}"
+	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     focal )
 	# 20.04 LTS -- Focal Fossa
-	MIRROR="${UBUNTU}"
+	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     groovy )
 	# 20.10 -- Groovy Gorilla
-	MIRROR="${UBUNTU}"
+	MIRROR=ubuntu
 	DISTRO=ubuntu
 	DEBSCRIPT=focal
+	;;
+    esac
+
+    case "$MIRROR" in
+    oldubuntu )
+	case "$RELEASE" in
+	# This line from /usr/share/debootstrap/scripts/gutsy
+	gutsy|hardy|intrepid|jaunty|karmic|lucid|maverick|natty|oneiric|precise|quantal|raring|saucy|utopic|vivid|wily|yakk)
+	    # Already old
+	    unset MIRROR
+	    ;;
+	* ) MIRROR=http://old-releases.ubuntu.com/ubuntu
+	    ;;
+	esac
+	;;
+    ubuntu)
+	unset MIRROR
+	[ "$DEBSCRIPT" != '' ] &&
+	    MIRROR=http://archive.ubuntu.com/ubuntu
 	;;
     esac
 }
@@ -271,7 +330,7 @@ devuan_versions() {
     jessie|ascii|beowulf|chimaera|ceres )
 	MIRROR=http://deb.devuan.org/merged
 	DISTRO=devuan
-	DEBSCRIPT=sid
+	DEBSCRIPT=kali
 	DEBOPTIONS='--no-check-gpg --include=devuan-keyring'
 	;;
     esac

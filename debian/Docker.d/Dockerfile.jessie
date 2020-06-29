@@ -1,6 +1,22 @@
 # We can use any Linux that has debootstrap as a package.
+# Ideally we want the smallest that has up to date
+# repository keys for our final target
+#
+# Alpine is very small, but only has a Debian keyring.
 FROM alpine AS unpack
 RUN apk add perl debootstrap
+
+# Add some more keyrings.
+# The download is secured by https and the ca-certificates package.
+RUN apk add git
+WORKDIR /root
+RUN git clone \
+	-b ubuntu/devel \
+	https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
+RUN cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
+RUN git clone \
+	https://git.devuan.org/devuan/devuan-keyring.git
+RUN cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
 ARG RELEASE=jessie
 ARG ARCH=amd64
@@ -11,11 +27,12 @@ ARG DEBOPTIONS
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
 RUN set -x;DIR=/usr/share/debootstrap/scripts;\
-if grep -q keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \
-COMP="--components=main,restricted,universe,multiverse";else \
-COMP="--components=main,contrib,non-free";fi;\
-    debootstrap --foreign $COMP $DEBOPTIONS \
-    --arch=$ARCH --variant=minbase \
+    if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \
+    COMP="--components=main,restricted,universe,multiverse";else \
+    COMP="--components=main,contrib,non-free";fi;\
+    if grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}";then \
+    VARIANT="--variant=minbase";fi;\
+    debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \
     --exclude=systemd,systemd-sysv --include=sysvinit-core \
     "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
@@ -74,9 +91,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG RELEASE
 ARG ARCH
 
-# init uses ischroot to disable restarting.
-RUN dpkg-divert --local --rename --add /usr/bin/ischroot \
-&&  ln -s /bin/true /usr/bin/ischroot
+# init sometimes uses ischroot to disable restarting.
+RUN \
+    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \
+    dpkg-divert --local --rename --add /usr/bin/ischroot;\
+    ln -s /bin/true /usr/bin/ischroot; fi
 
 RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage
 
@@ -94,9 +113,14 @@ RUN dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb
 RUN apt-mark auto -qq $(apt-mark showmanual) \
 &&  apt-get autoremove --purge -y
 
+# Make sure everything is installed properly
+RUN set -x;: $RELEASE $ARCH; dpkg --configure --pending
+
 # Clean up the divert I put in to stop sysvinit trying to restart itself
-RUN rm /usr/bin/ischroot \
-&&  dpkg-divert --local --rename --remove /usr/bin/ischroot
+RUN \
+    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \
+    rm -f /usr/bin/ischroot; \
+    dpkg-divert --local --rename --remove /usr/bin/ischroot;fi
 
 # Clean lists, cache and history.
 RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
@@ -104,7 +128,8 @@ RUN apt-get clean
 RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
 RUN rm -f /var/lib/dpkg/*-old
-RUN :|find /var/log -type f -exec tee {} \;
+RUN :|find /var/log -type f ! -name bootstrap.log -exec tee {} \;
+RUN [ ! -x /usr/bin/dselect ] || dselect update
 
 #------------------------------------------------------------------------------#
 # Finally squash all the layers.

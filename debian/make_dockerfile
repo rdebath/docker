@@ -11,31 +11,47 @@ default_list() {
     BASE=Docker.d/Dockerfile
     mkdir -p Docker.d
     make_dockerfile > "$BASE.minbase"
-    for RELEASE in jessie wheezy woody potato
+    for RELEASE in jessie potato
     do make_dockerfile "$RELEASE" > "$BASE.$RELEASE"
     done
 }
 
 make_dockerfile() {
     local RELEASE="$1"
-    local VARIANT="${2:-minbase}"
     local MIRROR="$3"
     local ARCH
 
-    [ "$RELEASE" = potato ] && ARCH=i386 && unset VARIANT
-    [ "$RELEASE" = woody ] && ARCH=i386 && unset VARIANT
+    [ "$RELEASE" = potato ] && ARCH=i386
     [ "$ARCH" = '' ] && ARCH=amd64
 
     case "$RELEASE" in
-    potato|woody|wheezy)
-	MIRROR=http://archive.debian.org/debian
-	;;
+    potato) MIRROR=http://archive.debian.org/debian ;;
     esac
 
+    echo '# We can use any Linux that has debootstrap as a package.'
+    echo '# Ideally we want the smallest that has up to date'
+    echo '# repository keys for our final target'
+    echo '#'
+
     cat <<\@
-# We can use any Linux that has debootstrap as a package.
+# Alpine is very small, but only has a Debian keyring.
 FROM alpine AS unpack
 RUN apk add perl debootstrap
+
+@
+
+	cat <<\@
+# Add some more keyrings.
+# The download is secured by https and the ca-certificates package.
+RUN apk add git
+WORKDIR /root
+RUN git clone \
+	-b ubuntu/devel \
+	https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
+RUN cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
+RUN git clone \
+	https://git.devuan.org/devuan/devuan-keyring.git
+RUN cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
 @
 
@@ -50,13 +66,19 @@ RUN apk add perl debootstrap
     echo '# Chroot under Docker is unreliable; use --foreign as a workaround.'
 
     echo 'RUN set -x;DIR=/usr/share/debootstrap/scripts;\'
-    echo 'if grep -q keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
-    echo 'COMP="--components=main,restricted,universe,multiverse";else \'
-    echo 'COMP="--components=main,contrib,non-free";fi;\'
-    echo '    debootstrap --foreign $COMP $DEBOPTIONS \'
-    echo '    --arch=$ARCH '"${VARIANT+--variant=$VARIANT}" '\'
+
+    echo '    if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
+    echo '    COMP="--components=main,restricted,universe,multiverse";else \'
+    echo '    COMP="--components=main,contrib,non-free";fi;\'
+
+    echo '    if grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
+    echo '    VARIANT="--variant=minbase";fi;\'
+
+    echo '    debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \'
+
     [ "$RELEASE" = jessie ] &&
 	echo '    --exclude=systemd,systemd-sysv --include=sysvinit-core \'
+
     echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
     echo
     echo 'WORKDIR /opt/chroot'
@@ -92,13 +114,12 @@ RUN apk add perl debootstrap
     echo 'ARG ARCH'
     echo
 
-    case "$RELEASE" in jessie|wheezy )
-	echo '# init uses ischroot to disable restarting.'
-	echo 'RUN dpkg-divert --local --rename --add /usr/bin/ischroot \'
-	echo '&&  ln -s /bin/true /usr/bin/ischroot'
-	echo
-	;;
-    esac
+    echo '# init sometimes uses ischroot to disable restarting.'
+    echo 'RUN \'
+    echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
+    echo '    dpkg-divert --local --rename --add /usr/bin/ischroot;\'
+    echo '    ln -s /bin/true /usr/bin/ischroot; fi'
+    echo
 
     echo 'RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage'
     echo
@@ -125,13 +146,16 @@ RUN apk add perl debootstrap
 	echo
     fi
 
-    case "$RELEASE" in jessie|wheezy )
-	echo '# Clean up the divert I put in to stop sysvinit trying to restart itself'
-	echo 'RUN rm /usr/bin/ischroot \'
-	echo '&&  dpkg-divert --local --rename --remove /usr/bin/ischroot'
-	echo
-	;;
-    esac
+    echo '# Make sure everything is installed properly'
+    echo 'RUN set -x;: $RELEASE $ARCH; dpkg --configure --pending'
+    echo
+
+    echo '# Clean up the divert I put in to stop sysvinit trying to restart itself'
+    echo 'RUN \'
+    echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
+    echo '    rm -f /usr/bin/ischroot; \'
+    echo '    dpkg-divert --local --rename --remove /usr/bin/ischroot;fi'
+    echo
 
     echo '# Clean lists, cache and history.'
     echo 'RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null'
@@ -139,15 +163,9 @@ RUN apk add perl debootstrap
     echo 'RUN dpkg --clear-avail'
     echo 'RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels'
     echo 'RUN rm -f /var/lib/dpkg/*-old'
-    echo 'RUN :|find /var/log -type f -exec tee {} \;'
+    echo 'RUN :|find /var/log -type f ! -name bootstrap.log -exec tee {} \;'
+    echo 'RUN [ ! -x /usr/bin/dselect ] || dselect update'
     echo
-
-    case "$RELEASE" in potato|woody )
-	echo '# clear-avail breaks dpkg'
-	echo 'RUN echo > /var/lib/dpkg/available'
-	echo
-	;;
-    esac
 
     echo '#------------------------------------------------------------------------------#'
     echo '# Finally squash all the layers.'
