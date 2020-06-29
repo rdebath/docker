@@ -13,6 +13,13 @@ build_images() {
     [ "$#" -ge 1 -a "$1" = ubuntu ] &&
 	set -- groovy focal bionic xenial trusty
 
+    [ "$#" -ge 1 -a "$1" = all ] &&
+	set -- \
+	    potato woody etch lenny squeeze wheezy \
+	    jessie stretch buster bullseye unstable \
+	    groovy focal bionic xenial trusty \
+	    cosmic ascii ceres kali-rolling
+
     local Q=-q
     local RELEASE ARCH
 
@@ -47,15 +54,11 @@ build_image() {
     [ -f "${BASE}.${RELEASE}" ] && EXTN="$RELEASE"
 
     case $RELEASE in
-    squeeze|lenny|etch )
-	MIRROR=http://archive.debian.org/debian
-	;;
-    woody ) MIRROR=http://archive.debian.org/debian ;;
     potato )
-	MIRROR=http://archive.debian.org/debian
 	DEBOPTIONS='--no-check-gpg'
 	;;
-    jessie ) DISTRO=debian ;; # Not Devuan
+    woody|etch|lenny|squeeze|wheezy|jessie ) ;;
+    stretch|buster|bullseye|unstable ) ;;
 
     * ) ubuntu_versions "$RELEASE"
 	devuan_versions "$RELEASE"
@@ -77,7 +80,7 @@ build_image() {
 
     for STAGE in $(sed -n 's/^FROM.*AS \+//p' "$DOCKERFILE")
     do
-	docker build -q --target=$STAGE -t interim-deboot:$DISTRO-$RELEASE-$ARCH-$STAGE \
+	docker build -q --target=$STAGE -t interim/deboot:$DISTRO-$RELEASE-$ARCH-$STAGE \
 	    --build-arg=RELEASE=$RELEASE \
 	    --build-arg=ARCH=$ARCH \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
@@ -257,10 +260,9 @@ ubuntu_versions() {
 	# 20.10 -- Groovy Gorilla
 	MIRROR="${UBUNTU}"
 	DISTRO=ubuntu
-	DEBSCRIPT=bionic
+	DEBSCRIPT=focal
 	;;
     esac
-
 }
 
 devuan_versions() {
@@ -278,7 +280,7 @@ devuan_versions() {
 kali_versions() {
     local RELEASE="$1"
     case "$RELEASE" in
-    kali-rolling|kali-last-snapshot|kali-dev )
+    kali|kali-rolling|kali-last-snapshot|kali-dev )
 	MIRROR=http://http.kali.org/kali
 	DISTRO=kali
 	DEBSCRIPT=kali

@@ -10,11 +10,10 @@ main() {
 default_list() {
     BASE=Docker.d/Dockerfile
     mkdir -p Docker.d
-    make_dockerfile > $BASE.minbase
-    make_dockerfile jessie > $BASE.jessie
-    make_dockerfile wheezy > $BASE.wheezy
-    make_dockerfile woody > $BASE.woody
-    make_dockerfile potato > $BASE.potato
+    make_dockerfile > "$BASE.minbase"
+    for RELEASE in jessie wheezy woody potato
+    do make_dockerfile "$RELEASE" > "$BASE.$RELEASE"
+    done
 }
 
 make_dockerfile() {
@@ -50,22 +49,15 @@ RUN apk add perl debootstrap
     echo WORKDIR /opt
     echo '# Chroot under Docker is unreliable; use --foreign as a workaround.'
 
-    if [ "$RELEASE" != jessie ]
-    then
-	echo 'RUN debootstrap --foreign $DEBOPTIONS \'
-	echo '    --arch=$ARCH '"${VARIANT+--variant=$VARIANT}" '\'
-	echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
-    else
-	echo 'RUN debootstrap --foreign $DEBOPTIONS \'
-	echo '    --arch=$ARCH '"${VARIANT:+--variant=$VARIANT}" '\'
+    echo 'RUN set -x;DIR=/usr/share/debootstrap/scripts;\'
+    echo 'if grep -q keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
+    echo 'COMP="--components=main,restricted,universe,multiverse";else \'
+    echo 'COMP="--components=main,contrib,non-free";fi;\'
+    echo '    debootstrap --foreign $COMP $DEBOPTIONS \'
+    echo '    --arch=$ARCH '"${VARIANT+--variant=$VARIANT}" '\'
+    [ "$RELEASE" = jessie ] &&
 	echo '    --exclude=systemd,systemd-sysv --include=sysvinit-core \'
-	echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
-	echo 
-	echo '# Systemd is unpacked ready to install even if we don'\''t want it.'
-	echo '# So break the chroot such that it doesn'\''t actually get installed.'
-	echo 'RUN sed -i -e '\''/systemd\>.*/d'\'' chroot/debootstrap/required'
-
-    fi
+    echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
     echo
     echo 'WORKDIR /opt/chroot'
     echo
@@ -74,11 +66,15 @@ RUN apk add perl debootstrap
 	echo '# It tries to mount proc, nope!'
 	echo 'RUN sed -i -e '\''s/  setup_proc/#setup_proc/'\'' debootstrap/suite-script'
 	echo
-	echo '# Defaults to wrong mirror'
-	echo 'RUN echo deb' "$MIRROR $RELEASE" 'main > etc/apt/sources.list'
-	echo
 	echo '# Current debootstrap has bug'
 	echo 'RUN sed -i -e '\''s/echo \${USE_COMPONENTS}/echo "\{USE_COMPONENTS}"/'\'' debootstrap/functions'
+	echo
+    }
+
+    [ "$RELEASE" = jessie ] && {
+	echo '# Systemd is unpacked ready to install even if we don'\''t want it.'
+	echo '# So break the chroot such that it doesn'\''t actually get installed.'
+	echo 'RUN sed -i -e '\''/systemd\>.*/d'\'' debootstrap/required'
 	echo
     }
 
@@ -99,11 +95,12 @@ RUN apk add perl debootstrap
     case "$RELEASE" in jessie|wheezy )
 	echo '# init uses ischroot to disable restarting.'
 	echo 'RUN dpkg-divert --local --rename --add /usr/bin/ischroot \'
-	echo '&&  ln -s /bin/true /usr/bin/ischroot \'
-	echo '&&  /debootstrap/debootstrap --second-stage'
+	echo '&&  ln -s /bin/true /usr/bin/ischroot'
+	echo
 	;;
-    * ) echo 'RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage' ;;
     esac
+
+    echo 'RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage'
     echo
 
     if [ "$RELEASE" = jessie ]
@@ -141,8 +138,8 @@ RUN apk add perl debootstrap
     echo 'RUN apt-get clean'
     echo 'RUN dpkg --clear-avail'
     echo 'RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels'
-    echo 'RUN rm -f /var/log/apt/*'
     echo 'RUN rm -f /var/lib/dpkg/*-old'
+    echo 'RUN :|find /var/log -type f -exec tee {} \;'
     echo
 
     case "$RELEASE" in potato|woody )

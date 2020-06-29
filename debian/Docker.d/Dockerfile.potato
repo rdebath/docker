@@ -10,7 +10,11 @@ ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign $DEBOPTIONS \
+RUN set -x;DIR=/usr/share/debootstrap/scripts;\
+if grep -q keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \
+COMP="--components=main,restricted,universe,multiverse";else \
+COMP="--components=main,contrib,non-free";fi;\
+    debootstrap --foreign $COMP $DEBOPTIONS \
     --arch=$ARCH  \
     "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
@@ -18,9 +22,6 @@ WORKDIR /opt/chroot
 
 # It tries to mount proc, nope!
 RUN sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
-
-# Defaults to wrong mirror
-RUN echo deb http://archive.debian.org/debian potato main > etc/apt/sources.list
 
 # Current debootstrap has bug
 RUN sed -i -e 's/echo \${USE_COMPONENTS}/echo "\{USE_COMPONENTS}"/' debootstrap/functions
@@ -84,8 +85,8 @@ RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
 RUN apt-get clean
 RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
-RUN rm -f /var/log/apt/*
 RUN rm -f /var/lib/dpkg/*-old
+RUN :|find /var/log -type f -exec tee {} \;
 
 # clear-avail breaks dpkg
 RUN echo > /var/lib/dpkg/available

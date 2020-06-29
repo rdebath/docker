@@ -10,7 +10,11 @@ ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign $DEBOPTIONS \
+RUN set -x;DIR=/usr/share/debootstrap/scripts;\
+if grep -q keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \
+COMP="--components=main,restricted,universe,multiverse";else \
+COMP="--components=main,contrib,non-free";fi;\
+    debootstrap --foreign $COMP $DEBOPTIONS \
     --arch=$ARCH --variant=minbase \
     "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
@@ -75,8 +79,8 @@ RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
 RUN apt-get clean
 RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
-RUN rm -f /var/log/apt/*
 RUN rm -f /var/lib/dpkg/*-old
+RUN :|find /var/log -type f -exec tee {} \;
 
 #------------------------------------------------------------------------------#
 # Finally squash all the layers.

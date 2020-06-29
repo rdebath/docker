@@ -10,16 +10,20 @@ ARG DEBOPTIONS
 
 WORKDIR /opt
 # Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN debootstrap --foreign $DEBOPTIONS \
+RUN set -x;DIR=/usr/share/debootstrap/scripts;\
+if grep -q keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \
+COMP="--components=main,restricted,universe,multiverse";else \
+COMP="--components=main,contrib,non-free";fi;\
+    debootstrap --foreign $COMP $DEBOPTIONS \
     --arch=$ARCH --variant=minbase \
     --exclude=systemd,systemd-sysv --include=sysvinit-core \
     "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
+WORKDIR /opt/chroot
+
 # Systemd is unpacked ready to install even if we don't want it.
 # So break the chroot such that it doesn't actually get installed.
-RUN sed -i -e '/systemd\>.*/d' chroot/debootstrap/required
-
-WORKDIR /opt/chroot
+RUN sed -i -e '/systemd\>.*/d' debootstrap/required
 
 # Configure apt and dpkg for docker
 # Note: standard used "#" for comment not "//"
@@ -72,8 +76,9 @@ ARG ARCH
 
 # init uses ischroot to disable restarting.
 RUN dpkg-divert --local --rename --add /usr/bin/ischroot \
-&&  ln -s /bin/true /usr/bin/ischroot \
-&&  /debootstrap/debootstrap --second-stage
+&&  ln -s /bin/true /usr/bin/ischroot
+
+RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage
 
 # Systemd leaves a mess, unpack it again so dpkg can remove it.
 RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb
@@ -98,8 +103,8 @@ RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
 RUN apt-get clean
 RUN dpkg --clear-avail
 RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
-RUN rm -f /var/log/apt/*
 RUN rm -f /var/lib/dpkg/*-old
+RUN :|find /var/log -type f -exec tee {} \;
 
 #------------------------------------------------------------------------------#
 # Finally squash all the layers.
