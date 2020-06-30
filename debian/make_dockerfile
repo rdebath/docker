@@ -106,12 +106,13 @@ RUN set -e;\
     echo 'WORKDIR /opt/chroot'
     echo
 
-    [ "$RELEASE" = potato ] && {
-	echo '# It tries to mount proc, nope!'
+	echo '# Docker has already setup /proc'
 	echo 'RUN sed -i -e '\''s/  setup_proc/#setup_proc/'\'' debootstrap/suite-script'
 	echo
+
+    [ "$RELEASE" = potato ] && {
 	echo '# Current debootstrap has bug'
-	echo 'RUN sed -i -e '\''s/echo \${USE_COMPONENTS}/echo "\{USE_COMPONENTS}"/'\'' debootstrap/functions'
+	echo 'RUN sed -i -e '\''s/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/'\'' debootstrap/functions'
 	echo
     }
 
@@ -168,10 +169,10 @@ RUN set -e;\
 	echo '&&  dpkg --configure --pending'
 	echo
     else
-	echo 'RUN set -x;\'
-	echo ' : $RELEASE $ARCH; /debootstrap/debootstrap --second-stage \'
-	echo '|| dpkg --configure --pending \'
-	echo ';  dpkg -l dpkg apt base-files'
+	echo 'RUN set -ex;\'
+	echo ': $RELEASE $ARCH; /debootstrap/debootstrap --second-stage ||:\'
+	echo '; dpkg --configure --pending \'
+	echo '; dpkg -l dpkg apt base-files'
 	echo
 
 	echo '# Clear all the manual install flags'

@@ -1,11 +1,14 @@
 #!/bin/bash -
 
-EX=
+LISTCMD=
+case "$1" in
+-l ) LISTCMD=1;shift;;
+esac
 
 build_images() {
     local forkcount=8
     (:&wait -n) >/dev/null 2>&1 || forkcount=0
-    [ "$EX" != '' ] && forkcount=0
+    [ "$LISTCMD" != '' ] && forkcount=0
 
     [ "$#" -eq 0 ] &&
 	set -- \
@@ -30,10 +33,18 @@ build_images() {
 
     [ "$#" -ge 1 -a "$1" = allubuntu ] &&
 	set -- \
-	artful bionic breezy cosmic dapper disco edgy eoan feisty focal \
-	groovy gutsy hardy hoary intrepid jaunty karmic lucid maverick natty \
-	oneiric precise quantal raring saucy trusty utopic vivid warty wily \
+	artful bionic breezy cosmic disco eoan focal \
+	groovy intrepid jaunty karmic maverick natty \
+	oneiric precise quantal raring saucy trusty utopic vivid wily \
 	xenial yakkety zesty
+
+    # Fail due to repo issue
+    [ "$#" -ge 1 -a "$1" = dlfailubuntu ] &&
+	set -- hoary lucid warty
+
+    # Failing in stage 2
+    [ "$#" -ge 1 -a "$1" = infailubuntu ] &&
+	set -- hardy gutsy dapper feisty edgy
 
     local Q=-q
     local RELEASE ARCH
@@ -96,11 +107,24 @@ build_image() {
 	;;
     esac
 
-    echo "Building $RELEASE $ARCH"
     DOCKERFILE="${BASE}.${EXTN}"
+
+    [ "$LISTCMD" != '' ] && {
+	echo -n cat "$DOCKERFILE | "
+	echo docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
+	    --build-arg=RELEASE=$RELEASE \
+	    --build-arg=ARCH=$ARCH \
+	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
+	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
+	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
+	    -
+	return 0
+    }
+
+    echo "Building $RELEASE $ARCH"
     (   set -ex
 	: "$DOCKERFILE"
-	$EX docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
+	docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
 	    --build-arg=RELEASE=$RELEASE \
 	    --build-arg=ARCH=$ARCH \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
@@ -108,8 +132,6 @@ build_image() {
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
 	    -< "$DOCKERFILE"
     ) || return 1
-
-    [ "$EX" != '' ] && return 0
 
     for STAGE in $(sed -n 's/^FROM.*AS \+//p' "$DOCKERFILE")
     do
@@ -132,6 +154,7 @@ ubuntu_versions() {
 	# 4.10 -- Warty Warthog
 	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     hoary )
 	# 5.04 -- Hoary Hedgehog
@@ -193,6 +216,7 @@ ubuntu_versions() {
 	# 10.04 LTS -- Lucid Lynx
 	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	DEBOPTIONS='--no-check-gpg'
 	;;
     maverick )
 	# 10.10 -- Maverick Meerkat

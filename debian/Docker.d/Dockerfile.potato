@@ -21,11 +21,11 @@ RUN COMP="--components=main,contrib,non-free";\
 
 WORKDIR /opt/chroot
 
-# It tries to mount proc, nope!
+# Docker has already setup /proc
 RUN sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
 
 # Current debootstrap has bug
-RUN sed -i -e 's/echo \${USE_COMPONENTS}/echo "\{USE_COMPONENTS}"/' debootstrap/functions
+RUN sed -i -e 's/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/' debootstrap/functions
 
 # Configure apt and dpkg for docker
 # Note: standard used "#" for comment not "//"
@@ -76,10 +76,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG RELEASE
 ARG ARCH
 
-RUN set -x;\
- : $RELEASE $ARCH; /debootstrap/debootstrap --second-stage \
-|| dpkg --configure --pending \
-;  dpkg -l dpkg apt base-files
+RUN set -ex;\
+: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage ||:\
+; dpkg --configure --pending \
+; dpkg -l dpkg apt base-files
 
 # Clear all the manual install flags
 RUN [ ! -f /usr/bin/apt-mark ] || apt-mark auto -qq $(apt-mark showmanual) ||:

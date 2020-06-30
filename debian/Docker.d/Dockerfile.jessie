@@ -27,6 +27,9 @@ RUN set -x;DIR=/usr/share/debootstrap/scripts;\
 
 WORKDIR /opt/chroot
 
+# Docker has already setup /proc
+RUN sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
+
 # Systemd is unpacked ready to install even if we don't want it.
 # So break the chroot such that it doesn't actually get installed.
 RUN sed -i -e '/systemd\>.*/d' debootstrap/required

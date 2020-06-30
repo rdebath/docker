@@ -48,6 +48,9 @@ RUN set -x;DIR=/usr/share/debootstrap/scripts;\
 
 WORKDIR /opt/chroot
 
+# Docker has already setup /proc
+RUN sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
+
 # Configure apt and dpkg for docker
 # Note: standard used "#" for comment not "//"
 RUN set -eu; _() { echo "$@";};(\
@@ -103,10 +106,10 @@ RUN \
     dpkg-divert --local --rename --add /usr/bin/ischroot;\
     ln -s /bin/true /usr/bin/ischroot; fi
 
-RUN set -x;\
- : $RELEASE $ARCH; /debootstrap/debootstrap --second-stage \
-|| dpkg --configure --pending \
-;  dpkg -l dpkg apt base-files
+RUN set -ex;\
+: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage ||:\
+; dpkg --configure --pending \
+; dpkg -l dpkg apt base-files
 
 # Clear all the manual install flags
 RUN [ ! -f /usr/bin/apt-mark ] || apt-mark auto -qq $(apt-mark showmanual) ||:
