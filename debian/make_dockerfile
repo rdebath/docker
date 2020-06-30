@@ -23,6 +23,7 @@ make_dockerfile() {
     [ "$RELEASE" = potato ] && ARCH=i386
     [ "$ARCH" = '' ] && ARCH=amd64
 
+    echo '#------------------------------------------------------------------------------#'
     echo '# We can use any Linux that has debootstrap as a package.'
     echo '# Ideally we want the smallest that has up to date'
     echo '# repository keys for our final target'
@@ -76,22 +77,32 @@ RUN set -e;\
     echo WORKDIR /opt
     echo '# Chroot under Docker is unreliable; use --foreign as a workaround.'
 
-    echo 'RUN set -x;DIR=/usr/share/debootstrap/scripts;\'
+    if [ "$RELEASE" = potato ]
+    then
+	echo 'RUN COMP="--components=main,contrib,non-free";\'
+	echo '    debootstrap --foreign --arch=$ARCH $COMP $DEBOPTIONS \'
+	echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
+	echo
 
-    echo '    if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
-    echo '    COMP="--components=main,restricted,universe,multiverse";else \'
-    echo '    COMP="--components=main,contrib,non-free";fi;\'
+    else
+	echo 'RUN set -x;DIR=/usr/share/debootstrap/scripts;\'
 
-    echo '    if grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
-    echo '    VARIANT="--variant=minbase";fi;\'
+	echo '    if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
+	echo '    COMP="--components=main,restricted,universe,multiverse";else \'
+	echo '    COMP="--components=main,contrib,non-free";fi;\'
 
-    echo '    debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \'
+	echo '    if grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
+	echo '    VARIANT="--variant=minbase";fi;\'
 
-    [ "$RELEASE" = jessie ] &&
-	echo '    --exclude=systemd,systemd-sysv --include=sysvinit-core \'
+	echo '    debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \'
 
-    echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
-    echo
+	[ "$RELEASE" = jessie ] &&
+	    echo '    --exclude=systemd,systemd-sysv --include=sysvinit-core \'
+
+	echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
+	echo
+    fi
+
     echo 'WORKDIR /opt/chroot'
     echo
 
@@ -125,18 +136,20 @@ RUN set -e;\
     echo 'ARG ARCH'
     echo
 
-    echo '# init sometimes uses ischroot to disable restarting.'
-    echo 'RUN \'
-    echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
-    echo '    dpkg-divert --local --rename --add /usr/bin/ischroot;\'
-    echo '    ln -s /bin/true /usr/bin/ischroot; fi'
-    echo
-
-    echo 'RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage'
-    echo
+    if [ "$RELEASE" != potato ]
+    then
+	echo '# init sometimes uses ischroot to disable updates.'
+	echo 'RUN \'
+	echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
+	echo '    dpkg-divert --local --rename --add /usr/bin/ischroot;\'
+	echo '    ln -s /bin/true /usr/bin/ischroot; fi'
+	echo
+    fi
 
     if [ "$RELEASE" = jessie ]
     then
+	echo 'RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage'
+	echo
 	echo '# Systemd leaves a mess, unpack it again so dpkg can remove it.'
 	echo 'RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb'
 	echo '# Sigh this breaks sysvinit ...'
@@ -147,25 +160,39 @@ RUN set -e;\
 	echo '# Oh, and fix sysvinit'
 	echo 'RUN dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb'
 	echo ''
-	echo '# Remove packages that are not essential'
+	echo '# Remove packages that are not essential and check'
 	echo 'RUN apt-mark auto -qq $(apt-mark showmanual) \'
-	echo '&&  apt-get autoremove --purge -y'
+	echo '&&  apt-get autoremove --purge -y \'
+	echo '&&  apt-get update -y \'
+	echo '&&  apt-get dist-upgrade -y \'
+	echo '&&  dpkg --configure --pending'
 	echo
     else
+	echo 'RUN set -x;\'
+	echo ' : $RELEASE $ARCH; /debootstrap/debootstrap --second-stage \'
+	echo '|| dpkg --configure --pending \'
+	echo ';  dpkg -l dpkg apt base-files'
+	echo
+
 	echo '# Clear all the manual install flags'
 	echo 'RUN [ ! -f /usr/bin/apt-mark ] || apt-mark auto -qq $(apt-mark showmanual) ||:'
 	echo
     fi
 
-    echo '# Make sure everything is installed properly'
-    echo 'RUN set -x;: $RELEASE $ARCH; dpkg --configure --pending'
-    echo
+    if [ "$RELEASE" != potato ]
+    then
+	echo '# Clean up the ischroot divert.'
+	echo 'RUN \'
+	echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
+	echo '    rm -f /usr/bin/ischroot; \'
+	echo '    dpkg-divert --local --rename --remove /usr/bin/ischroot;fi'
+	echo
+    fi
 
-    echo '# Clean up the divert I put in to stop sysvinit trying to restart itself'
-    echo 'RUN \'
-    echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
-    echo '    rm -f /usr/bin/ischroot; \'
-    echo '    dpkg-divert --local --rename --remove /usr/bin/ischroot;fi'
+    echo '# This option breaks some installs eg: ubuntu/maverick'
+    echo 'RUN dpkg --force-unsafe-io -l dpkg >/dev/null 2>&1 && \'
+    echo '    sed -i -e '\''/^#<off> force-unsafe-io/s/#[^ ]* //'\'' \'
+    echo '        /etc/dpkg/dpkg.cfg.d/docker-apt-speedup ||:'
     echo
 
     echo '# Clean lists, cache and history.'

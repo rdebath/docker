@@ -3,4 +3,4 @@
 # this minor tweak gives us a nice speedup (much nicer on spinning disks,
 # obviously).
 
-force-unsafe-io
+#<off> force-unsafe-io

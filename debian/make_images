@@ -88,9 +88,11 @@ build_image() {
     potato|woody|etch|lenny|squeeze|wheezy|jessie ) ;;
     stretch|buster|bullseye|unstable ) ;;
 
-    * ) ubuntu_versions "$RELEASE"
-	devuan_versions "$RELEASE"
-	kali_versions "$RELEASE"
+    * ) DISTRO=
+	[ -z "$DISTRO" ] && ubuntu_versions "$RELEASE"
+	[ -z "$DISTRO" ] && devuan_versions "$RELEASE"
+	[ -z "$DISTRO" ] && kali_versions "$RELEASE"
+	[ -z "$DISTRO" ] && { echo "Unknown release $RELEASE-$ARCH">&2;exit 2;}
 	;;
     esac
 
