@@ -1,58 +1,51 @@
-#------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------#
 # We can use any Linux that has debootstrap as a package.
 # Ideally we want the smallest that has up to date
 # repository keys for our final target
 #
 # Alpine is very small, but only has a Debian keyring.
+# So use git to fetch some others over https if needed.
 FROM alpine AS unpack
-RUN apk add perl debootstrap
-
-# Add some more keyrings.
-# The download is secured by https and the ca-certificates package.
-RUN apk add git
 WORKDIR /root
-RUN git clone \
-	-b ubuntu/devel \
-	https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
-RUN cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
-RUN git clone \
-	https://git.devuan.org/devuan/devuan-keyring.git
-RUN cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
-# Fixup the Devuan scripts
-RUN set -e;\
-    sed < /usr/share/debootstrap/scripts/sid \
-	> /usr/share/debootstrap/scripts/devuan \
-    's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/ascii \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/beowulf \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/chimaera \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/ceres
+RUN : Configure host ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA41TwW6cMBA9w1eMVlVWSmRQpfaC0py2VXOoEpH01CYrY8+CFbDp2E66f1+D;\
+_ IWElpJSTmXkz857nObHogOHfNE14/wRcSmBMGya4aBAkVsY464j30CO1UCsXkLvr8kvuLeW2;\
+_ 4YT5ApVbQap3NoAKKLHnisAQCELuEFxoucNnzzVMuCxNLEq4hA+hZ26VhN9pklzFXxmhIQLh;\
+_ YwhbWzw+4ZGUriE7L+bjgsoUslMt4yQa9Yxsimd1XxfbZcdPKog8cN+6faeIAtfGub7IB1FZ;\
+_ bJIZqvMOqUa5DbpaDexgYSI3EuVWKLWaqdC8+PawmgvMOo7E15NIGG/x1hPe3E0XNpMFZeH7;\
+_ /f3tXZr8GnRsIo+uQtrAA5ydRYU1YQ/sz6j0cUWn3Z5WDnXjQpgaaz4q8HpwyO7rt/04b//j;\
+_ uixvytO65bZ/Vl47P+83XXYLd30wJHDfyc9zgxdO7rh5F9YYTsc4Jw5Ik2BFEK3R+LrOCvyY;\
+_ G5aP7RwedYaFBnzWcq9F03OZaXT5hL6wxodx0+9slTQR4eo4nEbfDHY+eGnVetlIM/p8SXNJ;\
+_ ZOGseJwN+2rU8NAmBqeZ/2UwvGaJ8cX+A23qI5jlAwAA;\
+)|base64 -d|gzip -d>/tmp/install;sh /tmp/install;rm -f /tmp/install
 
+WORKDIR /opt
 ARG RELEASE=stable
-ARG ARCH=amd64
+ARG ARCH
 ARG MIRROR
 ARG DEBSCRIPT
 ARG DEBOPTIONS
 
-WORKDIR /opt
-# Chroot under Docker is unreliable; use --foreign as a workaround.
-RUN set -x;DIR=/usr/share/debootstrap/scripts;\
-    if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \
-    COMP="--components=main,restricted,universe,multiverse";else \
-    COMP="--components=main,contrib,non-free";fi;\
-    if grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}";then \
-    VARIANT="--variant=minbase";fi;\
-    debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \
-    "$RELEASE" chroot $MIRROR $DEBSCRIPT
-
-WORKDIR /opt/chroot
-
-# Docker has already setup /proc
-RUN sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
+RUN : Stage 1 ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA5VU72vbMBD9HP8Vh2saKHHM2Cgjw4OsDSywJcXJxmDdimJfYq2O5OpHuhDy;\
+_ v+8UOW3SsrL5iyTr3unp3T21NBqI8XfQ6kE4MWyB8ArmUkGUDT4N+pMBRP3s4mMYBK3LYZYm;\
+_ VqtEl0xhUuBMSqONYnWic8Vro4PWdwj3wBBSqKVhRsIPOD0FlyYNo40bezF//fZ8Gz4D3EtZ;\
+_ rP8jXjNFjP89vsCVZcIDNkEL6LscfJhcZMOrafoY+c5vNctUGzar0P/7PMyyceYO8rNeXBpT;\
+_ 9xKnR9en70q1SJZIzApHYRu0jrmxZXH+Zusk5XNYKKwhvoOft7hWXCy6Z3ZmhbHEmwRPos0D;\
+_ v1685+eymhIFXIw/X6VhHOdyWUuBwuh0ybjoKKS68Nxg0bGCr1Bp7CxtZfyU0Fhp/Cs6l4LQ;\
+_ s46QIp4rdPFzTmwfqK6Y4ozCu2dLLmaMUr1IlsT22n3tZ8P+aOrObFKkTQInxpNS/UKtua+t;\
+_ Rw++TbN+2o6pW/PKFpjqtTa4LDrNGNO4gjjm4mF7xQU3dD+FbTrgoGMpjJoc+ULQjKm8THdt;\
+_ DlFDESInDkR0n/HVdDgeTeDas4h2NA6p5qWitBD5fthhvAZ0ZF5AImuT+JjAuexS5reooGQa;\
+_ WKWQUb+TB20NSa1kHrQ0FhBz8iS0dQJ+78ZtJScH8zYc+c9yg7F3YfCiC5umP4ELqxSV/DDN;\
+_ jtPMLnzIEQ/MSwnX0ebLZHDjlBmPBqPpZOv/h883wicE51bkhkuhnR1eKvWeoHuNfFmBa7Ci;\
+_ ZqRaAV4vugwXZMqqAlyRDchG9wiFFG0D99RVwE03fMwjYUa4WyDL7IulbV7SmrlQAqJ2UJYb;\
+_ SznXsKA3sTkAi32mAz2SpuOu33fPkuL4pgrvLFdY7Hzfg/2T6jxWocGjtzX4AxTWrEd+BQAA;\
+)|base64 -d|gzip -d>/tmp/install;sh /tmp/install;rm -f /tmp/install
 
 # Configure apt and dpkg for docker
 # Note: standard used "#" for comment not "//"
+WORKDIR /opt/chroot
 RUN set -eu; _() { echo "$@";};(\
 _ H4sIAAAAAAACA+1abY8btxG+z/oV0zUQO4G00kn34sqGASdGigPSwLAd5EuBgNqlVqx2yQ3J;\
 _ lSw3+e99hlyddeeXokFP56Ac2He3Inc45HCeeYaU9MX45I5lArk8Pw+/Ibd/h79PZxfns9n0;\
@@ -92,49 +85,34 @@ _ FBKUoAgHApEj8LFsYAXxtmkpVM1np7TqGmORrvm+2eX0BjQA2lCQb6QOR6P8bQzuHY4oFzsM;\
 _ Ydq2r9XfD7O0piE+am7aeMxpoi2gAPItCunTyWk6AEySJEmSJEmSJEmSJEmSJEmSJEmSJEmS;\
 _ JEmSJEmSJEmSJEmSJEmSJMmfV/4NQR5c0wBQAAA=;\
 )|base64 -d|gzip -d|tar xvf -
+#--------------------------------------------------------------------------#
 
-#------------------------------------------------------------------------------#
+RUN : Stage 2 ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA61V227bRhB9Fr9i7BhOa2S1jR/Z2oVbq0GAQAHsAH1InGC1OyS3IneZvagS;\
+_ 4vx7Z5eUFNltekH5QJHcuZ05M0cTjwEYrosJrnvrAlzPfnp5Nf/wy83r+ZvZ/PrCWKNNQCdk;\
+_ 0CssikkJ2ugA3nYYdIceoqeb9rJx1gYIFpT2YtEixF6JgH5aTHQFb4GtgfuFNjz7M5E/RO94;\
+_ /rb1vysmoUEDql/WTFFKqomx1krR0q9DIzqkB6HUY+diAulqDTAP+SS4iH9mV+mM5E2jPdg+;\
+_ aGtg4VAsfcZFCH0QbesB6xLiIpoQeSeoFi2XxSSVRiVU1klk0XhRIdMWWJuLhkuucMVNbFs4;\
+_ vzx9DqenQ10eFTBNzYan/P2TH2xVXcKDGNzzJ2/fw90ZcP4U3o146OIYJE/R820qq3qquLJy;\
+_ iY6JPjDfI6rYw/19ScCogAXB9MGJ/stnKtqjtEYxglcjWQ8ZUDYWjn+9upm/nL8oYbZO/AYR;\
+_ oofK2Q6+EoL6d/LjMVyenhcjzccnN7NXs6vb2TFcwG/ovcYtqUO2Em43PmCnoEXqqQcBNEb+;\
+_ GUTTC7kESi5qoQ1RMTRUCgMOO7uidGE6BBk5GF22ZCjs0SjifiUcl0I2yKk7XDjZ0CR57ofE;\
+_ H86mBGlXja4bCGkStiOw8as8o9Pp/5GNpXiHKW8GNNST7iBBH12Nj+KPcTK5/9g6Z927lPC6;\
+_ eQbCKKj0eofwy3D6aziyNZPW4QjkAZLUFxoHT5AE0ecQDO0ysYomaNrclJjipu1JfmlkO+GW;\
+_ ICLpBfv4EU6+2X3zjf29EyaK9tu9dU0ylYzHOdiB3xyaDJLz6DMpUmCxr51Qw2He/7GNNM2V;\
+_ rqPLUamF2tTbs3GjKQwshEdW6RY9eZKYVXtZ2VV+R7t+uAFH+xVIZ5/+HfyBvs9Zqn6mZTGE;\
+_ Lw3NXm0HgfxPCjuU4roDKIdK+jcaPHLx1/I61NxS82m782DlQaBVIyI3VPVD2qgTlCeRJZMr;\
+_ oWX2WruynAVZlrc20qC/ouOLncTuY2SPPan0RtK4EppMRpBJQ/Ng92GaSCcJ/e75fqgYianB;\
+_ 1u/s0zq0ejHo7hmzrRqO3HgWup6TUucfgntfaQI3eFmqIWx6hAqO0t8rSgiI8OkzvPs+jc/R;\
+_ ATXKY4uSmCHCYfsy9CS18TYr7TlI2/UtUp9o4WE7Y8Uf5BuWicIHAAA=;\
+)|base64 -d|gzip -d>tmp/stage2
+
+#--------------------------------------------------------------------------#
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
-ARG DEBIAN_FRONTEND=noninteractive
 ARG RELEASE
-ARG ARCH
-
-# init sometimes uses ischroot to disable updates.
-RUN \
-    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \
-    dpkg-divert --local --rename --add /usr/bin/ischroot;\
-    ln -s /bin/true /usr/bin/ischroot; fi
-
-RUN set -ex;\
-: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage ||:\
-; dpkg --configure --pending \
-; dpkg -l dpkg apt base-files
-
-# Clear all the manual install flags
-RUN [ ! -f /usr/bin/apt-mark ] || apt-mark auto -qq $(apt-mark showmanual) ||:
-
-# Clean up the ischroot divert.
-RUN \
-    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \
-    rm -f /usr/bin/ischroot; \
-    dpkg-divert --local --rename --remove /usr/bin/ischroot;fi
-
-# This option breaks some installs eg: ubuntu/maverick
-RUN dpkg --force-unsafe-io -l dpkg >/dev/null 2>&1 && \
-    sed -i -e '/^#<off> force-unsafe-io/s/#[^ ]* //' \
-        /etc/dpkg/dpkg.cfg.d/docker-apt-speedup ||:
-
-# Clean lists, cache and history.
-RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
-RUN apt-get clean
-RUN dpkg --clear-avail
-RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels
-RUN rm -f /var/lib/dpkg/*-old
-RUN :|find /var/log -type f ! -exec tee {} \;
-RUN [ ! -x /usr/bin/dselect ] || dselect update
-
-#------------------------------------------------------------------------------#
+RUN set -ex;: $RELEASE; sh /tmp/stage2 && rm -f /tmp/stage2
+#--------------------------------------------------------------------------#
 # Finally squash all the layers.
 FROM scratch
 COPY --from=stage2 / /

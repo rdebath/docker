@@ -1,19 +1,24 @@
 #!/bin/bash -
 
-LISTCMD=
-case "$1" in
--l ) LISTCMD=1;shift;;
-esac
-
 build_images() {
-    local forkcount=8
+    local forkcount=1
+
+    LISTCMD=
+    case "$1" in
+    -j ) forkcount=8; shift;;
+    -l ) LISTCMD=1; shift;;
+    esac
+
     (:&wait -n) >/dev/null 2>&1 || forkcount=0
     [ "$LISTCMD" != '' ] && forkcount=0
 
+:   "Acquire{ Pdiffs \"false\";http::Proxy \"http://proxy.server:3128/\";};"
+
     [ "$#" -eq 0 ] &&
 	set -- \
-	    potato woody etch lenny squeeze wheezy \
+	    potato woody sarge etch lenny squeeze wheezy \
 	    jessie stretch buster bullseye unstable
+	    # Future: bookworm
 
     [ "$#" -ge 1 -a "$1" = debian ] &&
 	set -- unstable bullseye buster stretch
@@ -26,10 +31,10 @@ build_images() {
 
     [ "$#" -ge 1 -a "$1" = all ] &&
 	set -- \
-	    potato woody etch lenny squeeze wheezy \
+	    potato woody sarge etch lenny squeeze wheezy \
 	    jessie stretch buster bullseye unstable \
 	    groovy focal bionic xenial trusty \
-	    cosmic ascii ceres kali-rolling
+	    cosmic ascii ceres
 
     [ "$#" -ge 1 -a "$1" = allubuntu ] &&
 	set -- \
@@ -38,26 +43,44 @@ build_images() {
 	oneiric precise quantal raring saucy trusty utopic vivid wily \
 	xenial yakkety zesty
 
-    # Fail due to repo issue
-    [ "$#" -ge 1 -a "$1" = dlfailubuntu ] &&
-	set -- hoary lucid warty
+    # Failing due to repo issue
+    [ "$#" -ge 1 -a "$1" = failing ] &&
+	set -- warty hoary  dapper edgy feisty gutsy hardy
+	# focal-i386 groovy-i386 warty-i386
 
-    # Failing in stage 2
-    [ "$#" -ge 1 -a "$1" = infailubuntu ] &&
-	set -- hardy gutsy dapper feisty edgy
+    [ "$#" -ge 1 -a "$1" = kali ] &&
+	set -- kali-dev kali-rolling kali-last-snapshot
+
+    # WARNING: Distro Tanglu is discontinued
+    [ "$#" -ge 1 -a "$1" = tanglu ] &&
+	set -- aequorea bartholomea chromodoris dasyatis
+
+    [ "$#" -ge 1 -a "$1" = allok ] &&
+	set -- \
+            amber artful ascii beowulf bionic \
+            breezy bullseye buster ceres chimaera \
+            cosmic devuan disco eoan etch \
+            focal groovy intrepid jaunty jessie \
+            karmic lenny lucid maverick \
+            natty oneiric potato precise quantal raring sarge saucy \
+            squeeze stretch trusty unstable utopic vivid \
+            wheezy wily woody xenial yakkety zesty
 
     local Q=-q
     local RELEASE ARCH
     local runcount
 
-    [ "$#" -eq 1 ] && Q=
+    [ "$#" -eq 1 ] && forkcount=1
+    [ "$forkcount" -le 1 ] && Q=
 
     for RELEASE
     do
 	for ARCH in amd64 i386
 	do
-	    [ "$RELEASE" = potato -a "$ARCH" = amd64 ] && continue
-	    [ "$RELEASE" = woody -a "$ARCH" = amd64 ] && continue
+	    # Not compiled for i386
+	    [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
+
+	    # These fail on touching a file !?
 	    [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue # Humm.
 	    [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue # Humm.
 
@@ -76,6 +99,7 @@ build_images() {
 	done
     done
     [ "$forkcount" -ne 0 ] && wait
+    exit 0
 }
 
 build_image() {
@@ -96,24 +120,32 @@ build_image() {
     potato ) DEBOPTIONS='--no-check-gpg' ;;
     wheezy ) MIRROR=http://archive.debian.org/debian ;;
 
-    potato|woody|etch|lenny|squeeze|wheezy|jessie ) ;;
-    stretch|buster|bullseye|unstable ) ;;
+    potato|woody|sarge|etch|lenny|squeeze|wheezy|jessie ) ;;
+    stretch|buster|bullseye|bookworm|unstable ) ;;
+
+    aequorea|bartholomea|chromodoris|dasyatis)
+	DISTRO=tanglu
+	echo >&2 WARNING: Distro Tanglu is discontinued
+	;;
 
     * ) DISTRO=
 	[ -z "$DISTRO" ] && ubuntu_versions "$RELEASE"
 	[ -z "$DISTRO" ] && devuan_versions "$RELEASE"
 	[ -z "$DISTRO" ] && kali_versions "$RELEASE"
-	[ -z "$DISTRO" ] && { echo "Unknown release $RELEASE-$ARCH">&2;exit 2;}
+	[ -z "$DISTRO" ] && {
+	    echo "WARNING: Unknown release $RELEASE-$ARCH">&2
+	    DISTRO=unknown
+	}
 	;;
     esac
 
-    DOCKERFILE="${BASE}.${EXTN}"
+    local DOCKERFILE="${BASE}.${EXTN}"
+    local NARCH="$ARCH"; [ "$NARCH" = amd64 ] && NARCH=
 
     [ "$LISTCMD" != '' ] && {
-	echo -n cat "$DOCKERFILE | "
-	echo docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
+	echo docker build $Q -t rdb/$DISTRO:$RELEASE${ARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
-	    --build-arg=ARCH=$ARCH \
+	    ${NARCH:+--build-arg=ARCH=$ARCH} \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
 	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
@@ -124,9 +156,9 @@ build_image() {
     echo "Building $RELEASE $ARCH"
     (   set -ex
 	: "$DOCKERFILE"
-	docker build $Q -t rdb/$DISTRO:$RELEASE-$ARCH \
+	docker build $Q -t rdb/$DISTRO:$RELEASE${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
-	    --build-arg=ARCH=$ARCH \
+	    ${NARCH:+--build-arg=ARCH=$ARCH} \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
 	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
@@ -135,9 +167,10 @@ build_image() {
 
     for STAGE in $(sed -n 's/^FROM.*AS \+//p' "$DOCKERFILE")
     do
-	docker build -q --target=$STAGE -t interim/deboot:$DISTRO-$RELEASE-$ARCH-$STAGE \
+	docker build -q --target=$STAGE \
+		-t temp/$STAGE:$RELEASE${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
-	    --build-arg=ARCH=$ARCH \
+	    ${NARCH:+--build-arg=ARCH=$ARCH} \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
 	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
@@ -326,7 +359,7 @@ ubuntu_versions() {
 	# 20.10 -- Groovy Gorilla
 	MIRROR=ubuntu
 	DISTRO=ubuntu
-	DEBSCRIPT=focal
+	DEBSCRIPT=eoan
 	;;
     esac
 
@@ -364,13 +397,33 @@ devuan_versions() {
 kali_versions() {
     local RELEASE="$1"
     case "$RELEASE" in
-    kali|kali-rolling|kali-last-snapshot|kali-dev )
+    kali-rolling|kali-last-snapshot|kali-dev )
 	MIRROR=http://http.kali.org/kali
 	DISTRO=kali
 	DEBSCRIPT=kali
 	DEBOPTIONS='--no-check-gpg --include=kali-archive-keyring'
 	;;
     esac
+}
+
+version_notes() {
+case `cat /etc/debian_version` in
+1.1* ) APTID=deb.buzz ;;
+1.2* ) APTID=deb.rex ;;
+1.3* ) APTID=deb.bo ;;
+2.0* ) APTID=deb.hamm ;;
+2.1* ) APTID=deb.slink ;;
+2.2* ) APTID=deb.potato ;;
+3.0* ) APTID=deb.woody ;;
+3.1* ) APTID=deb.sarge ;;
+4.* ) APTID=deb.etch ;;
+5.* ) APTID=deb.lenny ;;
+6.* ) APTID=deb.squeeze ;;
+7.* ) APTID=deb.wheezy ;;
+8.* ) APTID=deb.jessie ;;
+9.* ) APTID=deb.stretch ;;
+10.* ) APTID=deb.buster ;;
+esac
 }
 
 build_images "$@"

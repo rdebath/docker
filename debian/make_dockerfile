@@ -1,4 +1,5 @@
-#!/bin/sh -
+#!/usr/bin/env bash
+if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
 main() {
     if [ "$#" -gt 0 ]
@@ -9,209 +10,202 @@ main() {
 
 default_list() {
     BASE=Docker.d/Dockerfile
+    rm -rf Docker.d
     mkdir -p Docker.d
     make_dockerfile > "$BASE.minbase"
-    for RELEASE in jessie potato
-    do make_dockerfile "$RELEASE" > "$BASE.$RELEASE"
-    done
 }
 
 make_dockerfile() {
-    local RELEASE="$1"
-    local ARCH
 
-    [ "$RELEASE" = potato ] && ARCH=i386
-    [ "$ARCH" = '' ] && ARCH=amd64
-
-    echo '#------------------------------------------------------------------------------#'
-    echo '# We can use any Linux that has debootstrap as a package.'
-    echo '# Ideally we want the smallest that has up to date'
-    echo '# repository keys for our final target'
-    echo '#'
-
-    cat <<\@
+cat <<\@
+#--------------------------------------------------------------------------#
+# We can use any Linux that has debootstrap as a package.
+# Ideally we want the smallest that has up to date
+# repository keys for our final target
+#
 # Alpine is very small, but only has a Debian keyring.
-FROM alpine AS unpack
-RUN apk add perl debootstrap
-
+# So use git to fetch some others over https if needed.
 @
+    docker_cmd 'FROM alpine AS unpack'
+    docker_cmd 'WORKDIR /root'
 
-    if [ "$RELEASE" = '' ]
-    then
-	cat <<\@
-# Add some more keyrings.
-# The download is secured by https and the ca-certificates package.
-RUN apk add git
-WORKDIR /root
-RUN git clone \
-	-b ubuntu/devel \
-	https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
-RUN cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
-RUN git clone \
-	https://git.devuan.org/devuan/devuan-keyring.git
-RUN cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
+    docker_start || {
+	set -ex
 
-# Fixup the Devuan scripts
-RUN set -e;\
-    sed < /usr/share/debootstrap/scripts/sid \
-	> /usr/share/debootstrap/scripts/devuan \
-    's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/ascii \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/beowulf \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/chimaera \
-    ; ln -fs devuan /usr/share/debootstrap/scripts/ceres
+	apk add --no-cache debootstrap perl git
 
-@
-    fi
+	DIR=/usr/share/debootstrap/scripts
 
-    echo ARG RELEASE=${RELEASE:-stable}
-    echo ARG ARCH=$ARCH
-    if [ "$RELEASE" != potato ]
-    then echo ARG MIRROR
-    else echo ARG MIRROR=http://archive.debian.org/debian
-    fi
-    echo ARG DEBSCRIPT
-    echo ARG DEBOPTIONS
-    echo
+	: Repair or create the Devuan scripts.
+	sed < $DIR/sid \
+		> $DIR/devuan \
+	    -e 's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
+	    -e '4i default_mirror http://deb.devuan.org/merged'
 
-    echo WORKDIR /opt
-    echo '# Chroot under Docker is unreliable; use --foreign as a workaround.'
+	ln -fs devuan $DIR/ascii
+	ln -fs devuan $DIR/beowulf
+	ln -fs devuan $DIR/chimaera
+	ln -fs devuan $DIR/ceres
 
-    if [ "$RELEASE" = potato ]
-    then
-	echo 'RUN COMP="--components=main,contrib,non-free";\'
-	echo '    debootstrap --foreign --arch=$ARCH $COMP $DEBOPTIONS \'
-	echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
-	echo
+	: PureOS script default is HTTPS
+	[ -e "$DIR/amber" ] &&
+	    grep -q -e '^default_mirror https' "$DIR/amber" &&
+		sed -i -e '1i unset DEF_HTTPS_MIRROR' "$DIR/amber"
 
-    else
-	echo 'RUN set -x;DIR=/usr/share/debootstrap/scripts;\'
+	: Repair Ubuntu scripts
+	sed -i -e '4i force_md5' "$DIR/warty"
+	sed -i -e '4i force_md5' "$DIR/hoary"
 
-	echo '    if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
-	echo '    COMP="--components=main,restricted,universe,multiverse";else \'
-	echo '    COMP="--components=main,contrib,non-free";fi;\'
+	: Ubuntu
+	git clone \
+	    -b ubuntu/devel \
+	    https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
+	cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
-	echo '    if grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}";then \'
-	echo '    VARIANT="--variant=minbase";fi;\'
+	: Devuan
+	git clone https://git.devuan.org/devuan/devuan-keyring.git
+	cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
-	echo '    debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \'
+	apk del git
+
+    } ; docker_commit "Configure host"
+
+    docker_cmd 'WORKDIR /opt'
+    docker_cmd "ARG RELEASE=stable"
+    docker_cmd "ARG ARCH"
+    docker_cmd "ARG MIRROR"
+    docker_cmd "ARG DEBSCRIPT"
+    docker_cmd "ARG DEBOPTIONS"
+
+    docker_start || {
+	set -ex
+	: "Stage 1 for $RELEASE $ARCH"
+
+	DIR=/usr/share/debootstrap/scripts
+	[ "$RELEASE" = potato ] && ARCH="${ARCH:-i386}"
+	[ "$RELEASE" = woody ] && ARCH="${ARCH:-i386}"
+	[ "$RELEASE" = sarge ] && ARCH="${ARCH:-i386}"
+	[ "$RELEASE" = devuan ] && {
+	    DEBSCRIPT="$RELEASE";
+	    RELEASE=stable
+	    MIRROR="${MIRROR:-http://deb.devuan.org/merged}"
+	}
+	ARCH="${ARCH:-amd64}"
+
+	if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}"
+	then COMP="--components=main,restricted,universe,multiverse"
+	else COMP="--components=main,contrib,non-free"
+	fi
+
+	grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}" &&
+	    VARIANT="--variant=minbase"
 
 	[ "$RELEASE" = jessie ] &&
-	    echo '    --exclude=systemd,systemd-sysv --include=sysvinit-core \'
+	    EXTRA='--exclude=systemd,systemd-sysv --include=sysvinit-core'
 
-	echo '    "$RELEASE" chroot $MIRROR $DEBSCRIPT'
-	echo
-    fi
+	debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \
+	    $EXTRA "$RELEASE" chroot $MIRROR $DEBSCRIPT
 
-    echo 'WORKDIR /opt/chroot'
-    echo
+	cd /opt/chroot
 
-	echo '# Docker has already setup /proc'
-	echo 'RUN sed -i -e '\''s/  setup_proc/#setup_proc/'\'' debootstrap/suite-script'
-	echo
+	: Docker has already setup /proc
+	sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
 
-    [ "$RELEASE" = potato ] && {
-	echo '# Current debootstrap has bug'
-	echo 'RUN sed -i -e '\''s/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/'\'' debootstrap/functions'
-	echo
-    }
+	[ "$RELEASE" = potato ] && {
+	    # Current debootstrap has bug
+	    sed -i -e 's/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/' debootstrap/functions
+	}
 
-    [ "$RELEASE" = jessie ] && {
-	echo '# Systemd is unpacked ready to install even if we don'\''t want it.'
-	echo '# So break the chroot such that it doesn'\''t actually get installed.'
-	echo 'RUN sed -i -e '\''/systemd\>.*/d'\'' debootstrap/required'
-	echo
-    }
+	[ "$RELEASE" = jessie ] && {
+	    : "Systemd is unpacked ready to install even if we don't want it."
+	    : "So break the chroot such that it doesn't actually get installed."
+	    sed -i -e '/systemd\>.*/d' debootstrap/required
+	}
+	: Stage 1 complete for $RELEASE
 
-    echo '# Configure apt and dpkg for docker'
-    echo '# Note: standard used "#" for comment not "//"'
+    } ; docker_commit "Stage 1"
+
+    docker_cmd '# Configure apt and dpkg for docker'
+    docker_cmd '# Note: standard used "#" for comment not "//"'
+    docker_cmd 'WORKDIR /opt/chroot'
     base64_extras
-    echo
 
-    echo '#------------------------------------------------------------------------------#'
+    docker_cmd '#--------------------------------------------------------------------------#'
 
-    echo 'FROM scratch AS stage2'
-    echo 'COPY --from=unpack /opt/chroot /'
-    echo 'ARG DEBIAN_FRONTEND=noninteractive'
-    echo 'ARG RELEASE'
-    echo 'ARG ARCH'
-    echo
+    docker_start || {
+	set -ex
+	export DEBIAN_FRONTEND=noninteractive
 
-    if [ "$RELEASE" != potato ]
-    then
-	echo '# init sometimes uses ischroot to disable updates.'
-	echo 'RUN \'
-	echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
-	echo '    dpkg-divert --local --rename --add /usr/bin/ischroot;\'
-	echo '    ln -s /bin/true /usr/bin/ischroot; fi'
-	echo
-    fi
+	: init sometimes uses ischroot to disable updates.
+	if [ -x /sbin/init -a -x /usr/bin/ischroot ]
+	then dpkg-divert --local --rename --add /usr/bin/ischroot
+	     ln -s /bin/true /usr/bin/ischroot
+	fi
 
-    if [ "$RELEASE" = jessie ]
-    then
-	echo 'RUN set -x;: $RELEASE $ARCH; /debootstrap/debootstrap --second-stage'
-	echo
-	echo '# Systemd leaves a mess, unpack it again so dpkg can remove it.'
-	echo 'RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb'
-	echo '# Sigh this breaks sysvinit ...'
-	echo 'RUN dpkg --unpack --force-depends /var/cache/apt/archives/systemd-sysv_*.deb'
-	echo '# Remove them'
-	echo 'RUN dpkg --purge --force-depends systemd ||:'
-	echo 'RUN dpkg --purge --force-depends systemd-sysv ||:'
-	echo '# Oh, and fix sysvinit'
-	echo 'RUN dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb'
-	echo ''
-	echo '# Remove packages that are not essential and check'
-	echo 'RUN apt-mark auto -qq $(apt-mark showmanual) \'
-	echo '&&  apt-get autoremove --purge -y \'
-	echo '&&  apt-get update -y \'
-	echo '&&  apt-get dist-upgrade -y \'
-	echo '&&  dpkg --configure --pending'
-	echo
-    else
-	echo 'RUN set -ex;\'
-	echo ': $RELEASE $ARCH; /debootstrap/debootstrap --second-stage ||:\'
-	echo '; dpkg --configure --pending \'
-	echo '; dpkg -l dpkg apt base-files'
-	echo
+	: This option breaks some installs eg: ubuntu/maverick
+	dpkg --force-unsafe-io -l dpkg >/dev/null 2>&1 &&
+	    sed -i -e '/^#<off> force-unsafe-io/s/#[^ ]* //' \
+	        /etc/dpkg/dpkg.cfg.d/docker-apt-speedup ||:
 
-	echo '# Clear all the manual install flags'
-	echo 'RUN [ ! -f /usr/bin/apt-mark ] || apt-mark auto -qq $(apt-mark showmanual) ||:'
-	echo
-    fi
+	/debootstrap/debootstrap --second-stage ||
+	    echo "WARNING: Exit status from debootstrap --second-stage is $?" >&2
 
-    if [ "$RELEASE" != potato ]
-    then
-	echo '# Clean up the ischroot divert.'
-	echo 'RUN \'
-	echo '    if [ -x /sbin/init -a -x /usr/bin/ischroot ] ; then \'
-	echo '    rm -f /usr/bin/ischroot; \'
-	echo '    dpkg-divert --local --rename --remove /usr/bin/ischroot;fi'
-	echo
-    fi
+	if [ "$RELEASE" = jessie ]
+	then
+	    : Systemd leaves a mess, unpack it again so dpkg can remove it.
+	    dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb
+	    : Sigh this breaks sysvinit ...
+	    dpkg --unpack --force-depends /var/cache/apt/archives/systemd-sysv_*.deb
+	    : Remove them
+	    dpkg --purge --force-depends systemd ||:
+	    dpkg --purge --force-depends systemd-sysv ||:
+	    : Oh, and fix sysvinit
+	    dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb
 
-    echo '# This option breaks some installs eg: ubuntu/maverick'
-    echo 'RUN dpkg --force-unsafe-io -l dpkg >/dev/null 2>&1 && \'
-    echo '    sed -i -e '\''/^#<off> force-unsafe-io/s/#[^ ]* //'\'' \'
-    echo '        /etc/dpkg/dpkg.cfg.d/docker-apt-speedup ||:'
-    echo
+	    : Remove packages that are not essential and check
+	    apt-mark auto -qq $(apt-mark showmanual)
+	    apt-get autoremove --purge -y
+	    apt-get update -y
+	    apt-get dist-upgrade -y
+	fi
 
-    echo '# Clean lists, cache and history.'
-    echo 'RUN apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null'
-    echo 'RUN apt-get clean'
-    echo 'RUN dpkg --clear-avail'
-    echo 'RUN rm -f /etc/apt/apt.conf.d/01autoremove-kernels'
-    echo 'RUN rm -f /var/lib/dpkg/*-old'
-    echo 'RUN :|find /var/log -type f ! -exec tee {} \;'
-    echo 'RUN [ ! -x /usr/bin/dselect ] || dselect update'
-    echo
+	dpkg --configure --pending
+	dpkg -l dpkg apt base-files
 
-    echo '#------------------------------------------------------------------------------#'
-    echo '# Finally squash all the layers.'
-    echo 'FROM scratch'
-    echo 'COPY --from=stage2 / /'
-    echo 'WORKDIR /root'
-    echo 'CMD ["bash"]'
+	[ -f /usr/bin/apt-mark ] && [ "$RELEASE" != jessie ] && {
+	    apt-mark auto -qq $(apt-mark showmanual) ||:
+	}
+
+	: Clean up the ischroot divert.
+	if [ -x /sbin/init -a -x /usr/bin/ischroot ]
+	then
+	    rm -f /usr/bin/ischroot
+	    dpkg-divert --local --rename --remove /usr/bin/ischroot
+	fi
+
+	: Clean lists, cache and history.
+	apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
+	apt-get clean
+	dpkg --clear-avail
+	rm -f /etc/apt/apt.conf.d/01autoremove-kernels
+	rm -f /var/lib/dpkg/*-old
+	rm -rf /var/tmp/* /tmp/*
+	:|find /var/log -type f ! -exec tee {} \;
+	[ ! -x /usr/bin/dselect ] || dselect update
+	: Stage 2 complete for $RELEASE
+    } ; docker_save "Stage 2" tmp/stage2
+
+    docker_cmd '#--------------------------------------------------------------------------#'
+    docker_cmd 'FROM scratch AS stage2'
+    docker_cmd 'COPY --from=unpack /opt/chroot /'
+    docker_cmd 'ARG RELEASE'
+    docker_cmd 'RUN set -ex;: $RELEASE; sh /tmp/stage2 && rm -f /tmp/stage2'
+    docker_cmd '#--------------------------------------------------------------------------#'
+    docker_cmd '# Finally squash all the layers.'
+    docker_cmd 'FROM scratch'
+    docker_cmd 'COPY --from=stage2 / /'
+    docker_cmd 'WORKDIR /root'
+    docker_cmd 'CMD ["bash"]'
 }
 
 base64_extras() {
@@ -226,6 +220,47 @@ base64_extras() {
 	gzip -n9 | base64 -w 72 | sed 's/.*/_ &;\\/'
 	echo ')|base64 -d|gzip -d|tar xvf -'
     }
+}
+
+################################################################################
+# Dockerfile building scriptlets
+#
+docker_cmd() { echo "$@" ; return 0; }
+docker_start() { START_LINE=$((BASH_LINENO[0]+1)) ; }
+docker_commit() {
+    END_LINE=$((BASH_LINENO[0]-1))
+    TEXT=$(sed -n < "${BASH_SOURCE[1]}" "${START_LINE},${END_LINE}p")
+
+    echo
+    echo "$TEXT" | make_docker_runcmd "$1"
+    echo
+    return 0
+}
+
+make_docker_runcmd() {
+    # Encode the script
+    local sn="/tmp/install"
+    echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'
+    gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
+    echo ')|base64 -d|gzip -d>'"$sn;sh $sn;rm -f $sn"
+}
+
+docker_save() {
+    END_LINE=$((BASH_LINENO[0]-1))
+    TEXT=$(sed -n < "${BASH_SOURCE[1]}" "${START_LINE},${END_LINE}p")
+
+    echo
+    echo "$TEXT" | make_docker_savescript "$1" "$2"
+    echo
+    return 0
+}
+
+make_docker_savescript() {
+    # Encode the script
+    local sn="${2:-/tmp/install}"
+    echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'
+    gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
+    echo ")|base64 -d|gzip -d>$sn"
 }
 
 main "$@"
