@@ -12,9 +12,11 @@ build_images() {
     (:&wait -n) >/dev/null 2>&1 || forkcount=0
     [ "$LISTCMD" != '' ] && forkcount=0
 
-:   "Acquire{ Pdiffs \"false\";http::Proxy \"http://proxy.server:3128/\";};"
-
     [ "$#" -eq 0 ] &&
+	set -- \
+	    unstable bullseye buster xenial bionic focal
+
+    [ "$#" -ge 1 -a "$1" = alldebian ] &&
 	set -- \
 	    potato woody sarge etch lenny squeeze wheezy \
 	    jessie stretch buster bullseye unstable
@@ -26,27 +28,18 @@ build_images() {
     [ "$#" -ge 1 -a "$1" = ubuntu ] &&
 	set -- groovy focal bionic xenial trusty
 
-    [ "$#" -ge 1 -a "$1" = lts ] &&
+    [ "$#" -ge 1 -a "$1" = ubuntults ] &&
 	set -- dapper hardy lucid precise trusty xenial bionic focal
-
-    [ "$#" -ge 1 -a "$1" = all ] &&
-	set -- \
-	    potato woody sarge etch lenny squeeze wheezy \
-	    jessie stretch buster bullseye unstable \
-	    groovy focal bionic xenial trusty \
-	    cosmic ascii ceres
 
     [ "$#" -ge 1 -a "$1" = allubuntu ] &&
 	set -- \
-	artful bionic breezy cosmic disco eoan focal \
-	groovy intrepid jaunty karmic maverick natty \
-	oneiric precise quantal raring saucy trusty utopic vivid wily \
-	xenial yakkety zesty
+	    warty hoary breezy dapper edgy feisty gutsy hardy intrepid \
+	    jaunty karmic lucid maverick natty oneiric precise \
+	    quantal raring saucy trusty utopic vivid wily xenial \
+	    yakkety zesty artful bionic cosmic disco eoan focal groovy
 
-    # Failing due to repo issue
-    [ "$#" -ge 1 -a "$1" = failing ] &&
-	set -- warty hoary  dapper edgy feisty gutsy hardy
-	# focal-i386 groovy-i386 warty-i386
+    [ "$#" -ge 1 -a "$1" = alldevuan ] &&
+	set -- ascii beowulf chimaera ceres
 
     [ "$#" -ge 1 -a "$1" = kali ] &&
 	set -- kali-dev kali-rolling kali-last-snapshot
@@ -55,16 +48,16 @@ build_images() {
     [ "$#" -ge 1 -a "$1" = tanglu ] &&
 	set -- aequorea bartholomea chromodoris dasyatis
 
-    [ "$#" -ge 1 -a "$1" = allok ] &&
+    [ "$#" -ge 1 -a "$1" = all ] &&
 	set -- \
-            amber artful ascii beowulf bionic \
-            breezy bullseye buster ceres chimaera \
-            cosmic devuan disco eoan etch \
-            focal groovy intrepid jaunty jessie \
-            karmic lenny lucid maverick \
-            natty oneiric potato precise quantal raring sarge saucy \
-            squeeze stretch trusty unstable utopic vivid \
-            wheezy wily woody xenial yakkety zesty
+	    potato woody sarge etch lenny squeeze wheezy \
+	    jessie stretch buster bullseye unstable \
+	    warty hoary breezy dapper edgy feisty gutsy hardy intrepid \
+	    jaunty karmic lucid maverick natty oneiric precise \
+	    quantal raring saucy trusty utopic vivid wily xenial \
+	    yakkety zesty artful bionic cosmic disco eoan focal groovy \
+	    kali-dev kali-rolling kali-last-snapshot \
+	    ascii beowulf chimaera ceres
 
     local Q=-q
     local RELEASE ARCH
@@ -77,12 +70,19 @@ build_images() {
     do
 	for ARCH in amd64 i386
 	do
-	    # Not compiled for i386
+	    # Not compiled for i386 or always compiled for i386
 	    [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
+	    [ "$RELEASE" = potato -a "$ARCH" = i386 ] && continue # Is default
+	    [ "$RELEASE" = woody -a "$ARCH" = i386 ] && continue # Is default
+	    [ "$RELEASE" = sarge -a "$ARCH" = i386 ] && continue # Is default
 
 	    # These fail on touching a file !?
 	    [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue # Humm.
 	    [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue # Humm.
+
+	    # vdso nuisance
+	    [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue
+	    [ "$RELEASE" = hoary -a "$ARCH" = i386 ] && continue
 
 	    if [ "$forkcount" -le 1 ]
 	    then
@@ -106,15 +106,11 @@ build_image() {
     local RELEASE="$1"
     local ARCH="$2"
     local Q="$3"
-    local BASE=Docker.d/Dockerfile
-    local EXTN
 
     unset DEBSCRIPT
     unset DEBOPTIONS
-    EXTN=minbase
     MIRROR=
     DISTRO=debian
-    [ -f "${BASE}.${RELEASE}" ] && EXTN="$RELEASE"
 
     case $RELEASE in
     potato ) DEBOPTIONS='--no-check-gpg' ;;
@@ -128,6 +124,8 @@ build_image() {
 	echo >&2 WARNING: Distro Tanglu is discontinued
 	;;
 
+    amber ) DISTRO=pureos ;;
+
     * ) DISTRO=
 	[ -z "$DISTRO" ] && ubuntu_versions "$RELEASE"
 	[ -z "$DISTRO" ] && devuan_versions "$RELEASE"
@@ -139,11 +137,11 @@ build_image() {
 	;;
     esac
 
-    local DOCKERFILE="${BASE}.${EXTN}"
+    local DOCKERFILE=Dockerfile
     local NARCH="$ARCH"; [ "$NARCH" = amd64 ] && NARCH=
 
     [ "$LISTCMD" != '' ] && {
-	echo docker build $Q -t rdb/$DISTRO:$RELEASE${ARCH:+-$ARCH} \
+	echo docker build $Q -t rdb/$DISTRO:$RELEASE${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
 	    ${NARCH:+--build-arg=ARCH=$ARCH} \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
@@ -155,7 +153,6 @@ build_image() {
 
     echo "Building $RELEASE $ARCH"
     (   set -ex
-	: "$DOCKERFILE"
 	docker build $Q -t rdb/$DISTRO:$RELEASE${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
 	    ${NARCH:+--build-arg=ARCH=$ARCH} \
@@ -386,10 +383,16 @@ ubuntu_versions() {
 devuan_versions() {
     local RELEASE="$1"
     case "$RELEASE" in
-    jessie|ascii|beowulf|chimaera|ceres )
+    jessie )
 	MIRROR=http://deb.devuan.org/merged
 	DISTRO=devuan
-	DEBOPTIONS='--include=devuan-keyring'
+	DEBSCRIPT=ascii
+	;;
+    ascii|beowulf|chimaera|ceres )
+	DISTRO=devuan
+	;;
+    devuan ) # Alias for devuan/stable
+	DISTRO=devuan
 	;;
     esac
 }
@@ -398,10 +401,10 @@ kali_versions() {
     local RELEASE="$1"
     case "$RELEASE" in
     kali-rolling|kali-last-snapshot|kali-dev )
-	MIRROR=http://http.kali.org/kali
+	MIRROR=https://http.kali.org/kali
 	DISTRO=kali
 	DEBSCRIPT=kali
-	DEBOPTIONS='--no-check-gpg --include=kali-archive-keyring'
+	DEBOPTIONS='--no-check-gpg'
 	;;
     esac
 }

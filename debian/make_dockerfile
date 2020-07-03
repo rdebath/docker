@@ -2,29 +2,60 @@
 if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
 main() {
-    if [ "$#" -gt 0 ]
-    then make_dockerfile "$@"
-    else default_list
+    set -e
+    if [ ".$1." = .-. ]
+    then make_dockerfile
+    else
+	make_dockerfile > "_tmp.doc"
+	if cmp -s "_tmp.doc" "${1:-Dockerfile}"
+	then rm "_tmp.doc"
+	else mv "_tmp.doc" "${1:-Dockerfile}"
+	fi
     fi
 }
 
-default_list() {
-    BASE=Docker.d/Dockerfile
-    rm -rf Docker.d
-    mkdir -p Docker.d
-    make_dockerfile > "$BASE.minbase"
-}
-
 make_dockerfile() {
-
 cat <<\@
 #--------------------------------------------------------------------------#
-# We can use any Linux that has debootstrap as a package.
-# Ideally we want the smallest that has up to date
-# repository keys for our final target
-#
+# We could use any Linux that has debootstrap available.
+# Ideally we want the smallest possible.
 # Alpine is very small, but only has a Debian keyring.
-# So use git to fetch some others over https if needed.
+# So I use git to fetch some others over https.
+#
+# Working 'RELEASE' files include the default "stable" and ...
+# From Debian:
+#   potato woody sarge etch lenny squeeze wheezy
+#   jessie stretch buster bullseye unstable
+# From Ubuntu:
+#   artful bionic breezy cosmic disco eoan focal
+#   groovy intrepid jaunty karmic maverick natty
+#   oneiric precise quantal raring saucy trusty
+#   utopic vivid wily xenial yakkety zesty
+# From Devuan:
+#   ascii beowulf chimaera ceres
+# From Kali:
+#   kali-dev kali-rolling kali-last-snapshot
+# From PureOS:
+#   amber
+#
+# However, some of the older ones have expired keys so you'll need to include
+#   DEBOPTIONS='--no-check-gpg'
+# and use a https MIRROR.
+#
+# The ARCH option from be set to i386 for most of these (and is set to
+# i386 for some like Debian Woody)
+#
+# The MIRROR allows you to set the mirror to use and then
+# the DEBSCRIPT arg lets you use a deboostrap script different
+# from the RELEASE name ("sid" is the normal fallback).
+# The DEBOPTIONS arg allows you to add more options to debootstrap.
+#
+# The INSTALL arg is a list of packages to install just before the
+# final cleanup.
+#
+# I'm using the base64 stuff to make things prettier :-)
+
+#--------------------------------------------------------------------------#
 @
     docker_cmd 'FROM alpine AS unpack'
     docker_cmd 'WORKDIR /root'
@@ -37,8 +68,7 @@ cat <<\@
 	DIR=/usr/share/debootstrap/scripts
 
 	: Repair or create the Devuan scripts.
-	sed < $DIR/sid \
-		> $DIR/devuan \
+	sed < $DIR/sid > $DIR/devuan \
 	    -e 's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
 	    -e '4i default_mirror http://deb.devuan.org/merged'
 
@@ -56,20 +86,22 @@ cat <<\@
 	sed -i -e '4i force_md5' "$DIR/warty"
 	sed -i -e '4i force_md5' "$DIR/hoary"
 
-	: Ubuntu
+	: Ubuntu keys
 	git clone \
 	    -b ubuntu/devel \
 	    https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
 	cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
-	: Devuan
+	: Devuan keys
 	git clone https://git.devuan.org/devuan/devuan-keyring.git
 	cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
-	apk del git
+	apk del --repositories-file /dev/null --purge git
 
     } ; docker_commit "Configure host"
 
+    docker_cmd
+    docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd 'WORKDIR /opt'
     docker_cmd "ARG RELEASE=stable"
     docker_cmd "ARG ARCH"
@@ -82,26 +114,47 @@ cat <<\@
 	: "Stage 1 for $RELEASE $ARCH"
 
 	DIR=/usr/share/debootstrap/scripts
-	[ "$RELEASE" = potato ] && ARCH="${ARCH:-i386}"
-	[ "$RELEASE" = woody ] && ARCH="${ARCH:-i386}"
-	[ "$RELEASE" = sarge ] && ARCH="${ARCH:-i386}"
-	[ "$RELEASE" = devuan ] && {
+	case "$RELEASE" in
+	potato|woody|sarge ) ARCH="${ARCH:-i386}" ;;
+	devuan )
 	    DEBSCRIPT="$RELEASE";
 	    RELEASE=stable
 	    MIRROR="${MIRROR:-http://deb.devuan.org/merged}"
-	}
-	ARCH="${ARCH:-amd64}"
+	    ARCH="${ARCH:-amd64}"
+	    ;;
+	* ) # If no such script, guess it's like "sid"
+	    [ ! -e "$DIR/${DEBSCRIPT:-$RELEASE}" ] &&
+		ln -fs sid "$DIR/${DEBSCRIPT:-$RELEASE}"
+	    ARCH="${ARCH:-amd64}"
+	    ;;
+	esac
 
-	if grep -q ^keyring.*ubuntu "$DIR/${DEBSCRIPT:-$RELEASE}"
+	if grep -q '^keyring.*ubuntu' "$DIR/${DEBSCRIPT:-$RELEASE}"
 	then COMP="--components=main,restricted,universe,multiverse"
 	else COMP="--components=main,contrib,non-free"
 	fi
 
-	grep -q ^variants.*minbase "$DIR/${DEBSCRIPT:-$RELEASE}" &&
+	grep -q '^variants.*minbase' "$DIR/${DEBSCRIPT:-$RELEASE}" &&
 	    VARIANT="--variant=minbase"
 
-	[ "$RELEASE" = jessie ] &&
-	    EXTRA='--exclude=systemd,systemd-sysv --include=sysvinit-core'
+	# Must exclude/include to get an undamaged system
+	case "$RELEASE" in
+	jessie ) EXTRA='--exclude=systemd,systemd-sysv --include=sysvinit-core' ;;
+	warty|hoary )
+	    EXTRA='--exclude=udev,ubuntu-base'
+	    ;;
+
+	dapper )
+	    EXTRA='--exclude=udev,initscripts,sysvinit,console-tools,console-common,ubuntu-base'
+	    ;;
+
+	 gutsy|hardy )
+	    EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
+	    ;;
+
+	ascii|beowulf|chimaera|ceres ) EXTRA='--include=devuan-keyring' ;;
+	kali-* ) EXTRA='--include=kali-archive-keyring' ;;
+	esac
 
 	debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \
 	    $EXTRA "$RELEASE" chroot $MIRROR $DEBSCRIPT
@@ -109,7 +162,7 @@ cat <<\@
 	cd /opt/chroot
 
 	: Docker has already setup /proc
-	sed -i -e 's/  setup_proc/#setup_proc/' debootstrap/suite-script
+	sed -i -e 's/\<setup_proc/: setup_proc/' debootstrap/suite-script
 
 	[ "$RELEASE" = potato ] && {
 	    # Current debootstrap has bug
@@ -123,13 +176,18 @@ cat <<\@
 	}
 	: Stage 1 complete for $RELEASE
 
-    } ; docker_commit "Stage 1"
+    } ; docker_save "Stage 1" /tmp/stage1
+
+    # Split off so errors don't dump Base64 to screen and space due to
+    # deleted layers is not important here.
+    docker_cmd 'RUN set -ex;: $RELEASE; sh /tmp/stage1 && rm -f /tmp/stage1'
 
     docker_cmd '# Configure apt and dpkg for docker'
     docker_cmd '# Note: standard used "#" for comment not "//"'
     docker_cmd 'WORKDIR /opt/chroot'
     base64_extras
 
+    docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
 
     docker_start || {
@@ -150,8 +208,8 @@ cat <<\@
 	/debootstrap/debootstrap --second-stage ||
 	    echo "WARNING: Exit status from debootstrap --second-stage is $?" >&2
 
-	if [ "$RELEASE" = jessie ]
-	then
+	case "$RELEASE" in
+	jessie )
 	    : Systemd leaves a mess, unpack it again so dpkg can remove it.
 	    dpkg --unpack --force-depends /var/cache/apt/archives/systemd_*.deb
 	    : Sigh this breaks sysvinit ...
@@ -167,13 +225,67 @@ cat <<\@
 	    apt-get autoremove --purge -y
 	    apt-get update -y
 	    apt-get dist-upgrade -y
-	fi
+	    ;;
+
+	warty ) # Warty isn't a minbase
+	    dpkg --purge \
+		alsa-utils alsa-base libasound2 \
+		lvm10 lvm2 lvm-common hotplug \
+		modutils pciutils module-init-tools
+	    dpkg --purge \
+		aptitude at base-config bind9-host bsdmainutils \
+		console-common console-data console-tools cron discover1 \
+		discover1-data dnsutils evms evms-ncurses ftp gettext-base \
+		groff-base iproute iputils-arping iputils-tracepath klogd \
+		libasound2 libatm1 libconsole libdiscover1 libdns16 \
+		libevms-2.3 libgc1 libgdbm3 libgpmg1 libidn11 libisc7 \
+		liblockfile1 liblwres1 libncursesw5 libpcap0.7 libpcap0.8 \
+		libreadline4 libsigc++-1.2-5c102 libusb-0.1-4 logrotate \
+		lshw lsof ltrace mailx man-db manpages mdadm mime-support \
+		mtr-tiny mutt nano netcat ntp ntpdate openssh-client \
+		parted popularity-contest postfix postfix-tls ppp \
+		pppconfig pppoeconf python python2.3 reiser4progs \
+		reportbug rsync strace sudo sysklogd tcpdump telnet \
+		usbutils vim vim-common w3m xfsprogs
+	    ;;
+
+	dapper|edgy|feisty )
+	    : Some packages cannot be configured.
+	    dpkg --purge --force-remove-essential \
+		$(dpkg -l | awk '/^i[UF]/{print $2;}')
+	    ;;
+
+	potato ) # Potato isn't a minbase
+	    yes yes |
+	    dpkg --purge --force-remove-essential \
+		pcmcia-cs modconf modutils console-tools \
+		pppconfig ppp sysvinit ||:
+
+	    for pkg in \
+		adduser ae base-config console-data console-tools \
+		console-tools-libs elvis-tiny fbset fdflush fdutils ftp \
+		gettext-base isapnptools libreadline4 lilo locales makedev \
+		mbr modconf pciutils pcmcia-cs ppp pppconfig pump setserial \
+		sysklogd syslinux tasksel telnet xviddetect
+
+	    do  apt-get remove --purge -qq -y \
+		    -oDir::Etc::SourceList=/dev/null \
+		    "$pkg" ||:
+	    done
+	    ;;
+	esac
 
 	dpkg --configure --pending
 	dpkg -l dpkg apt base-files
 
 	[ -f /usr/bin/apt-mark ] && [ "$RELEASE" != jessie ] && {
 	    apt-mark auto -qq $(apt-mark showmanual) ||:
+	}
+
+	[ "$INSTALL" != '' ] && {
+	    [ "$RELEASE" != jessie ] &&
+		apt-get update -y
+	    apt-get install -y $INSTALL
 	}
 
 	: Clean up the ischroot divert.
@@ -191,15 +303,21 @@ cat <<\@
 	rm -f /var/lib/dpkg/*-old
 	rm -rf /var/tmp/* /tmp/*
 	:|find /var/log -type f ! -exec tee {} \;
-	[ ! -x /usr/bin/dselect ] || dselect update
+
+	# Workaround for old "dpkg --clear-avail" bug.
+	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
+
 	: Stage 2 complete for $RELEASE
     } ; docker_save "Stage 2" tmp/stage2
 
+    docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd 'FROM scratch AS stage2'
     docker_cmd 'COPY --from=unpack /opt/chroot /'
     docker_cmd 'ARG RELEASE'
+    docker_cmd 'ARG INSTALL'
     docker_cmd 'RUN set -ex;: $RELEASE; sh /tmp/stage2 && rm -f /tmp/stage2'
+    docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd '# Finally squash all the layers.'
     docker_cmd 'FROM scratch'
@@ -231,9 +349,7 @@ docker_commit() {
     END_LINE=$((BASH_LINENO[0]-1))
     TEXT=$(sed -n < "${BASH_SOURCE[1]}" "${START_LINE},${END_LINE}p")
 
-    echo
     echo "$TEXT" | make_docker_runcmd "$1"
-    echo
     return 0
 }
 
@@ -249,9 +365,7 @@ docker_save() {
     END_LINE=$((BASH_LINENO[0]-1))
     TEXT=$(sed -n < "${BASH_SOURCE[1]}" "${START_LINE},${END_LINE}p")
 
-    echo
     echo "$TEXT" | make_docker_savescript "$1" "$2"
-    echo
     return 0
 }
 
