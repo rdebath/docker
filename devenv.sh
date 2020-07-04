@@ -1,68 +1,86 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1003,SC2001
+#
+# vim: set et ts=8 sw=4 sts=4:
+# ^ DISABLE_ENCODE mode uses $'...' for tabs; some shells don't.
+#
+# This script generates a shell or dockerfile script to install a development
+# environment. Currently for most OS variants it installs a bare copy of the
+# essential build tools; whatever that means for the distribution. For Debian
+# based and derived versions it installs more.
+#
 if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 set -e
 
 host_main() {
     docker_init
+    ENC_OFF=
+    while [ "${1#-}" != "$1" ]
+    do
     case "$1" in
-    # Verbose, include the script in the dockerfile image
-    -v ) VERBOSE=yes ; shift ;;
     # Runnable, output a shell script runnable in the guest
     -r ) RUNNOW=yes ; shift ;;
     # Build, feed the dockerfile into docker build
     -b ) BUILD=yes ; shift ;;
+    # Disable encoding
+    -X ) ENC_OFF=yes ; shift ;;
+    * ) echo >&2 "Unknown Option $1" ; exit 1;;
     esac
+    done
 
     grep -q vsyscall /proc/cmdline ||
-	echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
+        echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
 
     # $1 is the FROM image.
     if [ "$1" != '' ]||[ "$RUNNOW" = yes ]
     then build_one "$1" ; wait
     else
 
-	for base in \
-	    debian:buster ubuntu:latest alpine centos:latest fedora:latest \
-	    opensuse/leap opensuse/tumbleweed archlinux \
-	    \
-	    debian:unstable debian:testing ubuntu:16.04 \
-	    \
-	    debian:stretch debian:jessie debian:squeeze debian:wheezy \
-	    i386/debian:jessie i386/debian:wheezy jfcoz/lenny:latest
+        for base in \
+            debian:buster ubuntu:latest alpine centos:latest fedora:latest \
+            opensuse/leap opensuse/tumbleweed archlinux \
+            \
+            debian:unstable debian:testing ubuntu:16.04 \
+            \
+            debian:stretch debian:jessie debian:squeeze debian:wheezy \
+            i386/debian:jessie i386/debian:wheezy jfcoz/lenny:latest
 
-	do build_one $base
-	done
-	wait
+        do build_one $base
+        done
+        wait
     fi
 }
 
 build_one() {
+    case "$1" in
+    *suse*|amazonlinux ) DISABLE_ENCODE=yes ;;
+    * ) DISABLE_ENCODE="$ENC_OFF" ;;
+    esac
+
     I="$(echo :"$1"- | tr ':/' '--' | tr -d . | \
-	sed -e 's/-latest-/-/' \
-	    -e 's/-debian-/-/' \
-	    -e 's/-rdb-/-/' \
-	    -e 's/^-//' -e 's/-$//' )"
+        sed -e 's/-latest-/-/' \
+            -e 's/-debian-/-/' \
+            -e 's/-rdb-/-/' \
+            -e 's/^-//' -e 's/-$//' )"
 
     [ "$I" = '' ] && I="$1"
     I="rdb/bfdev:$I"
 
     if [ "$BUILD" = yes ]
     then
-	echo "# Build $1 -> $I"
-	(
-	    NEWID=$(guest_script "$1" | docker build -q - -t "$I")
-	    echo "# Done $1 -> $I = $NEWID"
-	) &
+        echo "# Build $1 -> $I"
+        (
+            NEWID=$(guest_script "$1" | docker build -q - -t "$I")
+            echo "# Done $1 -> $I = $NEWID"
+        ) &
 
-	cnt=$((cnt + 1))
-	if [ "$cnt" -gt 3 ]
-	then wait -n && cnt=$((cnt - 1)) ;:
-	fi
+        cnt=$((cnt + 1))
+        if [ "$cnt" -gt 3 ]
+        then wait -n && cnt=$((cnt - 1)) ;:
+        fi
     else
-	echo "# Script to build $I from $1"
-	guest_script "$1"
-	echo
+        echo "# Script to build $I from $1"
+        guest_script "$1"
     fi
 }
 
@@ -71,15 +89,6 @@ build_one() {
 guest_script() {
 
     docker_cmd FROM "$1"
-
-    case "$1" in
-    *suse* )
-	docker_cmd RUN \
-	    '[ -e /bin/gzip ] || { [ -e /usr/bin/zypper ] && { ' \
-	    'echo >&2 "WARNING: gzip not installed in SUSE!" ; ' \
-	    'zypper install -y gzip; zypper -q clean -a; } ; }'
-	;;
-    esac
 
 docker_start || {
 #!/bin/sh -
@@ -95,11 +104,11 @@ install_os() {
     if [ -f /etc/os-release ]
     then . /etc/os-release
     else
-	[ -f /etc/debian_version ] && {
-	    ID=debian
-	    VERSION_ID=$(cat /etc/debian_version)
-	    PRETTY_NAME="${PRETTY_NAME:-$ID $VERSION_ID}"
-	}
+        [ -f /etc/debian_version ] && {
+            ID=debian
+            VERSION_ID=$(cat /etc/debian_version)
+            PRETTY_NAME="${PRETTY_NAME:-$ID $VERSION_ID}"
+        }
     fi
 
     case "$ID" in
@@ -110,6 +119,8 @@ install_os() {
     ubuntu ) install_apt; return ;;
     opensuse*) install_opensuse; return ;;
     arch )   install_arch; return ;;
+    amzn )   install_amzn; return ;;
+    clear-linux-os ) install_clear_linux_os; return ;;
     esac
 
     echo >&2 "OS not supported: $PRETTY_NAME"
@@ -118,10 +129,17 @@ install_os() {
 install_alpine() {
     echo >&2 "Installing build-base with apk for $PRETTY_NAME"
     apk add --no-cache -t build-packages \
-	build-base bash bison flex lua gmp-dev openssl-dev cmake gcc-gnat
+        build-base bash bison flex lua gmp-dev openssl-dev cmake gcc-gnat
 }
 
 install_centos() {
+    echo >&2 "Installing 'Development Tools' with yum for $PRETTY_NAME"
+    yum groupinstall -y "Development Tools"
+    yum install -y which gmp-devel openssl-devel cmake
+    yum clean all
+}
+
+install_amzn() {
     echo >&2 "Installing 'Development Tools' with yum for $PRETTY_NAME"
     yum groupinstall -y "Development Tools"
     yum install -y which gmp-devel openssl-devel cmake
@@ -142,8 +160,14 @@ install_opensuse() {
 }
 
 install_arch() {
+    echo >&2 "Installing packages with pacman for $PRETTY_NAME"
     pacman -Syy --noconfirm --needed base-devel
     find /var/cache/pacman/pkg/ -type f -delete
+}
+
+install_clear_linux_os() {
+    echo >&2 "Installing packages with swupd for $PRETTY_NAME"
+    swupd bundle-add  dev-utils
 }
 
 install_debian() {
@@ -194,6 +218,7 @@ deb http://archive.debian.org/debian-security/ lenny/updates contrib main non-fr
 }
 
 install_apt() {
+    set -e
     echo >&2 "Installing build-essential and more with apt for $PRETTY_NAME"
 
     # Only install what we ask for.
@@ -208,13 +233,15 @@ install_apt() {
     apt-get update || exit
 
     # Howto update the keyring ...
-    KV=$(dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}')
-    apt-get install debian-archive-keyring ||:
-    [ "$KV" != "$(dpkg --list debian-archive-keyring | awk '/^ii/{print $3;}')" ] &&
-	apt-get update
+    KR=debian-archive-keyring
+    KV=$(dpkg --list $KR 2>/dev/null | awk '/^ii/{print $3;}')
+    apt-get install $KR 2>/dev/null && {
+    [ "$KV" != "$(dpkg --list $KR 2>/dev/null | awk '/^ii/{print $3;}')" ] &&
+        apt-get update
+    }
 
     # Make sure we're up to date.
-    apt-get dist-upgrade -y
+    apt-get upgrade -y
 
     PKGLIST="
     build-essential
@@ -222,7 +249,7 @@ install_apt() {
     autoconf automake beef bison bzip2 ccache debhelper flex g++-multilib
     gawk gcc-multilib gdc gnu-lightning ksh libgmp-dev libgmp3-dev
     liblua5.2-dev libluajit-5.1-dev libnetpbm10-dev libpng++-dev
-    libssl-dev libtcc-dev libtool locales lua-bitop lua-bitop-dev lua5.2
+    libssl-dev libtcc-dev lua-bitop lua-bitop-dev lua5.2
     luajit mawk nasm nickle pkgconf python python-dev python3 rsync ruby
     rustc tcc tcl-dev valac yasm
 
@@ -233,26 +260,27 @@ install_apt() {
     "
 
     for PKG in \
-	cmake=3.5.2-1 julia=0.3.2-2 golang=2:1.0.2-1.1 git=1:1.6
+        cmake=3.5.2-1 julia=0.3.2-2 golang=2:1.0.2-1.1 git=1:1.6 \
+        libtool=1.4 locales=2.2
     do
-	instver "${PKG%%=*}" "${PKG#*=}" &&
-	    PKGLIST="$PKGLIST ${PKG%%=*}"
+        instver "${PKG%%=*}" "${PKG#*=}" &&
+            PKGLIST="$PKGLIST ${PKG%%=*}"
     done
 
-    FOUND=$(apt-cache show $PKGLIST | sed -n 's/^Package: //p' 2>/dev/null)
+    FOUND=$(apt-cache show $PKGLIST 2>/dev/null | sed -n 's/^Package: //p' 2>/dev/null)
 
-    if ! apt-mark auto debian-archive-keyring 2>/dev/null
+    if ! apt-mark auto gzip 2>/dev/null
     then
-	# Simple way ...
-	apt-get install -y $FOUND
+        # Simple way ...
+        apt-get install -y $FOUND
 
     else
-	apt-get install -y equivs
+        apt-get install -y equivs
 
-	mkdir /tmp/build
-	cd /tmp/build
+        mkdir /tmp/build
+        cd /tmp/build
 
-	cat > control <<@
+        cat > control <<@
 Section: misc
 Priority: optional
 Standards-Version: 3.9.2
@@ -264,17 +292,17 @@ Description: A list of build tools
  .
  .
 @
-	equivs-build control
-	dpkg --unpack packagelist-local*.deb
-	apt-get install -f -y
-	cd
-	rm -rf /tmp/build
-	apt-get remove --purge -y equivs
-	apt-get autoremove --purge -y
+        equivs-build control
+        dpkg --unpack packagelist-local*.deb
+        apt-get install -f -y
+        cd
+        rm -rf /tmp/build
+        apt-get remove --purge -y equivs
+        apt-get autoremove --purge -y
     fi
 
     [ -d /usr/lib/ccache ] &&
-	echo "NOTE: export PATH=/usr/lib/ccache:$PATH"
+        echo "NOTE: export PATH=/usr/lib/ccache:$PATH"
 
     clean_apt
     return 0
@@ -296,14 +324,14 @@ instver() {
     [ "$minversion" = "" ] && minversion="0"
     V=0
     for version in $(apt-cache policy "$pkgname" 2>/dev/null |
-		    awk '/^  Candidate:/ {print $2;}'); do
-	if dpkg --compare-versions "$version" ge "$minversion"; then
-	    if dpkg --compare-versions "$version" gt "$V"; then
-		V=$version
-	    fi
-	else
-	    echo "Found $version, older than $minversion"
-	fi
+                    awk '/^  Candidate:/ {print $2;}'); do
+        if dpkg --compare-versions "$version" ge "$minversion"; then
+            if dpkg --compare-versions "$version" gt "$V"; then
+                V=$version
+            fi
+        else
+            echo "Found $version, older than $minversion"
+        fi
     done
     [ "$V" = "0" ] && return 1
     return 0
@@ -322,19 +350,19 @@ main() {
 
 add_userid() {
     [ -x /usr/sbin/useradd ] && {
-	useradd user --uid 1000 --home /home/user
-	return 0
+        useradd user -u 1000 -d /home/user
+        return 0
     }
     [ -f /etc/alpine-release ] && {
-	adduser user --uid 1000 --home /home/user -D
-	return 0
+        adduser user --uid 1000 --home /home/user -D
+        return 0
     }
     [ -x /usr/sbin/adduser ] && {
-	adduser user --uid 1000 --home /home/user
-	return 0
+        adduser user --uid 1000 --home /home/user
+        return 0
     }
 
-    useradd user --uid 1000 --home /home/user
+    useradd user -u 1000 -d /home/user
 }
 
 main "$@"
@@ -349,16 +377,13 @@ main "$@"
 ################################################################################
 # Dockerfile building scriptlets
 #
-docker_init() { RUNNOW= ; VERBOSE= ; BUILD= ; }
+docker_init() { RUNNOW= ; BUILD= ; DISABLE_ENCODE= ;}
 docker_start() { START_LINE=$((BASH_LINENO[0]+1)) ; }
 docker_commit() {
     END_LINE=$((BASH_LINENO[0]-1))
     TEXT=$(sed -n < "${BASH_SOURCE[1]}" "${START_LINE},${END_LINE}p")
 
-    test "$VERBOSE" && echo
-    test "$VERBOSE" && echo "$TEXT" | sed 's/^/# /'
     echo "$TEXT" | make_docker_runcmd "$1"
-    test "$VERBOSE" && echo
     return 0
 }
 
@@ -381,21 +406,29 @@ docker_cmd() {
 }
 
 make_docker_runcmd() {
+    local sn="/tmp/install"
+    local line
+
     [ "$RUNNOW" = yes ] && {
         echo ; echo '('
         cat -
         echo ')' ; echo
         return 0
     }
+    [ "$DISABLE_ENCODE" = yes ] && {
+        # line=$(cat); echo "RUN echo ${line@Q} >$sn;sh $sn;rm -f $sn"
+        echo "RUN ${1:+: $1 ;}(\\"
+        while IFS= read -r line
+        do echo echo "${line@Q}" \;\\
+        done
+        echo ")>$sn;sh $sn;rm -f $sn"
+        return 0;
+    }
     # Limit per "run" is library exec arg length (approx 128k)
     # Encode the script
-    local sn="'/tmp/install'"
-    echo '# grep ^_<<\# | base64 -di | gzip -d'
     echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'
     gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
-    echo ')|base64 -d|gzip -d >'"$sn;sh $sn;rm -f $sn"
-    echo '#'
-    echo
+    echo ')|base64 -d|gzip -d>'"$sn;sh $sn;rm -f $sn"
 }
 
 ################################################################################
