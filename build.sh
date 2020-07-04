@@ -6,18 +6,18 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 #########################################################
 # Dockerfile script command disposition                 #
 #                                                       #
-# FROM        - Only first                              #
+# FROM        - Keep first, rest after                  #
 # ENV         - Probably needed                         #
 # ARG         - Probably needed                         #
-# WORKDIR     - Only first                              #
+# WORKDIR     - Keep first, rest after                  #
 # LABEL       - Not significant                         #
 #                                                       #
-# RUN         - Embed if needed                         #
-# USER        - Will break installer                    #
-# SHELL       - Will break installer                    #
+# RUN         - Place after script                      #
+# USER        - Will break install script (place after) #
+# SHELL       - Will break install script (place after) #
 #                                                       #
-# ADD         - Run added script (Two layers)           #
-# COPY        - Run added script (Two layers)           #
+# ADD         - Place after script (Two layers)         #
+# COPY        - Place after script (Two layers)         #
 #                                                       #
 # CMD         - Only used by container                  #
 # EXPOSE      - Only used by container                  #
