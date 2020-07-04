@@ -151,7 +151,7 @@ build_image() {
 	return 0
     }
 
-    echo "Building $RELEASE $ARCH"
+    echo "Building $RELEASE${NARCH:+-$ARCH}"
     (   set -ex
 	docker build $Q -t rdb/$DISTRO:$RELEASE${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
@@ -173,7 +173,7 @@ build_image() {
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
 	    -< "$DOCKERFILE"
     done
-    echo "Done $RELEASE $ARCH"
+    echo "Done $RELEASE${NARCH:+-$ARCH}"
 }
 
 ubuntu_versions() {

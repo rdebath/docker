@@ -126,47 +126,53 @@ _ JEmSJEmSJEmSJEmSJEmSJMmfV/4NQR5c0wBQAAA=;\
 
 #--------------------------------------------------------------------------#
 RUN : Stage 2 ;set -eu; _() { echo "$@";};(\
-_ H4sIAAAAAAACA61XbW8bNxL+LP2KiWLETVpqLbe99pSLi/TiHgIEbhHn0A9pWlAkd8WKS7Ik;\
-_ V5YQ5b93hly92al7PVSAltwlh/P2zAsHUSVgajUcqJV3IcGLy29fPr/65bvX31+9ubx68cw6;\
-_ q21SgYukl2o4HExBW50gulYl3aoIXcSHjmIenEuQHEgd+cwo6LzkScXxcKBreAtsBVWcaVtl;\
-_ esbzhy6GKn/b0r8bDtJcWZB+0TCJLFEmxowT3OAYlOWtwgmX8i7xcAD0MxZYhLySQqc+tq/W;\
-_ WZM3cx3B+aSdhVlQfBGzXqhhTNyYCKqZQjfrbOqqlqMsWiyGAxINRahdEIp1NvJaMe2AmSw0;\
-_ XFRSLSvbGQPnF48m8OhRkSsqCUyjseG0+vnhv1xdX8CtM6pYPXz7M7x7AlV1Cj/1+uCvUklU;\
-_ dHp+jEXdjGUlnViowLhPLHqlZOdhs5miYijADNWMKXB/OEehoxLOSobqNQp3Fw5KzB2Mfnz+;\
-_ +url1X+mcLki/yaeugh1cC3ccwTa7+SbEVw8Oke+gkcFo5PXl68un19fjtCMw8GvKkat4HHh;\
-_ NIXrdUyqlWAU2jMCB4RQ/Aw667lYADLmDdcW3VCMKbiFoFq3RFZpXA7p7d+TbB0hlVdWot+X;\
-_ PFSCi7mq0DIVD2KOKIpVLIx/eTJGdXbS6GYOiVCwdf86LjM+x+O/gxuj845Zvi7aIMjbIwa+;\
-_ C426c35/Tnbs/7w7c92TTOH7+WfArYRar3YaHh6n79Mj72bCBdUrcksTsgtCIaJKHN0XFFiM;\
-_ Y/Sqsklj1BJjPJcih+gIri0PC+Ad5gr2229w8snuW5y7m5bbjpvH+90Npija3ONgp/z6eEtJ;\
-_ N3c+YzZKrPNN4HK/+PQpanHDQ1rDY3gIP+aZjvY0ESK1nSGSP2JvjMgBN5GzLmnMDnlKW8Fo;\
-_ HFxn5XneY5bt5AzweU4PtF3bYoaZu+RN1+QdrZPlDC90mdAXg0mAjJ2cM/GP+GO6Sh3qgsYm;\
-_ 3ni6rXUDmODkP9ncRfwcZYtBVM4lGtwSnVFbQbavaC++e8k8QQRcR5MJtHSYZOLdW9kvbSwH;\
-_ q2VbHsyKLlARqJMHNHlSq1TMQuRNwExXXrUPrks05hMYD17bZveK+UUoz9McFsY1slhyb1ia;\
-_ pnZCYy8zTfey0ouNk39s6bJo5+PPaaEReb2Rs7a8+7bJX7S0kzKJ4qstJVabRa2NygvmJqiY;\
-_ Z72aN1/Sixfcn42/2k+/3lJjIpFGW/UFrUXdiE8/ZZPxOftSTM6yFl2csbPxhOEGh9ZJhNpM;\
-_ G+c3YKKrwWRTADrRrPBpmZzR4HOYtZLLFkHaKhY7n4t2RlQKLGm7hrZLCSy3DixWDUSJRbfg;\
-_ P0eHw0QR45wJozE8M6FH8GNp8s53hged1oQorNsJP8VEKaMfWSK8el+ovO+BhzNHJaEGv05z;\
-_ hE8ZyPJB6ajCF+j2pgAxKJJ3hkEQ4toKiEXR2ElHian4PQkvu9ZDUgY1yHRosgK6pW7pv0Xy;\
-_ zectrOqYGRxEtuTeq7BRsllvapSBwnyX8qnA73IW1hfKVjMFRZsuKDm+J9OWHMT22Y2kO/mk;\
-_ 7DWwAX6zoPqu3/73u3fVex+weYKT86cfTh8fyOfJ6S6nnh/K9KO5Z40C0n/zVwXyohWaM5Gz;\
-_ SnbNLt8ch/sdT+4LYGkliC8yAmKNZTknICmx5QvA1VH+uSepHKag/IVRZIAySx0LZusZ9aG1;\
-_ rE0X5zgWWSmf5BRymFOwufTWl4NvRZtxkBtFChK+UNiGlciYhZ0ddul2byLS+sAGhDwUBjXc;\
-_ WnMHTJwgq24FicdFVGaL0NVSS6mSEqm3GKJ5V39uVy0seGydz6WdzL3QYTq9TGI6vXYdevQV;\
-_ wvXZvoXcbhydoAtGB32As2qHqIGKXAx3nekOysQVGwNMstu1vkdF4YrzKM1FpMT2vN43yrt6;\
-_ /A67V2zdD3q6B8+gb+ny2vu/VtSL/B8yw9HJy6vrN89fvcqHnp4eHXgPz1ID7yv5fftOdt7y;\
-_ KEyn8G/sOy3SUf+1v7SUe8b/dVEpnEN7ZL/jC8mfXGV6gPzxLaXIbBAX2CjnHi33VNi1Yk+0;\
-_ Rqlvm4Mgxmg/pnkkRW3/DGb7MzLFHkn4hjeMJRai4aBXkq4iuUf0aUxIw5vI2WTfnzG8k1hF;\
-_ 7Uu/nzpLDNRyfXnCnJFlKfRrqfUVXnjygOpuamxkeiqHMqS1V1DDA7qlKoEhp+D9B/iJ0ig2;\
-_ bi4seKD+IGcpPBtGd0UfAVacMWHuwZEvJcYwBi2iarMpl6CLi1vyZnq6zWZPXOc7zzmmt9Yb;\
-_ DPjMdIvT4e8mpOFaTA8AAA==;\
+_ H4sIAAAAAAACA61WbXMTNxD+bP+KbcgkpCBfHKC0oaRDS+gw0wmdQIcPNDCytHdWrZOEpHPs;\
+_ Ifz3rqSznYRAS6ee8el1te/P7iBgBIaL4QAXzvoIT49/fv7k5N2z0xcnr45Pnj421igT0XMR;\
+_ 1RyHw8EhKKMiBNtiVC0G6AJ9VBBTb22EaEGqwCcaoXOSRwyj4UDV8AbYAqowUabK9IznjS74;\
+_ Ku+t6M+GgzhFA9LNGiaJJcnEmLaCaxo9Gt4iTbiUnxIPB5B+2gALkE+i7/Cme7XKmryaqgDW;\
+_ RWUNTDzyWch6kYYhcq0DYHMI3aQzsataTrIoMRsOkmgkQm29QNaZwGtkygLTWWg4qiTOK9Np;\
+_ DQdHO2PY2SlyBZTAFBkbdqu3t360dX0E196oQnXrzVs4+xaqahf+7PWhX4VRVOn1/BmJuhnJ;\
+_ SloxQ8+4iyw4RNk5uLg4JMVIgAmpGaLn7vKchA4orJGM1GuQbhcOKKYWtl4/OT15fvLrIRwv;\
+_ kn8jj12A2tsWvvAE2W/7py042jkgvoIHhK3t0+Pfjp+8PN4iMw4Hf2EICmGvcDqEl8sQsZWg;\
+_ kewZgAOFULgLnXFczIAY84YrQ24oxhTcgMfWzolVHJVHevv3JCtHSHRoJPl9zn0luJhiRZap;\
+_ uBdTiqJQhcL43bcjUmctjWqmEFMUrNy/DPMcn6PR/8GNpfeusjwt2lCQt1cYuM43+Mn7/TvZ;\
+_ sf/6dua6ITmEF9O7wI2EWi3WGl5+Tn1Jj3ybCeuxV+SaJskuFAqBVOLkPo9gKI/Jq2iioqxN;\
+_ jOndlDmJLoVry/0MeEdYwd6/h+3b670wtectNx3Xe5vbDUFUutzHwVr55dUrBW4+2SY0iqxz;\
+_ jedyc/joEWlxzn1cwh7cgtd5poLZjSkilZlQJN9gb8rIAdeBsy4qQoc8TVdBKxpsZ+RBvqPn;\
+_ 7Xgf6HuQPmS7tiWEmdrodNfkG62V5Q0nVJmkHU0gkIwdrdXhc/wJrmJHupCxE2963dSqAQI4;\
+_ +QOb2kDbQbaUROXdRENXgtW4EmS1JHvx9SLzBOHpnEwmyNJ+nInXq3JfmlAexnlbPsyIzqci;\
+_ UEcHZPKIi1jMksgbT0hXlsp528U05hcY906ZZr0kfBHoeJzCTNtGFktuDJumsR2nsZc5TTey;\
+_ poUJ4+9WdFm0g9G9dNCIfN7ISVvWrm3yjpJmXCZBPFxRUrWZ1UpjPtDnHkOe9WqeP0gLJ7jb;\
+_ Hz3cTL9fUROQSK0M3k9nQTXizh02Hh2wB2K8n7XowoTtj8aMLliyTkxRm2nD9Bx0sDXobAog;\
+_ J+oFfQ2TkzS4nGat5LKlIG2Rhc7lop0jKnoWlVlC28UIhhsLhqoGRYkht9A/Z4cloAhhyoRW;\
+_ lJ6Z0FHwU2ly1nWaexWXKaKobkfaCjFBRj+ymOLVuULlXB94NLOpJNTglnFK4VOGZHmPKqC/;\
+_ T25vSiB6TPJOKAl8WBoBoSgaOmkTMBW/R+Fk1zqIqEmDTEcmK0E3V236ryL5/F4LizpkBpcy;\
+_ W3Ln0F+gbJYXNcmQ0nwN+anArzGL6ktCqwlC0abzKEdfQNqCQWyDbkm67dvlroYL4OezVN/V;\
+_ mz+enVUfnKfmCbYPHn3c3bskn0tOtxl6fi/TG7FnSQKm/8XXCuREKxRnIqNKds0Gby777Vry;\
+_ r4tfaSMST2ICiS2V5Aw+UlK754HjFez5PKCwlAOZFPVchRKh9SR1nbWsdRemNBbJbkQPaiWd;\
+_ cUW8a7mlLeS2MKUEnyE1XdBOfK9/D6ouxRExI5mTbdYhRhN6pltA5GEWsFitj7fFXEmJEUXs;\
+_ bUCxedX2W9u02lodGlx7doCBi+G6Q1yHVKKkAk1gtzrre0UC82LIBDeBKKlNrjcN67ounlEX;\
+_ SS30pd7qm8fQt1b57MPXFdfSHHzMTfAv1IoZqp6pJdn08aX1/k+9exHFt1dUudqj/0N331f6;\
+_ zzfuL3PzeUCx1jpNvspxujLO8G8XIsrw1QwAAA==;\
 )|base64 -d|gzip -d>tmp/stage2
+RUN : Extras and Cleanup ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA2VRy0oDMRRdT77i2EqFYhrdjiiI7UIoLqzgQl2kyZ12bJpMk0x1sP67malV;\
+_ 0EDI4zxycm/Wx9i9WeOkhrQapQ1RGpP2DTQVpSWNSqqVXFBg2RN6x7d3s4fr6bSHo0ucnOAF;\
+_ gwE+WIY0Wvh+Mp1czyYd/EohlNRRWJbJKvIFRdSVlpHAm73ocH14mTc4vMGyT8ayHDeGpIUp;\
+_ QwynUFItqcu6TBfONyP2z3qzAectn6tWWlfgblz6PJ9EleczV3tF0wRfCk1bYWtjfj06Bct0;\
+_ tVokk/bkudzKMlH8GryAoKhEYrdzpJwtRlqcncs6ZaG12xJfkbdkwg9/K70w5Vy0lmLIndF7;\
+_ yH9jcV2JIfZL+u4uVV1/q1zKEJuKUOAInN5JIRLh4xPPF6k0fTw6v5Le1UlROI/kjd7/6D3M;\
+_ 68Wo7V9yeYeogxfz0godyJCKqUO7HUgtHa6u/uTt9HJuiH0BGEEyKisCAAA=;\
+)|base64 -d|gzip -d>tmp/stage3
 
 #--------------------------------------------------------------------------#
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
 ARG RELEASE
-ARG INSTALL
 RUN set -ex;: $RELEASE; sh /tmp/stage2 && rm -f /tmp/stage2
+
+ARG INSTALL
+RUN sh /tmp/stage3 && rm -f /tmp/stage3
 
 #--------------------------------------------------------------------------#
 # Finally squash all the layers.

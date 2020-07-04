@@ -258,19 +258,16 @@ cat <<\@
 	potato ) # Potato isn't a minbase
 	    yes yes |
 	    dpkg --purge --force-remove-essential \
-		pcmcia-cs modconf modutils console-tools \
-		pppconfig ppp sysvinit ||:
+		pcmcia-cs modconf modutils pppconfig ppp console-tools sysvinit ||:
 
 	    for pkg in \
-		adduser ae base-config console-data console-tools \
-		console-tools-libs elvis-tiny fbset fdflush fdutils ftp \
-		gettext-base isapnptools libreadline4 lilo locales makedev \
-		mbr modconf pciutils pcmcia-cs ppp pppconfig pump setserial \
-		sysklogd syslinux tasksel telnet xviddetect
+		adduser ae base-config console-data console-tools-libs \
+		elvis-tiny fbset fdflush fdutils ftp gettext-base \
+		isapnptools libreadline4 lilo locales makedev mbr \
+		pciutils pump setserial sysklogd syslinux tasksel \
+		telnet xviddetect
 
-	    do  apt-get remove --purge -qq -y \
-		    -oDir::Etc::SourceList=/dev/null \
-		    "$pkg" ||:
+	    do  dpkg --purge "$pkg"
 	    done
 	    ;;
 	esac
@@ -282,18 +279,23 @@ cat <<\@
 	    apt-mark auto -qq $(apt-mark showmanual) ||:
 	}
 
-	[ "$INSTALL" != '' ] && {
-	    [ "$RELEASE" != jessie ] &&
-		apt-get update -y
-	    apt-get install -y $INSTALL
-	}
-
 	: Clean up the ischroot divert.
 	if [ -x /sbin/init -a -x /usr/bin/ischroot ]
 	then
 	    rm -f /usr/bin/ischroot
 	    dpkg-divert --local --rename --remove /usr/bin/ischroot
 	fi
+
+	: Stage 2 complete for $RELEASE
+    } ; docker_save "Stage 2" tmp/stage2
+
+    docker_start || {
+	# Download and install any defined packages
+	[ "$INSTALL" != '' ] && {
+	    [ "$RELEASE" != jessie ] &&
+		apt-get update -y
+	    apt-get install -y $INSTALL
+	}
 
 	: Clean lists, cache and history.
 	apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
@@ -306,17 +308,17 @@ cat <<\@
 
 	# Workaround for old "dpkg --clear-avail" bug.
 	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
-
-	: Stage 2 complete for $RELEASE
-    } ; docker_save "Stage 2" tmp/stage2
+    } ; docker_save "Extras and Cleanup" tmp/stage3
 
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd 'FROM scratch AS stage2'
     docker_cmd 'COPY --from=unpack /opt/chroot /'
     docker_cmd 'ARG RELEASE'
-    docker_cmd 'ARG INSTALL'
     docker_cmd 'RUN set -ex;: $RELEASE; sh /tmp/stage2 && rm -f /tmp/stage2'
+    docker_cmd
+    docker_cmd 'ARG INSTALL'
+    docker_cmd 'RUN sh /tmp/stage3 && rm -f /tmp/stage3'
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd '# Finally squash all the layers.'
@@ -326,6 +328,9 @@ cat <<\@
     docker_cmd 'CMD ["bash"]'
 }
 
+################################################################################
+# Dockerfile building scriptlets
+#
 base64_extras() {
 
     tar c \
@@ -340,9 +345,6 @@ base64_extras() {
     }
 }
 
-################################################################################
-# Dockerfile building scriptlets
-#
 docker_cmd() { echo "$@" ; return 0; }
 docker_start() { START_LINE=$((BASH_LINENO[0]+1)) ; }
 docker_commit() {
