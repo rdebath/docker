@@ -292,8 +292,7 @@ cat <<\@
     docker_start || {
 	# Download and install any defined packages
 	[ "$INSTALL" != '' ] && {
-	    [ "$RELEASE" != jessie ] &&
-		apt-get update -y
+	    apt-get update -y
 	    apt-get install -y $INSTALL
 	}
 
