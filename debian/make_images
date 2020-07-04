@@ -137,7 +137,7 @@ build_image() {
 	;;
     esac
 
-    local DOCKERFILE=Dockerfile
+    local DOCKERFILE="$(dirname "$0")/Dockerfile"
     local NARCH="$ARCH"; [ "$NARCH" = amd64 ] && NARCH=
 
     [ "$LISTCMD" != '' ] && {
