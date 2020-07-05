@@ -15,17 +15,23 @@ set -e
 host_main() {
     docker_init
     ENC_OFF=
+    REPOPREFIX=
+    DOPUSH=
     while [ "${1#-}" != "$1" ]
     do
-    case "$1" in
-    # Runnable, output a shell script runnable in the guest
-    -r ) RUNNOW=yes ; shift ;;
-    # Build, feed the dockerfile into docker build
-    -b ) BUILD=yes ; shift ;;
-    # Disable encoding
-    -X ) ENC_OFF=yes ; shift ;;
-    * ) echo >&2 "Unknown Option $1" ; exit 1;;
-    esac
+        case "$1" in
+        # Runnable, output a shell script runnable in the guest
+        -r ) RUNNOW=yes ; shift ;;
+        # Build, feed the dockerfile into docker build
+        -b ) BUILD=yes ; shift ;;
+        # Disable encoding
+        -X ) ENC_OFF=yes ; shift ;;
+
+        -R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
+        -P ) DOPUSH=yes; shift;;
+
+        * ) echo >&2 "Unknown Option $1" ; exit 1;;
+        esac
     done
 
     grep -q vsyscall /proc/cmdline ||
@@ -37,40 +43,66 @@ host_main() {
     else
 
         for base in \
-            debian:buster ubuntu:latest alpine centos:latest fedora:latest \
-            opensuse/leap opensuse/tumbleweed archlinux \
-            \
-            debian:unstable debian:testing ubuntu:16.04 \
-            \
-            debian:stretch debian:jessie debian:squeeze debian:wheezy \
-            i386/debian:jessie i386/debian:wheezy jfcoz/lenny:latest
-
+            debian ubuntu alpine centos fedora opensuse/leap archlinux \
+            localhost/debian:unstable-i386 localhost/debian:unstable \
+            localhost/debian:bullseye localhost/debian:bullseye-i386 \
+            localhost/debian:buster-i386 localhost/debian:jessie-i386 \
+            localhost/debian:jessie localhost/debian:buster \
+            localhost/debian:wheezy-i386 localhost/debian:squeeze-i386 \
+            localhost/debian:wheezy localhost/debian:stretch-i386 \
+            localhost/debian:stretch localhost/debian:squeeze \
+            localhost/debian:lenny-i386 localhost/debian:lenny
         do build_one $base
         done
+
+        ENC_OFF=yes
+        for base in \
+            localhost/debian:etch-i386 localhost/debian:etch \
+            localhost/debian:sarge localhost/debian:woody \
+            localhost/debian:potato
+        do build_one $base
+        done
+
         wait
     fi
 }
 
 build_one() {
     case "$1" in
+    "" )
+        DISABLE_ENCODE="$ENC_OFF"
+        [ "$RUNNOW" = yes ] && echo '#!/bin/sh -'
+        guest_script
+        return 0
+        ;;
+
     *suse*|amazonlinux ) DISABLE_ENCODE=yes ;;
     * ) DISABLE_ENCODE="$ENC_OFF" ;;
     esac
 
+    local I
     I="$(echo :"$1"- | tr ':/' '--' | tr -d . | \
         sed -e 's/-latest-/-/' \
             -e 's/-debian-/-/' \
             -e 's/-rdb-/-/' \
+            -e 's/-localhost-/-/' \
             -e 's/^-//' -e 's/-$//' )"
 
     [ "$I" = '' ] && I="$1"
-    I="rdb/bfdev:$I"
+    I="${REPOPREFIX}devel:$I"
 
     if [ "$BUILD" = yes ]
     then
         echo "# Build $1 -> $I"
         (
             NEWID=$(guest_script "$1" | docker build -q - -t "$I")
+
+            echo "# Push -> $I"
+            [ "$DOPUSH" = yes ] && {
+                lockfile /tmp/pushlock.lock
+                docker push "$I" ||:
+                rm -f /tmp/pushlock.lock
+            }
             echo "# Done $1 -> $I = $NEWID"
         ) &
 
@@ -88,10 +120,9 @@ build_one() {
 # shellcheck disable=SC1091,SC2086
 guest_script() {
 
-    docker_cmd FROM "$1"
+    [ -n "$1" ] && docker_cmd FROM "$1"
 
 docker_start || {
-#!/bin/sh -
 
 main() {
     install_os
@@ -342,7 +373,6 @@ main "$@"
 } ; docker_commit "Install devenv"
 
 docker_start || {
-#!/bin/sh -
 
 main() {
     add_userid
