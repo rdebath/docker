@@ -25,6 +25,17 @@ do
 	sed -e 's/^\(ARG RELEASE\>\).*/\1='"$variant"'/' \
 	    < ../Dockerfile > Dockerfile
 
+	case "$variant" in
+	potato )
+	    sed -i -e 's@^\(ARG DEBOPTIONS\>\).*@\1=--no-check-gpg@' \
+		Dockerfile
+	    ;;
+	wheezy )
+	    sed -i -e 's@^\(ARG MIRROR\>\).*@\1=http://archive.debian.org/debian@' \
+		Dockerfile
+	    ;;
+	esac
+
 	git add -A
 	git commit -m "Update build tree for $variant"
     )
