@@ -315,7 +315,7 @@ cat <<\@
 	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
 
 	# Workaround for Jessie apt-get very slow issue
-	[ "$RELEASE" = jessie ] &&
+	[ "$RELEASE" != jessie ] ||
 	    echo >>/root/.bashrc ulimit -n 1024
 
     } ; docker_save "Extras and Cleanup" tmp/stage3
