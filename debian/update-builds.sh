@@ -11,7 +11,7 @@ T="$(pwd)/temptree"
 
 for variant in \
     potato woody sarge etch lenny squeeze wheezy \
-    jessie stretch buster bullseye unstable stable
+    jessie stretch buster bullseye unstable
 do
     b="build-$variant"
     git worktree add "$T" "$NULL"
