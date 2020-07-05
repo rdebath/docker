@@ -25,6 +25,8 @@ do
 	sed -e 's/^\(ARG RELEASE\>\).*/\1='"$variant"'/' \
 	    < ../Dockerfile > Dockerfile
 
+	cp -p ../README.txt .
+
 	case "$variant" in
 	potato )
 	    sed -i -e 's@^\(ARG DEBOPTIONS\>\).*@\1=--no-check-gpg@' \
