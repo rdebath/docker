@@ -38,6 +38,17 @@ do
 	    ;;
 	esac
 
+	ID=$(docker image inspect --format '{{.Id}}' rdebath/debian:$variant 2>/dev/null ||:)
+	if [ "$ID" = '' ]
+	then
+	    docker build -t rdebath/debian:$variant -<Dockerfile
+	    ID=$(docker image inspect --format '{{.Id}}' rdebath/debian:$variant)
+	fi
+
+	docker run --rm -it -v "$(pwd)":/home/user \
+	    rdebath/debian:$variant \
+	    bash -c 'apt-get update && apt-get -y dist-upgrade && dpkg -l > /home/user/packages.txt'
+
 	git add -A
 	git commit -m "Update build tree for $variant"
     )
