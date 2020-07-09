@@ -9,13 +9,15 @@ committer nobody <> 1 +0000
 
 T="$(pwd)/temptree"
 
+# potato doesn't build on "Docker hub".
+
 [ "$#" = 0 ] && set -- \
-    potato woody sarge etch lenny squeeze wheezy \
+    woody sarge etch lenny squeeze wheezy \
     jessie stretch buster bullseye unstable latest
 
 for variant
 do
-    b="build-$variant"
+    b="build-debian-$variant"
     git worktree add "$T" "$NULL"
 
     (
