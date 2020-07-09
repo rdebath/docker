@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1003,SC2001
-#
-# vim: set et ts=8 sw=4 sts=4:
-# ^ DISABLE_ENCODE mode uses $'...' for tabs; some shells don't.
+# shellcheck disable=SC1003,SC2001,SC2016
 #
 # This script generates a shell or dockerfile script to install a development
 # environment. Currently for most OS variants it installs a bare copy of the
@@ -19,62 +16,62 @@ host_main() {
     DOPUSH=
     while [ "${1#-}" != "$1" ]
     do
-        case "$1" in
-        # Runnable, output a shell script runnable in the guest
-        -r ) RUNNOW=yes ; shift ;;
-        # Build, feed the dockerfile into docker build
-        -b ) BUILD=yes ; shift ;;
-        # Disable encoding
-        -X ) ENC_OFF=yes ; shift ;;
+	case "$1" in
+	# Runnable, output a shell script runnable in the guest
+	-r ) RUNNOW=yes ; shift ;;
+	# Build, feed the dockerfile into docker build
+	-b ) BUILD=yes ; shift ;;
+	# Disable encoding
+	-X ) ENC_OFF=yes ; shift ;;
 
-        -R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
-        -P ) DOPUSH=yes; shift;;
+	-R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
+	-P ) DOPUSH=yes; shift;;
 
-        * ) echo >&2 "Unknown Option $1" ; exit 1;;
-        esac
+	* ) echo >&2 "Unknown Option $1" ; exit 1;;
+	esac
     done
 
     grep -q vsyscall /proc/cmdline ||
-        echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
+	echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
 
     # $1 is the FROM image.
     if [ "$1" != '' ]||[ "$RUNNOW" = yes ]
     then build_one "$1" ; wait
     else
 
-        for base in \
-            debian ubuntu alpine centos fedora opensuse/leap archlinux \
-            localhost/debian:unstable-i386 localhost/debian:unstable \
-            localhost/debian:bullseye localhost/debian:bullseye-i386 \
-            localhost/debian:buster-i386 localhost/debian:jessie-i386 \
-            localhost/debian:jessie localhost/debian:buster \
-            localhost/debian:wheezy-i386 localhost/debian:squeeze-i386 \
-            localhost/debian:wheezy localhost/debian:stretch-i386 \
-            localhost/debian:stretch localhost/debian:squeeze \
-            localhost/debian:lenny-i386 localhost/debian:lenny
-        do build_one $base
-        done
+	for base in \
+	    debian ubuntu alpine centos fedora opensuse/leap archlinux \
+	    localhost/debian:unstable-i386 localhost/debian:unstable \
+	    localhost/debian:bullseye localhost/debian:bullseye-i386 \
+	    localhost/debian:buster-i386 localhost/debian:jessie-i386 \
+	    localhost/debian:jessie localhost/debian:buster \
+	    localhost/debian:wheezy-i386 localhost/debian:squeeze-i386 \
+	    localhost/debian:wheezy localhost/debian:stretch-i386 \
+	    localhost/debian:stretch localhost/debian:squeeze \
+	    localhost/debian:lenny-i386 localhost/debian:lenny
+	do build_one $base
+	done
 
-        ENC_OFF=yes
-        for base in \
-            localhost/debian:etch-i386 localhost/debian:etch \
-            localhost/debian:sarge localhost/debian:woody \
-            localhost/debian:potato
-        do build_one $base
-        done
+	ENC_OFF=yes
+	for base in \
+	    localhost/debian:etch-i386 localhost/debian:etch \
+	    localhost/debian:sarge localhost/debian:woody \
+	    localhost/debian:potato
+	do build_one $base
+	done
 
-        wait
+	wait
     fi
 }
 
 build_one() {
     case "$1" in
     "" )
-        DISABLE_ENCODE="$ENC_OFF"
-        [ "$RUNNOW" = yes ] && echo '#!/bin/sh -'
-        guest_script
-        return 0
-        ;;
+	DISABLE_ENCODE="$ENC_OFF"
+	[ "$RUNNOW" = yes ] && echo '#!/bin/sh -'
+	guest_script
+	return 0
+	;;
 
     *suse*|amazonlinux ) DISABLE_ENCODE=yes ;;
     * ) DISABLE_ENCODE="$ENC_OFF" ;;
@@ -82,37 +79,37 @@ build_one() {
 
     local I
     I="$(echo :"$1"- | tr ':/' '--' | tr -d . | \
-        sed -e 's/-latest-/-/' \
-            -e 's/-debian-/-/' \
-            -e 's/-rdb-/-/' \
-            -e 's/-localhost-/-/' \
-            -e 's/^-//' -e 's/-$//' )"
+	sed -e 's/-latest-/-/' \
+	    -e 's/-debian-/-/' \
+	    -e 's/-rdb-/-/' \
+	    -e 's/-localhost-/-/' \
+	    -e 's/^-//' -e 's/-$//' )"
 
     [ "$I" = '' ] && I="$1"
     I="${REPOPREFIX}devel:$I"
 
     if [ "$BUILD" = yes ]
     then
-        echo "# Build $1 -> $I"
-        (
-            NEWID=$(guest_script "$1" | docker build -q - -t "$I")
+	echo "# Build $1 -> $I"
+	(
+	    NEWID=$(guest_script "$1" | docker build -q - -t "$I")
 
-            echo "# Push -> $I"
-            [ "$DOPUSH" = yes ] && {
-                lockfile /tmp/pushlock.lock
-                docker push "$I" ||:
-                rm -f /tmp/pushlock.lock
-            }
-            echo "# Done $1 -> $I = $NEWID"
-        ) &
+	    echo "# Push -> $I"
+	    [ "$DOPUSH" = yes ] && {
+		lockfile /tmp/pushlock.lock
+		docker push "$I" ||:
+		rm -f /tmp/pushlock.lock
+	    }
+	    echo "# Done $1 -> $I = $NEWID"
+	) &
 
-        cnt=$((cnt + 1))
-        if [ "$cnt" -gt 3 ]
-        then wait -n && cnt=$((cnt - 1)) ;:
-        fi
+	cnt=$((cnt + 1))
+	if [ "$cnt" -gt 3 ]
+	then wait -n && cnt=$((cnt - 1)) ;:
+	fi
     else
-        echo "# Script to build $I from $1"
-        guest_script "$1"
+	echo "# Script to build $I from $1"
+	guest_script "$1"
     fi
 }
 
@@ -135,11 +132,11 @@ install_os() {
     if [ -f /etc/os-release ]
     then . /etc/os-release
     else
-        [ -f /etc/debian_version ] && {
-            ID=debian
-            VERSION_ID=$(cat /etc/debian_version)
-            PRETTY_NAME="${PRETTY_NAME:-$ID $VERSION_ID}"
-        }
+	[ -f /etc/debian_version ] && {
+	    ID=debian
+	    VERSION_ID=$(cat /etc/debian_version)
+	    PRETTY_NAME="${PRETTY_NAME:-$ID $VERSION_ID}"
+	}
     fi
 
     case "$ID" in
@@ -160,7 +157,7 @@ install_os() {
 install_alpine() {
     echo >&2 "Installing build-base with apk for $PRETTY_NAME"
     apk add --no-cache -t build-packages \
-        build-base bash bison flex lua gmp-dev openssl-dev cmake gcc-gnat
+	build-base bash bison flex lua gmp-dev openssl-dev cmake gcc-gnat
 }
 
 install_centos() {
@@ -268,7 +265,7 @@ install_apt() {
     KV=$(dpkg --list $KR 2>/dev/null | awk '/^ii/{print $3;}')
     apt-get install $KR 2>/dev/null && {
     [ "$KV" != "$(dpkg --list $KR 2>/dev/null | awk '/^ii/{print $3;}')" ] &&
-        apt-get update
+	apt-get update
     }
 
     # Make sure we're up to date.
@@ -291,27 +288,27 @@ install_apt() {
     "
 
     for PKG in \
-        cmake=3.5.2-1 julia=0.3.2-2 golang=2:1.0.2-1.1 git=1:1.6 \
-        libtool=1.4 locales=2.2
+	cmake=3.5.2-1 julia=0.3.2-2 golang=2:1.0.2-1.1 git=1:1.6 \
+	libtool=1.4 locales=2.2
     do
-        instver "${PKG%%=*}" "${PKG#*=}" &&
-            PKGLIST="$PKGLIST ${PKG%%=*}"
+	instver "${PKG%%=*}" "${PKG#*=}" &&
+	    PKGLIST="$PKGLIST ${PKG%%=*}"
     done
 
     FOUND=$(apt-cache show $PKGLIST 2>/dev/null | sed -n 's/^Package: //p' 2>/dev/null)
 
     if ! apt-mark auto gzip 2>/dev/null
     then
-        # Simple way ...
-        apt-get install -y $FOUND
+	# Simple way ...
+	apt-get install -y $FOUND
 
     else
-        apt-get install -y equivs
+	apt-get install -y equivs
 
-        mkdir /tmp/build
-        cd /tmp/build
+	mkdir /tmp/build
+	cd /tmp/build
 
-        cat > control <<@
+	cat > control <<@
 Section: misc
 Priority: optional
 Standards-Version: 3.9.2
@@ -323,17 +320,17 @@ Description: A list of build tools
  .
  .
 @
-        equivs-build control
-        dpkg --unpack packagelist-local*.deb
-        apt-get install -f -y
-        cd
-        rm -rf /tmp/build
-        apt-get remove --purge -y equivs
-        apt-get autoremove --purge -y
+	equivs-build control
+	dpkg --unpack packagelist-local*.deb
+	apt-get install -f -y
+	cd
+	rm -rf /tmp/build
+	apt-get remove --purge -y equivs
+	apt-get autoremove --purge -y
     fi
 
     [ -d /usr/lib/ccache ] &&
-        echo "NOTE: export PATH=/usr/lib/ccache:$PATH"
+	echo "NOTE: export PATH=/usr/lib/ccache:$PATH"
 
     clean_apt
     return 0
@@ -341,7 +338,7 @@ Description: A list of build tools
 
 clean_apt() {
     apt-get update -qq --list-cleanup \
-        -oDir::Etc::SourceList=/dev/null
+	-oDir::Etc::SourceList=/dev/null
     apt-get clean
     dpkg --clear-avail; dpkg --clear-avail
     return 0
@@ -355,14 +352,14 @@ instver() {
     [ "$minversion" = "" ] && minversion="0"
     V=0
     for version in $(apt-cache policy "$pkgname" 2>/dev/null |
-                    awk '/^  Candidate:/ {print $2;}'); do
-        if dpkg --compare-versions "$version" ge "$minversion"; then
-            if dpkg --compare-versions "$version" gt "$V"; then
-                V=$version
-            fi
-        else
-            echo "Found $version, older than $minversion"
-        fi
+		    awk '/^  Candidate:/ {print $2;}'); do
+	if dpkg --compare-versions "$version" ge "$minversion"; then
+	    if dpkg --compare-versions "$version" gt "$V"; then
+		V=$version
+	    fi
+	else
+	    echo "Found $version, older than $minversion"
+	fi
     done
     [ "$V" = "0" ] && return 1
     return 0
@@ -380,16 +377,16 @@ main() {
 
 add_userid() {
     [ -x /usr/sbin/useradd ] && {
-        useradd user -u 1000 -d /home/user
-        return 0
+	useradd user -u 1000 -d /home/user
+	return 0
     }
     [ -f /etc/alpine-release ] && {
-        adduser user --uid 1000 --home /home/user -D
-        return 0
+	adduser user --uid 1000 --home /home/user -D
+	return 0
     }
     [ -x /usr/sbin/adduser ] && {
-        adduser user --uid 1000 --home /home/user
-        return 0
+	adduser user --uid 1000 --home /home/user
+	return 0
     }
 
     useradd user -u 1000 -d /home/user
@@ -402,6 +399,7 @@ main "$@"
     docker_cmd USER user
     docker_cmd WORKDIR /home/user
     docker_cmd CMD '["bash"]'
+    docker_cmd
 }
 
 ################################################################################
@@ -422,15 +420,16 @@ docker_cmd() {
 
     case "$1" in
     ENV )
-        shift;
-        case "$1" in
-        *=* ) echo export "$@" ;;
-        * ) V="$1" ; shift ; echo export "$V=\"$*\"" ;;
-        esac
-        ;;
+	shift;
+	case "$1" in
+	*=* ) echo export "$@" ;;
+	* ) V="$1" ; shift ; echo export "$V=\"$*\"" ;;
+	esac
+	;;
     ARG ) echo "export \"$1\"" ;;
     WORKDIR ) echo "mkdir -p \"$2\"" ; echo "cd \"$2\"" ;;
 
+    '') ;;
     * ) echo "# $*" ;;
     esac
 }
@@ -440,19 +439,22 @@ make_docker_runcmd() {
     local line
 
     [ "$RUNNOW" = yes ] && {
-        echo ; echo '('
-        cat -
-        echo ')' ; echo
-        return 0
+	echo '('
+	cat -
+	echo ')'
+	return 0
     }
     [ "$DISABLE_ENCODE" = yes ] && {
-        # line=$(cat); echo "RUN echo ${line@Q} >$sn;sh $sn;rm -f $sn"
-        echo "RUN ${1:+: $1 ;}(\\"
-        while IFS= read -r line
-        do echo echo "${line@Q}" \;\\
-        done
-        echo ")>$sn;sh $sn;rm -f $sn"
-        return 0;
+	# Note the sed command might break your script; maybe.
+	# It reduces the size of the Dockerfile and if in DISABLE_ENCODE mode
+	# significantly reduces the occurance of $'...' strings.
+	echo "RUN ${1:+: $1 ;}(\\"
+	sed -e 's/^[\t ]\+//' -e 's/^#.*//' -e '/^$/d' |
+	    while IFS= read -r line
+	    do echo echo "${line@Q};"\\
+	    done
+	echo ")>$sn;sh $sn;rm -f $sn"
+	return 0;
     }
     # Limit per "run" is library exec arg length (approx 128k)
     # Encode the script
