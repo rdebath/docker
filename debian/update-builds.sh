@@ -32,7 +32,7 @@ do
 	sed -e 's/^\(ARG RELEASE\>\).*/\1='"$dvar"'/' \
 	    < ../Dockerfile > Dockerfile
 
-	cp -p ../README.txt .
+	cp -p ../README.md .
 
 	case "$variant" in
 	potato )
