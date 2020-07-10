@@ -2,13 +2,13 @@ This repo contains debootstrap images for all Debian versions since "potato".
 
 Version-|Tag            |Notes
 --------|---------------|--------------------
-2.2     |potato         |i386 only, unsigned
-3.0     |woody          |i386 only, unsigned
-3.1     |sarge          |i386 only, unsigned
-4.0     |etch
-5.0     |lenny          |keys expired
-6.0     |squeeze        |keys expired
-7.0     |wheezy
+2.2     |potato         |i386 only, No Release signature
+3.0     |woody          |i386 only, No Release signature
+3.1     |sarge          |i386 only, No Release signature
+4.0     |etch           |amd64 uses vsyscall
+5.0     |lenny          |amd64 uses vsyscall, keys expired
+6.0     |squeeze        |amd64 uses vsyscall, keys expired
+7.0     |wheezy         |amd64 uses vsyscall
 8.0     |jessie
 9.0     |stretch
 10.0    |buster

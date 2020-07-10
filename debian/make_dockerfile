@@ -82,9 +82,17 @@ cat <<\@
 	    grep -q -e '^default_mirror https' "$DIR/amber" &&
 		sed -i -e '1i unset DEF_HTTPS_MIRROR' "$DIR/amber"
 
+	: Kali has an https mirror
+	[ -e "$DIR/kali" ] &&
+	    sed -i -e '1i unset DEF_HTTPS_MIRROR' \
+		-e 's@^\(default_mirror\) .*@\1 https://http.kali.org/kali@' \
+		"$DIR/kali"
+
 	: Repair Ubuntu scripts
 	sed -i -e '4i force_md5' "$DIR/warty"
 	sed -i -e '4i force_md5' "$DIR/hoary"
+	ln -fs gutsy $DIR/groovy
+	sed -i -e 's/archive\.ubuntu/old-releases.ubuntu/' "$DIR/dapper"
 
 	: Ubuntu keys
 	git clone \
@@ -116,18 +124,43 @@ cat <<\@
 	DIR=/usr/share/debootstrap/scripts
 	case "$RELEASE" in
 	potato|woody|sarge ) ARCH="${ARCH:-i386}" ;;
+
 	devuan )
 	    DEBSCRIPT="$RELEASE";
 	    RELEASE=stable
 	    MIRROR="${MIRROR:-http://deb.devuan.org/merged}"
-	    ARCH="${ARCH:-amd64}"
 	    ;;
+
+	etch|lenny|squeeze|wheezy )
+	    if [ "$ARCH" != i386 ]
+	    then
+		grep -q vsyscall /proc/$$/maps || {
+		    echo >&2 "ERROR: Debian $RELEASE requires the vsyscall memory section."
+		    echo >&2 "Add vsyscall=emulate or vsyscall=native to kernel command line."
+		    echo >&2 "Alternatively use the i386 architecture."
+		    exit 22
+		}
+	    fi
+	    ;;
+
+	warty|hoary|breezy|dapper|edgy|feisty|gutsy|hardy|intrepid|jaunty|karmic )
+	    if [ "$ARCH" != i386 ]
+	    then
+		grep -q vsyscall /proc/$$/maps || {
+		    echo >&2 "ERROR: Ubuntu $RELEASE requires the vsyscall memory section."
+		    echo >&2 "Add vsyscall=emulate or vsyscall=native to kernel command line."
+		    echo >&2 "Alternatively use the i386 architecture."
+		    exit 22
+		}
+	    fi
+	    ;;
+
 	* ) # If no such script, guess it's like "sid"
 	    [ ! -e "$DIR/${DEBSCRIPT:-$RELEASE}" ] &&
 		ln -fs sid "$DIR/${DEBSCRIPT:-$RELEASE}"
-	    ARCH="${ARCH:-amd64}"
 	    ;;
 	esac
+	ARCH="${ARCH:-amd64}"
 
 	if grep -q '^keyring.*ubuntu' "$DIR/${DEBSCRIPT:-$RELEASE}"
 	then COMP="--components=main,restricted,universe,multiverse"

@@ -65,7 +65,7 @@ build_images() {
 	    quantal raring saucy trusty utopic vivid wily xenial \
 	    yakkety zesty artful bionic cosmic disco eoan focal groovy \
 	    kali-dev kali-rolling kali-last-snapshot \
-	    ascii beowulf chimaera ceres
+	    ascii beowulf chimaera ceres amber
 
     local Q=-q
     local RELEASE ARCH
@@ -134,10 +134,11 @@ build_image() {
 
     amber ) DISTRO=pureos ;;
 
+    kali-rolling|kali-last-snapshot|kali-dev ) DISTRO=kali ;;
+
     * ) DISTRO=
 	[ -z "$DISTRO" ] && ubuntu_versions "$RELEASE"
 	[ -z "$DISTRO" ] && devuan_versions "$RELEASE"
-	[ -z "$DISTRO" ] && kali_versions "$RELEASE"
 	[ -z "$DISTRO" ] && {
 	    echo "WARNING: Unknown release $RELEASE-$ARCH">&2
 	    DISTRO=unknown
@@ -155,7 +156,7 @@ build_image() {
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
 	    ${DEBSCRIPT:+--build-arg=DEBSCRIPT=$DEBSCRIPT} \
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
-	    -
+	    "-<Dockerfile"
 	return 0
     }
 
@@ -193,200 +194,164 @@ ubuntu_versions() {
     case "$RELEASE" in
     warty )
 	# 4.10 -- Warty Warthog
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
-	DEBOPTIONS='--no-check-gpg'
+	# amd64 vsyscall=emulate
 	;;
     hoary )
 	# 5.04 -- Hoary Hedgehog
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
-	DEBOPTIONS='--no-check-gpg'
+	# amd64 vsyscall=emulate
 	;;
     breezy )
 	# 5.10 -- Breezy Badger
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 vsyscall=emulate
 	;;
     dapper )
 	# 6.06 LTS -- Dapper Drake
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	MIRROR=http://old-releases.ubuntu.com/ubuntu
 	;;
     edgy )
 	# 6.10 -- Edgy Eft
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 vsyscall=emulate
 	;;
     feisty )
 	# 7.04 -- Feisty Fawn
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 vsyscall=emulate
 	;;
     gutsy )
 	# 7.10 -- Gutsy Gibbon
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     hardy )
 	# 8.04 LTS -- Hardy Heron
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     intrepid )
 	# 8.10 -- Intrepid Ibex
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     jaunty )
 	# 9.04 -- Jaunty Jackalope
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     karmic )
 	# 9.10 -- Karmic Koala
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     lucid )
 	# 10.04 LTS -- Lucid Lynx
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     maverick )
 	# 10.10 -- Maverick Meerkat
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     natty )
 	# 11.04 -- Natty Narwhal
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     oneiric )
 	# 11.10 -- Oneiric Ocelot
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     precise )
 	# 12.04 LTS -- Precise Pangolin
-	MIRROR=ubuntu
 	DISTRO=ubuntu
+	# amd64 i386 bad signature.
 	DEBOPTIONS='--no-check-gpg'
 	;;
     quantal )
 	# 12.10 -- Quantal Quetzal
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     raring )
 	# 13.04 -- Raring Ringtail
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     saucy )
 	# 13.10 -- Saucy Salamander
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     trusty )
 	# 14.04 LTS -- Trusty Tahr
-	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     utopic )
 	# 14.10 -- Utopic Unicorn
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     vivid )
 	# 15.04 -- Vivid Vervet
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     wily )
 	# 15.10 -- Wily Werewolf
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     xenial )
 	# 16.04 LTS -- Xenial Xerus
-	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     yakkety )
 	# 16.10 -- Yakkety Yak
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     zesty )
 	# 17.04 -- Zesty Zapus
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
 	;;
     artful )
 	# 17.10 -- Artful Aardvark
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	MIRROR=http://old-releases.ubuntu.com/ubuntu
 	;;
     bionic )
 	# 18.04 LTS -- Bionic Beaver
-	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     cosmic )
 	# 18.10 -- Cosmic Cuttlefish
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	MIRROR=http://old-releases.ubuntu.com/ubuntu
 	;;
     disco )
 	# 19.04 -- Disco Dingo
-	MIRROR=oldubuntu
 	DISTRO=ubuntu
+	MIRROR=http://old-releases.ubuntu.com/ubuntu
 	;;
     eoan )
 	# 19.10 -- Eoan Ermine
-	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     focal )
 	# 20.04 LTS -- Focal Fossa
-	MIRROR=ubuntu
 	DISTRO=ubuntu
 	;;
     groovy )
 	# 20.10 -- Groovy Gorilla
-	MIRROR=ubuntu
 	DISTRO=ubuntu
-	DEBSCRIPT=eoan
-	;;
-    esac
-
-    case "$MIRROR" in
-    oldubuntu )
-	case "$RELEASE" in
-	# This line from /usr/share/debootstrap/scripts/gutsy
-	gutsy|hardy|intrepid|jaunty|karmic|lucid|maverick|natty|oneiric|precise|quantal|raring|saucy|utopic|vivid|wily|yakk)
-	    # Already old
-	    unset MIRROR
-	    ;;
-	* ) MIRROR=http://old-releases.ubuntu.com/ubuntu
-	    ;;
-	esac
-	;;
-    ubuntu)
-	unset MIRROR
-	[ "$DEBSCRIPT" != '' ] &&
-	    MIRROR=http://archive.ubuntu.com/ubuntu
 	;;
     esac
 }
@@ -404,18 +369,6 @@ devuan_versions() {
 	;;
     devuan ) # Alias for devuan/stable
 	DISTRO=devuan
-	;;
-    esac
-}
-
-kali_versions() {
-    local RELEASE="$1"
-    case "$RELEASE" in
-    kali-rolling|kali-last-snapshot|kali-dev )
-	MIRROR=https://http.kali.org/kali
-	DISTRO=kali
-	DEBSCRIPT=kali
-	DEBOPTIONS='--no-check-gpg'
 	;;
     esac
 }
