@@ -16,7 +16,7 @@ main() {
 	done
     elif [ "$DIST" = debian ]
     then all_debian
-    else [ "$DIST" = ubuntu ]
+    elif [ "$DIST" = ubuntu ]
     then all_ubuntu
     else echo >&2 "Nothing to do" ; exit 1
     fi
