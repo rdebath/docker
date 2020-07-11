@@ -409,7 +409,8 @@ base64_extras() {
     tar c \
 	--owner=root --group=root \
 	--mode=og=u-w,ug-s \
-	--mtime=/etc/os-release \
+	--sort=name \
+	--mtime="$(date +%Y)-01-01 12:00:00" \
 	-f - -- etc usr |
     {
 	echo 'RUN set -eu; _() { echo "$@";};(\'

@@ -93,7 +93,10 @@ do_build() {
 	ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar" 2>/dev/null ||:)
 	if [ "$ID" = '' ]
 	then
-	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
+	    docker build -t "rdebath/$distro:$fullvar" \
+		--build-arg=RELEASE=$variant \
+		${arch:+--build-arg=ARCH=$arch} \
+		-< ../Dockerfile
 	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar")
 	fi
 
@@ -107,7 +110,10 @@ do_build() {
 
 	if ! cmp /tmp/_savedpackages.txt packages.txt
 	then
-	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
+	    docker build -t "rdebath/$distro:$fullvar" \
+		--build-arg=RELEASE=$variant \
+		${arch:+--build-arg=ARCH=$arch} \
+		-< ../Dockerfile
 
 	    docker run --rm -t -v "$(pwd)":/home/user \
 		"rdebath/$distro:$fullvar" \
@@ -116,6 +122,10 @@ do_build() {
 		    dpkg -l > /home/user/packages.txt'
 
 	    git add -A
+	    export GIT_AUTHOR_NAME=autocommit
+	    export GIT_AUTHOR_EMAIL=''
+	    export GIT_COMMITTER_NAME=autocommit
+	    export GIT_COMMITTER_EMAIL=''
 	    git commit -m "Update build tree for $fullvar"
 	    git push origin "$b"
 	fi
