@@ -96,7 +96,7 @@ cat <<\@
 	awk < "$DIR/gutsy" > "$DIR/gutsy.2" \
 	'F==1{print;next;}
 	 /zesty)/ {
-	    print "artful|cosmic|disco)"
+	    print "artful|cosmic|disco|zesty)"
 	    print "default_mirror http://old-releases.ubuntu.com/ubuntu"
 	    print "keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg"
 	    print ";;"
