@@ -61,32 +61,20 @@ cat <<\@
     docker_cmd 'WORKDIR /root'
 
     docker_start || {
-	set -ex
-
 	apk add --no-cache debootstrap perl git
+    } ; docker_commit "Configure host"
 
+    docker_start || {
+	set -ex
 	DIR=/usr/share/debootstrap/scripts
 
-	: Repair or create the Devuan scripts.
-	sed < $DIR/sid > $DIR/devuan \
-	    -e 's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
-	    -e '4i default_mirror http://deb.devuan.org/merged'
+	: 'Repair Debian scripts'
+	sed -e '4a default_mirror http://archive.debian.org/debian' \
+	    < "$DIR/wheezy" > "$DIR/wheezy.2"
+	mv "$DIR/wheezy.2" "$DIR/wheezy"
 
-	ln -fs devuan $DIR/ascii
-	ln -fs devuan $DIR/beowulf
-	ln -fs devuan $DIR/chimaera
-	ln -fs devuan $DIR/ceres
-
-	: PureOS script default is HTTPS
-	[ -e "$DIR/amber" ] &&
-	    grep -q -e '^default_mirror https' "$DIR/amber" &&
-		sed -i -e '1i unset DEF_HTTPS_MIRROR' "$DIR/amber"
-
-	: Kali has an https mirror
-	[ -e "$DIR/kali" ] &&
-	    sed -i -e '1i unset DEF_HTTPS_MIRROR' \
-		-e 's@^\(default_mirror\) .*@\1 https://http.kali.org/kali@' \
-		"$DIR/kali"
+	: 'Not-revoked Debian key for potato'
+	sed -i -e 's@^\(keyring\) .*@\1 /root/potato-key.gpg@' "$DIR/potato"
 
 	: Repair Ubuntu scripts
 	sed -i -e '4i force_md5' "$DIR/warty"
@@ -100,13 +88,34 @@ cat <<\@
 	    https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
 	cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
+	: Repair or create the Devuan scripts.
+	sed < $DIR/sid > $DIR/devuan \
+	    -e 's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
+	    -e '4i default_mirror http://deb.devuan.org/merged'
+
+	ln -fs devuan $DIR/ascii
+	ln -fs devuan $DIR/beowulf
+	ln -fs devuan $DIR/chimaera
+	ln -fs devuan $DIR/ceres
+
 	: Devuan keys
 	git clone https://git.devuan.org/devuan/devuan-keyring.git
 	cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
 
-	apk del --repositories-file /dev/null --purge git
+	: PureOS script default is HTTPS
+	[ -e "$DIR/amber" ] &&
+	    grep -q -e '^default_mirror https' "$DIR/amber" &&
+		sed -i -e '1i unset DEF_HTTPS_MIRROR' "$DIR/amber"
 
-    } ; docker_commit "Configure host"
+	: Kali has an https mirror
+	[ -e "$DIR/kali" ] &&
+	    sed -i -e '1i unset DEF_HTTPS_MIRROR' \
+		-e 's@^\(default_mirror\) .*@\1 https://http.kali.org/kali@' \
+		"$DIR/kali"
+
+    } ; docker_commit "Configure debootstrap"
+
+    docker_savefile 'Debian Potato key' /root/potato-key.gpg < potato-key.gpg
 
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
@@ -410,11 +419,11 @@ docker_save() {
     END_LINE=$((BASH_LINENO[0]-1))
     TEXT=$(sed -n < "${BASH_SOURCE[1]}" "${START_LINE},${END_LINE}p")
 
-    echo "$TEXT" | make_docker_savescript "$1" "$2"
+    echo "$TEXT" | docker_savefile "$1" "$2"
     return 0
 }
 
-make_docker_savescript() {
+docker_savefile() {
     # Encode the script
     local sn="${2:-/tmp/install}"
     echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'

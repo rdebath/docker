@@ -4,7 +4,7 @@ build_images() {
     local forkcount=1
 
     LISTCMD=
-    REPOPREFIX=
+    REPOPREFIX=rdebath/
     DOPUSH=
     while [ "${1#-}" != "$1" ]
     do
@@ -121,9 +121,6 @@ build_image() {
     DISTRO=debian
 
     case $RELEASE in
-    potato ) DEBOPTIONS='--no-check-gpg' ;;
-    wheezy ) MIRROR=http://archive.debian.org/debian ;;
-
     potato|woody|sarge|etch|lenny|squeeze|wheezy|jessie ) ;;
     stretch|buster|bullseye|bookworm|unstable ) ;;
 

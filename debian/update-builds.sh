@@ -1,83 +1,104 @@
 #!/bin/sh
 
-NULL=$(echo "tree $(git hash-object -t tree -w /dev/null)
-author nobody <> 1 +0000
-committer nobody <> 1 +0000
+main() {
+    init
 
- 
-" | git hash-object -t commit -w --stdin )
+    bash make_dockerfile
 
-T="$(pwd)/temptree"
+    # potato doesn't build on "Docker hub".
 
-# potato doesn't build on "Docker hub".
+    [ "$#" = 0 ] && set -- \
+	woody sarge etch lenny squeeze wheezy \
+	jessie stretch buster bullseye \
+	stable testing unstable latest \
+	\
+	etch-i386 lenny-i386 squeeze-i386 wheezy-i386 \
+	jessie-i386 stretch-i386 buster-i386 bullseye-i386
 
-[ "$#" = 0 ] && set -- \
-    woody sarge etch lenny squeeze wheezy \
-    jessie stretch buster bullseye unstable latest
+    for fullvar
+    do do_build "$fullvar" debian
+    done
+}
 
-for variant
-do
-    b="build-debian-$variant"
+do_build() {
+    distro="$2"
+    fullvar="$1"
+    variant=${fullvar%-*}; arch=${fullvar#$variant}; arch="${arch#-}"
+
+    b="build-$distro-$variant${arch:+-$arch}"
+
+    git worktree remove -f "$T" 2>/dev/null ||:
     git worktree add "$T" "$NULL"
 
     (
 	set -e
 	cd "$T"
-	git checkout "$b" 2>/dev/null ||
-	    git checkout --orphan "$b"
+	git branch -D "$b" 2>/dev/null ||:
+	git checkout -b "$b" --track origin/"$b" 2>/dev/null ||
+	    git checkout -f --orphan "$b"
 
 	if [ "$variant" = latest ]
 	then dvar=stable
 	else dvar="$variant"
 	fi
 
-	sed -e 's/^\(ARG RELEASE\>\).*/\1='"$dvar"'/' \
-	    < ../Dockerfile > Dockerfile
+	cp -p ../Dockerfile Dockerfile
+	sed -i -e 's/^\(ARG RELEASE\>\).*/\1='"$dvar"'/' \
+	    Dockerfile
+
+	[ "$arch" != '' ] && {
+	    sed -i -e 's/^\(ARG ARCH\>\).*/\1='"$arch"'/' \
+		Dockerfile
+	}
 
 	cp -p ../README.md .
 
-	case "$variant" in
-	potato )
-	    sed -i -e 's@^\(ARG DEBOPTIONS\>\).*@\1=--no-check-gpg@' \
-		Dockerfile
-	    ;;
-	wheezy )
-	    sed -i -e 's@^\(ARG MIRROR\>\).*@\1=http://archive.debian.org/debian@' \
-		Dockerfile
-	    ;;
-	esac
-
-	ID=$(docker image inspect --format '{{.Id}}' "rdebath/debian:$variant" 2>/dev/null ||:)
+	ID=$(docker image inspect --format '{{.Id}}' "rdebath/debian:$fullvar" 2>/dev/null ||:)
 	if [ "$ID" = '' ]
 	then
-	    docker build -t "rdebath/debian:$variant" -<Dockerfile
-	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/debian:$variant")
-	else
-	    docker pull "rdebath/debian:$variant" ||:
-	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/debian:$variant")
+	    docker build -t "rdebath/debian:$fullvar" -<Dockerfile
+	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/debian:$fullvar")
 	fi
 
-	case "$variant" in
-	potato )
-	    docker run --rm -it -v "$(pwd)":/home/user \
-		"rdebath/debian:$variant" \
-		bash -c 'apt-get update &&
+	cat packages.txt > /tmp/_savedpackages.txt ||:
+	rm -f packages.txt
+	docker run --rm -t -v "$(pwd)":/home/user \
+	    "rdebath/debian:$fullvar" \
+	    bash -c 'apt-get -y -qq update &&
+		apt-get -y upgrade &&
+		dpkg -l > /home/user/packages.txt'
+
+	if ! cmp /tmp/_savedpackages.txt packages.txt
+	then
+	    docker build -t "rdebath/debian:$fullvar" -<Dockerfile
+
+	    docker run --rm -t -v "$(pwd)":/home/user \
+		"rdebath/debian:$fullvar" \
+		bash -c 'apt-get -y -qq update &&
 		    apt-get -y upgrade &&
 		    dpkg -l > /home/user/packages.txt'
-	    ;;
-	* )
-	    docker run --rm -it -v "$(pwd)":/home/user \
-		"rdebath/debian:$variant" \
-		bash -c 'apt-get -y -qq update &&
-		    apt-get -y dist-upgrade &&
-		    dpkg -l > /home/user/packages.txt' ||
-	    docker rmi "rdebath/debian:$variant"
-	    ;;
-	esac
 
-	git add -A
-	git commit -m "Update build tree for $variant"
+	    git add -A
+	    git commit -m "Update build tree for $fullvar"
+	    git push origin "$b"
+	fi
+	rm -f /tmp/_savedpackages.txt
     )
-    git worktree remove "$T"
+    git worktree remove -f "$T" ||:
+    git branch -D "$b" ||:
+}
 
-done
+init() {
+    set -e
+
+    NULL=$(echo "tree $(git hash-object -t tree -w /dev/null)
+author nobody <> 1 +0000
+committer nobody <> 1 +0000
+
+ 
+" | git hash-object -t commit -w --stdin )
+
+    T="$(pwd)/temptree"
+}
+
+main "$@"

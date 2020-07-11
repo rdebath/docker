@@ -41,18 +41,59 @@
 FROM alpine AS unpack
 WORKDIR /root
 RUN : Configure host ;set -eu; _() { echo "$@";};(\
-_ H4sIAAAAAAACA41U32/TMBB+Tv6K04RWGHKiSfBSAepDQUwIberGE6WVm1wTa2lszvZG//ud;\
-_ E2ckqBLrS53z/fi+u/ucWHQg8E+aJtLcgyxLEKLVopBFjVDiTmtnHUkDBqmBSjn2XF6tPube;\
-_ Um5rSZiPvHJbkDLOstMcVmikItAEBaF0CI5TLvHByxaiX5YmFkv4AK84Z25VCZ/6Y9m7rdME;\
-_ +CcQZna+uccjqbaC7GI+HEcwosnGWCGpqNUDimjPKlPNZ+OM7xQT3EvfuO1BETHO2jkzzwOh;\
-_ rE+SaaryA1KF5Yw5NS2IvYUIrgMqbaHUyZsd6kff7E/eMbKDRJKnL5Gw7+CNJ7y+jc0awIKy;\
-_ 8PXu7uY2TX4GHmc9jsMO6Qx+wfl5z7AiNCB+d0w3J3ja2TQyxHXDEKqLuVTg27Ady89ftl29;\
-_ 7fer1ep6NY3rcH6TjYJaWmAKXW7oC00Q3rPTGODLavG8km78i8369ZTG+g1vwmJ92ZfkuYX/;\
-_ LJTpxhYOiz7BCMB4M3/sfOv8sIvpmD3vxl5TgdtD+X4g/CjJHc/+61ZrScEtTrbyzh77wVak;\
-_ 9cNxksDmcU3Xme/Q5LopBWGD0qIdbEPqUhoz9DyC5+1m5KxLKBrd4vN+7yDG8mZhM5iHTrF/;\
-_ 1kjfFrWRZdaiy6P3W6s984mfg3bSpOBdkjC1/lXcRRDXSS1mHdYo+n+xjtGM9NYfBxk/y5ef;\
-_ nghjevNSGOF9K7kVgttrtFVOk0Ir9qpBCMXy1jfh1niWe/fSPQF8aZpWHQUAAA==;\
+_ H4sIAAAAAAACA+NMLMhWSExJUdDVzcvXTU5MzkhVSElNys8vKS4pSixQKEgtylFIzyzhAgBw;\
+_ 6Nk8KQAAAA==;\
 )|base64 -d|gzip -d>/tmp/install;sh /tmp/install;rm -f /tmp/install
+RUN : Configure debootstrap ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA41UXW/TMBR9Tn7FVYUWGEqsofFSDdSHgpgQbOrGE6WVk9wmVtM42E678uu5;\
+_ ie2STJVYXmL7fp17zrUDjQZifAqD+e3iA2u1YrrkClmOqZRGG8UbpjMlGqPDMJhCtMCGCwVz;\
+_ TAWvwZmiMNCYUyKIrjnkuOFtZdY7oZRUUBrTTBnjKivFHpO8j0ykKphdRrAMA6DvBiavCAY7;\
+_ lIh/jhP4ONon7yZhsNs/PxvHWIzfpYkV7uWWMDmgWzzChsA00nAjPV7RQ9az1fI1OShRF8s3;\
+_ kFzOllfAFPXPrHtMxqRoilnkqtljW80R8iNta9N6Qkb5r0VXOsP1Ln/vMxy4MgT3f26l5Kpz;\
+_ q2qINxqK1ugj9JaC8O2P4z48x8uk7dEwWeVERIVco/ZnPnXOmwaV7cGBpzYJeSEMZJWs0esS;\
+_ p+Bic9xj5Y87XTUJS/5Jxds6KxueJzUa5rzfatlSP24bO4bDIGsg5jA+Ze6v2WXHNAxG8WRJ;\
+_ hnyTlplCbhBMiaTyvv03joml5cYypUVOo2R7tm6+r46z6crlJ92nfnmuuo2NHcUedwd2Gg0z;\
+_ koznLwBNe2KT9MO/Q1VgHoUncR24HijXmRBnLSnKQ1ttztoI2Y6j4ueNqNDeYUfWc7WHeg5w;\
+_ 2qVv/9S2MF7IseXlQt63Cu8enGaeMxAavjw+3j+Ewc+OTjurfJfSqMIvuLiwRBcKqfbvnvDV;\
+_ Gbp1NI7s4oZX5UpAW3dv3/zT53Vfb/3tdrG4W4zjepxfeSWg5BqIsz432EIjhFtyGgJ8WS0a;\
+_ m+D0Ao3bOD1EXpbun3RlelW6xcwmGAAI/wIRHilw0AUAAA==;\
+)|base64 -d|gzip -d>/tmp/install;sh /tmp/install;rm -f /tmp/install
+RUN : Debian Potato key ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA42U+T/UCQPHv3PlGs0gYzbHzjhzDxO9WtdYx5SUcZ85Z4YZzRDjWjeRlljb;\
+_ EsKYlUKEMQm76NAmYVlyhMgRoYwMyTi2fZ4fnl+eH/YP+Lw/P3w+r3cx6FeoqXmfrhQU2Kfj;\
+_ Up8fnlGUG+7dd2dMeBv0XQQphKZHj7CObLyKYiMqpYSSFGTaR3N6i+SSSlWaZ47HVoFu6NGw;\
+_ N3o+Lxo8F0dfNi/uMO9SGzdKrOTHfsZx8d9fqoDYZnoo6TqVKxdXJgRpOR/Y9HMqyIeqFoUj;\
+_ ZAOr3NfpN+UQV4Tdgljcx3mg4uFwTFPYDcFatXpJI9Fkkn8QCt6HAiujdBOLuQXV6Gi/3J2k;\
+_ 5r0y/3OKCgsbyps+E9Wqhu1dc+bZyJFGtH1qm/Wpv8CuBYzLhieXHo7p5H1E93sqIhvTu4os;\
+_ M4ss3GebyErbI1wNbiAnrCmBy1a69Ac4hfR5HJJKcvVrLkRlk2c8CstnCud7NRuwap2HLtAQ;\
+_ ShzTeBIKcFoNNI5eKidH22fsbhry1meM+C0A+scM6NVrLCM93fNeYi9ymZVJEu/NigzdSpwj;\
+_ x08L+D1pIj4aGZXbd0MsbJllB9NT6yNb7qo1oiOjG7Q/8dEm3Tew75PmqoMc505xP8FDTWWb;\
+_ OqU+hKbDrLynkq84PY16L3dpvmffOejzp5B03vfWlEBaABNjGREUQoumYCyjWGGMABYtCONM;\
+_ C2bSmMGYc5Q4zAlDHM5QE2NKZYUzAiJZlAgC+T8xvbCIYPOsi1AZKTCgCAP/MzdMDLTCBGAS;\
+_ IuIQKEQWAoagwCCwXAogLoasTVyNj9A//oH3E1CKEC336bMepIfu6hgAOpUQvM+8OcB23r6I;\
+_ VZZESG467oyTfyPVvKUMJmRR/g1e+n94EQqRRARAoK81bJuycAcefJlxOiF87wJdNSn1TlwY;\
+_ wHbr6syAlSqpCultQy63Cb1Blj1pbVDJr3ftb0ciAf6YpNRN6TYKvGUr/PgxYh/UYWzkwUIq;\
+_ trnAV6Ylwkn01sx0V1I27ob2sD8Zoc9T6OMLvDk/7xaeC9YX+OyiBEqJN1XLXWw7rpq54NiQ;\
+_ 5xl1PfDEP+bthB1NvYG6s49/OJr559JxPWNN4Bl9IGBWBIc8c6veIjCPi/ocdTnpXaRKzCJU;\
+_ cLVWi3lXZ9CubTbfCCXj418BO12HO3VMJ68nzDcy9HbGJqfHg2RoZK2dbSZ756VX+g2wlWJw;\
+_ rd068PFWfO5KifHnOCxCWePRmsN+tVsjcbgXcPfd4QR4KPZg8OsDrRMdE/g8WfgmKC7HtyNZ;\
+_ PfXxhHqJNLtUuCruJiPZ3Tf0NCYIomlNlax6pX20TM+/aklzYfG+9vOU9XKJzEE1IvQ+duuB;\
+_ n7v98h3RelifkLZj6ObXlXKwzoQ3lg65gNXd+CwGG7QahCA+0J874nJQljdU8WEH7UXrVpHQ;\
+_ LyzKj+hpGWnLfxYCKGIbY5fUBPRWa57940Z1mzU/6iwhvxz+Bg10y3rKGBFcVjG76hlNERj9;\
+_ 3/1lDcOdd3Y3HIKszq5F7EQNNPkLYn70Nhcvz3HMjZYueFaV+4gT4J64wvK++MRRDkWjLddF;\
+_ gs2EdAMuP/68qxVc+bsNWuy7M1327wjdKVOu0UsGrzOb+4u4koVNDC5v3+JyXrjGgrkO7hwA;\
+_ gSEObYNEIhO6BaSrXu+aTPOSS73FDl6s2lnuqXLiJni1KdRX980On1hQnS5vLvIa3qIaHO6B;\
+_ V0jYe9OPpBgB78MUNi7YuC5uNpBqgh9y8M4b7nOO+idVQr9AVo6gaBWImJv2wf5iSE7IPZF5;\
+_ fGOrrBj7N+ZLrKfKvSqv7NPMVp4fVEUP6WOshqe/LfZG46fXD8g28c/Q3+5mf4rTZk26+Ejf;\
+_ XtWfqQvZ/jJgg5IHivpG12UHfBMeT7X9vmfJyZGaUCLXDqTWT+rW9IhyRS3x1oLrb9R1ilxh;\
+_ E4Hb8pMBDdyONWtSoBDedS1FyuOvVX9IFkGb0NPeSRngqxUrdNSLJ5Bw/nPDfQtdvyQGEw6o;\
+_ WlUm3jom1Ed1hkMwG8cL3z0oEhZr/TpO8Jsrk+ERExWjx7LRvhEaVnhq90+zqH5tEP9Nukoq;\
+_ Kz6XN4W43y6m3eka2CIMVqkXri4Xfzm2uTCdbCIvag61xD7Xq67pIhKKxZKmro0SCcuoAqHi;\
+_ Aca1ikN2nInT0duH+YvGHIEzT9TeIknrseXLA2pETi18o5fUciUrbePpysY3IO2qtWbPs+xv;\
+_ sTnEZMqguYlwyPQsloi9TelvkMRsNcWOT0M0FsxQ+XGRU8e2FTq8vPdeXJ/6obLwvJZ435ck;\
+_ BpI1kXMdsv46pUi11xaJHasLMXZkt51IOpnlAkV/1Q78H+30t/9XO//PMhnrANvuiTww8jRf;\
+_ sMtX0vWhHg5uxUpxgPITTowPEpP9VIvDHXQHJi8hQ81W+W9h/YCYFQcAAA==;\
+)|base64 -d|gzip -d>/root/potato-key.gpg
 
 #--------------------------------------------------------------------------#
 WORKDIR /opt
