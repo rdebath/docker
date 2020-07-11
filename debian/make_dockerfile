@@ -3,7 +3,9 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
 main() {
     set -e
-    if [ ".$1." = .-. ]
+    if [ "$1" = base ]
+    then make_dockerfile baseonly
+    elif [ ".$1." = .-. ]
     then make_dockerfile
     else
 	make_dockerfile > "_tmp.doc"
@@ -15,6 +17,7 @@ main() {
 }
 
 make_dockerfile() {
+    if [ "$1" = '' ] ; then
 cat <<\@
 #--------------------------------------------------------------------------#
 # We could use any Linux that has debootstrap available.
@@ -57,6 +60,8 @@ cat <<\@
 
 #--------------------------------------------------------------------------#
 @
+    fi
+
     docker_cmd 'FROM alpine AS unpack'
     docker_cmd 'WORKDIR /root'
 
@@ -79,8 +84,25 @@ cat <<\@
 	: Repair Ubuntu scripts
 	sed -i -e '4i force_md5' "$DIR/warty"
 	sed -i -e '4i force_md5' "$DIR/hoary"
-	ln -fs gutsy $DIR/groovy
+	ln -fs gutsy "$DIR/groovy"
 	sed -i -e 's/archive\.ubuntu/old-releases.ubuntu/' "$DIR/dapper"
+
+	: Fix Ubuntu archive keyrings
+	sed -i -e 's/^\(keyring\)/#\1 /' "$DIR/gutsy"
+	sed -i -e '/default_mirror.*old-releases\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-removed-keys.gpg' "$DIR/gutsy"
+	sed -i -e '/default_mirror.*archive\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg' "$DIR/gutsy"
+	sed -i -e '/default_mirror.*ports\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg' "$DIR/gutsy"
+
+	awk < "$DIR/gutsy" > "$DIR/gutsy.2" \
+	'F==1{print;next;}
+	 /zesty)/ {
+	    print "artful|cosmic|disco)"
+	    print "default_mirror http://old-releases.ubuntu.com/ubuntu"
+	    print "keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg"
+	    print ";;"
+	    F=1; }
+	 {print;}'
+	mv "$DIR/gutsy.2" "$DIR/gutsy"
 
 	: Ubuntu keys
 	git clone \
@@ -118,8 +140,13 @@ cat <<\@
     docker_savefile 'Debian Potato key' /root/potato-key.gpg < potato-key.gpg
 
     docker_cmd
-    docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd 'WORKDIR /opt'
+    docker_cmd
+    docker_cmd '#--------------------------------------------------------------------------#'
+    docker_cmd
+
+    [ "$1" = baseonly ] && return 0
+
     docker_cmd "ARG RELEASE=stable"
     docker_cmd "ARG ARCH"
     docker_cmd "ARG MIRROR"
@@ -133,12 +160,6 @@ cat <<\@
 	DIR=/usr/share/debootstrap/scripts
 	case "$RELEASE" in
 	potato|woody|sarge ) ARCH="${ARCH:-i386}" ;;
-
-	devuan )
-	    DEBSCRIPT="$RELEASE";
-	    RELEASE=stable
-	    MIRROR="${MIRROR:-http://deb.devuan.org/merged}"
-	    ;;
 
 	etch|lenny|squeeze|wheezy )
 	    if [ "$ARCH" != i386 ]
@@ -190,7 +211,7 @@ cat <<\@
 	    EXTRA='--exclude=udev,initscripts,sysvinit,console-tools,console-common,ubuntu-base'
 	    ;;
 
-	 gutsy|hardy )
+	gutsy|hardy )
 	    EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
 	    ;;
 
