@@ -9,7 +9,7 @@ build_images() {
     while [ "${1#-}" != "$1" ]
     do
 	case "$1" in
-	-j ) forkcount=8; shift;;
+	-j ) forkcount=$(nproc); shift;;
 	-l ) LISTCMD=1; shift;;
 	-R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
 	-P ) DOPUSH=yes; shift;;
