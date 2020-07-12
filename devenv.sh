@@ -14,6 +14,7 @@ host_main() {
     ENC_OFF=
     REPOPREFIX=
     DOPUSH=
+    SRCREPO=rdebath/
     while [ "${1#-}" != "$1" ]
     do
 	case "$1" in
@@ -25,6 +26,7 @@ host_main() {
 	-X ) ENC_OFF=yes ; shift ;;
 
 	-R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
+	-S ) SRCREPO="${2:+$2/}" ; shift 2;;
 	-P ) DOPUSH=yes; shift;;
 
 	* ) echo >&2 "Unknown Option $1" ; exit 1;;
@@ -38,25 +40,24 @@ host_main() {
     if [ "$1" != '' ]||[ "$RUNNOW" = yes ]
     then build_one "$1" ; wait
     else
-
 	for base in \
 	    debian ubuntu alpine centos fedora opensuse/leap archlinux \
-	    localhost/debian:unstable-i386 localhost/debian:unstable \
-	    localhost/debian:bullseye localhost/debian:bullseye-i386 \
-	    localhost/debian:buster-i386 localhost/debian:jessie-i386 \
-	    localhost/debian:jessie localhost/debian:buster \
-	    localhost/debian:wheezy-i386 localhost/debian:squeeze-i386 \
-	    localhost/debian:wheezy localhost/debian:stretch-i386 \
-	    localhost/debian:stretch localhost/debian:squeeze \
-	    localhost/debian:lenny-i386 localhost/debian:lenny
+	    ${SRCREPO}debian:unstable-i386 ${SRCREPO}debian:unstable \
+	    ${SRCREPO}debian:bullseye ${SRCREPO}debian:bullseye-i386 \
+	    ${SRCREPO}debian:buster-i386 ${SRCREPO}debian:jessie-i386 \
+	    ${SRCREPO}debian:jessie ${SRCREPO}debian:buster \
+	    ${SRCREPO}debian:wheezy-i386 ${SRCREPO}debian:squeeze-i386 \
+	    ${SRCREPO}debian:wheezy ${SRCREPO}debian:stretch-i386 \
+	    ${SRCREPO}debian:stretch ${SRCREPO}debian:squeeze \
+	    ${SRCREPO}debian:lenny-i386 ${SRCREPO}debian:lenny
 	do build_one $base
 	done
 
 	ENC_OFF=yes
 	for base in \
-	    localhost/debian:etch-i386 localhost/debian:etch \
-	    localhost/debian:sarge localhost/debian:woody \
-	    localhost/debian:potato
+	    ${SRCREPO}debian:etch-i386 ${SRCREPO}debian:etch \
+	    ${SRCREPO}debian:sarge ${SRCREPO}debian:woody \
+	    ${SRCREPO}debian:potato
 	do build_one $base
 	done
 
@@ -81,8 +82,7 @@ build_one() {
     I="$(echo :"$1"- | tr ':/' '--' | tr -d . | \
 	sed -e 's/-latest-/-/' \
 	    -e 's/-debian-/-/' \
-	    -e 's/-rdb-/-/' \
-	    -e 's/-localhost-/-/' \
+	    -e "s/-${SRCREPO}-/-/" \
 	    -e 's/^-//' -e 's/-$//' )"
 
     [ "$I" = '' ] && I="$1"
