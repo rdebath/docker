@@ -7,6 +7,15 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 # This function copies a docker image flattening the layers into one and
 # removing the layer history.
 #
+# Usually you'll want to do this instead ...
+#
+# FROM scratch
+# COPY --from=buildstage / /
+# CMD ["startup"]
+#
+#
+
+#######################################################
 # // whitelist of commands allowed for a commit/import
 # var validCommitCommands = map[string]bool{
 #       "entrypoint": true,
@@ -19,6 +28,7 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 #       "onbuild":    true,
 #       "label":      true,
 # }
+#######################################################
 
 docker_cpi() {
     # docker_cpi "src image" "dest image" "ssh host"
