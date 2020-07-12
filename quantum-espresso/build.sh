@@ -52,7 +52,7 @@ build_one() {
 	    echo "# Push done -> $I"
 	}
     else
-	echo "# Script to build $I"
+	echo "# Dockerfile to build $I"
 	guest_script "$1"
     fi
     :
@@ -61,7 +61,42 @@ build_one() {
 ################################################################################
 # shellcheck disable=SC1091,SC2086
 guest_script() {
-    build_base condabuild
+    docker_cmd FROM debian as build-base
+    docker_cmd ENV 'LANG=C.UTF-8'
+    docker_cmd ENV 'PATH=/opt/conda/bin:$PATH'
+    docker_cmd WORKDIR '/workspace'
+
+    # Setup
+    docker_start || {
+	apt-get update
+	apt-get install -y build-essential bzip2 ca-certificates curl gfortran git
+    } ; docker_commit "Install Debian"
+    docker_cmd
+
+    docker_cmd FROM build-base AS qedownload
+
+    # docker_cmd ARG 'QE_VER=6.4.1'
+    # docker_cmd ARG 'MPI_VER=4.0'
+    # docker_cmd ARG 'MPI_BLD=1'
+
+    docker_cmd ARG 'QE_VER=6.5'
+    docker_cmd ARG 'MPI_VER=4.0'
+    docker_cmd ARG 'MPI_BLD=4'
+    docker_cmd
+
+    docker_start || {
+	echo "Downloading qe..."
+	curl https://gitlab.com/QEF/q-e/-/archive/qe-${QE_VER}/q-e-qe-${QE_VER}.tar.bz2 |
+	    tar -xj
+
+	echo "Downloading openmpi ..."
+	curl https://download.open-mpi.org/release/open-mpi/v${MPI_VER}/openmpi-${MPI_VER}.${MPI_BLD}.tar.bz2 |
+	    tar -xj
+
+    } ; docker_commit "Download qe and mpi"
+
+    docker_cmd
+    docker_cmd FROM build-base AS condabuild
 
     docker_start || {
 	curl -L https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
@@ -88,28 +123,7 @@ guest_script() {
     } ; docker_commit "Download and install miniconda"
 
     docker_cmd
-    build_base qebuild
-
-    # docker_cmd ARG 'QE_VER=6.4.1'
-    # docker_cmd ARG 'MPI_VER=4.0'
-    # docker_cmd ARG 'MPI_BLD=1'
-
-    docker_cmd ARG 'QE_VER=6.5'
-    docker_cmd ARG 'MPI_VER=4.0'
-    docker_cmd ARG 'MPI_BLD=4'
-    docker_cmd
-
-    docker_start || {
-	echo "Downloading qe..."
-	curl https://gitlab.com/QEF/q-e/-/archive/qe-${QE_VER}/q-e-qe-${QE_VER}.tar.bz2 |
-	    tar -xj
-
-	echo "Downloading openmpi ..."
-	curl https://download.open-mpi.org/release/open-mpi/v${MPI_VER}/openmpi-${MPI_VER}.${MPI_BLD}.tar.bz2 |
-	    tar -xj
-
-    } ; docker_commit "Download qe and mpi"
-
+    docker_cmd FROM qedownload AS qebuild
     docker_cmd
     docker_cmd ARG VARIANT=$1
     docker_cmd
@@ -197,21 +211,6 @@ guest_script() {
     esac
 
     docker_cmd ENV 'ESPRESSO_PSEUDO=/pseudo_dir'
-    docker_cmd CMD '["bash"]'
-    docker_cmd
-}
-
-build_base() {
-    docker_cmd FROM debian as "$1"
-    docker_cmd ENV 'LANG=C.UTF-8'
-    docker_cmd ENV 'PATH=/opt/conda/bin:$PATH'
-    docker_cmd WORKDIR '/workspace'
-
-    # Setup
-    docker_start || {
-	apt-get update
-	apt-get install -y build-essential bzip2 ca-certificates curl gfortran git
-    } ; docker_commit "Install Debian"
     docker_cmd
 }
 

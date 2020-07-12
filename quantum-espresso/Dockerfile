@@ -1,6 +1,6 @@
-# Script to build quantum-espresso:latest
+# Dockerfile to build quantum-espresso:latest
 #--------------------------------------------------------------------------#
-FROM debian as condabuild
+FROM debian as build-base
 ENV LANG=C.UTF-8
 ENV PATH=/opt/conda/bin:$PATH
 WORKDIR /workspace
@@ -9,25 +9,8 @@ _ H4sIAAAAAAACAzXLMQ7AIAgAwFlfwQdY+iOKaEiINYBD+/p26XjDFVqJQxL2apRSy2+dkWQG;\
 _ eMO51RpKhMxUMjgfXQcwIYunduUvBvB2g9EvT6cJQ7O+a5jTeFwAAAA=;\
 )|base64 -d|gzip -d>/tmp/install;sh -e /tmp/install;rm -f /tmp/install
 
-RUN : Download and install miniconda ;set -e;_() { echo "$@";};(\
-_ H4sIAAAAAAACA4WQQW7DIBBF1+YUo3RXaaBOU6uqFJ8gXXZXqcKYyEQYkIEq3vTsxTh20kpV;\
-_ 2cC8+fP1mULEQQMeoAvB+RfGBuks5YYLa1pOhe1Zr4zKFXtdXo+4o0+0LPGgTDzj+bn6qHbU;\
-_ d/BOCkinhnUoUVI0PPVuEWAD6IBZF1hmhBT5BqElN4BBOT+SQqenv5ExGQRzgz0qLWnLVrs/;\
-_ eHKVorOwof97bKCu4YvRKesgYJmcU3ER1CcPElJX/lSuyaNrJwWaLAIU0Mojjzp4wBHmX16k;\
-_ yvjAtZ74ZWMm9m7cl7Ss6P3CvFCZba/oZButGjIXd+B4cvP7B7rdZQ0pnHJX9zeYggyR91LT;\
-_ kff615LVCIhJSb4B13EsAgYCAAA=;\
-)|base64 -d|gzip -d>/tmp/install;sh -e /tmp/install;rm -f /tmp/install
-
 #--------------------------------------------------------------------------#
-FROM debian as qebuild
-ENV LANG=C.UTF-8
-ENV PATH=/opt/conda/bin:$PATH
-WORKDIR /workspace
-RUN : Install Debian ;set -e;_() { echo "$@";};(\
-_ H4sIAAAAAAACAzXLMQ7AIAgAwFlfwQdY+iOKaEiINYBD+/p26XjDFVqJQxL2apRSy2+dkWQG;\
-_ eMO51RpKhMxUMjgfXQcwIYunduUvBvB2g9EvT6cJQ7O+a5jTeFwAAAA=;\
-)|base64 -d|gzip -d>/tmp/install;sh -e /tmp/install;rm -f /tmp/install
-
+FROM build-base AS qedownload
 ARG QE_VER=6.5
 ARG MPI_VER=4.0
 ARG MPI_BLD=4
@@ -38,6 +21,20 @@ _ 83mkMsP90FzK3MijLlNeEwD4zFNnm/PMuaqZI6ba5TIBZQqMoyXWglCgtCrTLWFNIuji6LCP;\
 _ do9hJT4BOGkhuc34nXm8r37k4npizPt+bSoqi0rzHwLHKQZDRvQhMDZFSznJhvAFsQ26zXY1;\
 _ mkzXxBvB2C7W4V+tJ6W90xQRAQAA;\
 )|base64 -d|gzip -d>/tmp/install;sh -e /tmp/install;rm -f /tmp/install
+
+#--------------------------------------------------------------------------#
+FROM build-base AS condabuild
+RUN : Download and install miniconda ;set -e;_() { echo "$@";};(\
+_ H4sIAAAAAAACA4WQQW7DIBBF1+YUo3RXaaBOU6uqFJ8gXXZXqcKYyEQYkIEq3vTsxTh20kpV;\
+_ 2cC8+fP1mULEQQMeoAvB+RfGBuks5YYLa1pOhe1Zr4zKFXtdXo+4o0+0LPGgTDzj+bn6qHbU;\
+_ d/BOCkinhnUoUVI0PPVuEWAD6IBZF1hmhBT5BqElN4BBOT+SQqenv5ExGQRzgz0qLWnLVrs/;\
+_ eHKVorOwof97bKCu4YvRKesgYJmcU3ER1CcPElJX/lSuyaNrJwWaLAIU0Mojjzp4wBHmX16k;\
+_ yvjAtZ74ZWMm9m7cl7Ss6P3CvFCZba/oZButGjIXd+B4cvP7B7rdZQ0pnHJX9zeYggyR91LT;\
+_ kff615LVCIhJSb4B13EsAgYCAAA=;\
+)|base64 -d|gzip -d>/tmp/install;sh -e /tmp/install;rm -f /tmp/install
+
+#--------------------------------------------------------------------------#
+FROM qedownload AS qebuild
 
 ARG VARIANT=latest
 
@@ -76,5 +73,4 @@ ENV OMPI_NUM=2
 ENV OMP_NUM_THREADS=16
 ENV ASE_ESPRESSO_COMMAND="mpiexec --bind-to socket --map-by socket -n ${OMPI_NUM} pw.x -in espresso.pwi > espresso.pwo"
 ENV ESPRESSO_PSEUDO=/pseudo_dir
-CMD ["bash"]
 
