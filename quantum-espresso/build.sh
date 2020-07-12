@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1003,SC2001,SC2016
+# shellcheck disable=SC1003,SC2001,SC2016,SC2086
 #
-if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
-set -e
+if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set -e +o posix;fi
 
 host_main() {
     docker_init
+
     REPOPREFIX=
     DOPUSH=
-    DISABLE_ENCODE=yes
+    DISABLE_ENCODE=
+    DEFAULT_LIST=latest
     while [ "${1#-}" != "$1" ]
     do
 	case "$1" in
@@ -17,8 +18,11 @@ host_main() {
 	# Build, feed the dockerfile into docker build
 	-b ) BUILD=yes ; shift ;;
 	# Disable base64 encoding
-	-X ) DISABLE_ENCODE= ; shift ;;
+	-X ) DISABLE_ENCODE=yes ; shift ;;
+	# Build all variants
+	-A ) DEFAULT_LIST='latest openmp openmpi' ; shift ;;
 
+	# Where to stick it.
 	-R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
 	-P ) DOPUSH=yes; shift;;
 
@@ -26,7 +30,7 @@ host_main() {
 	esac
     done
 
-    [ "$#" -eq 0 ] && set -- latest openmp openmpi
+    [ "$#" -eq 0 ] && set -- $DEFAULT_LIST
     for i
     do build_one "$i"
     done
@@ -34,14 +38,7 @@ host_main() {
 }
 
 build_one() {
-    local I
-    I="$(echo :"$1"- | tr ':/' '--' | tr -d . | \
-	sed -e 's/-latest-/-/' \
-	    -e 's/-localhost-/-/' \
-	    -e 's/^-//' -e 's/-$//' )"
-
-    [ "$I" = '' ] && I="$1"
-    I="${REPOPREFIX}quantum-espresso:$I"
+    local I="${REPOPREFIX}quantum-espresso:$1"
 
     if [ "$BUILD" = yes ]
     then
@@ -64,27 +61,14 @@ build_one() {
 ################################################################################
 # shellcheck disable=SC1091,SC2086
 guest_script() {
-
-    docker_cmd FROM debian as qebuild
-    docker_cmd ENV 'LANG=C.UTF-8'
-    docker_cmd ENV 'PATH=/opt/conda/bin:$PATH'
-    docker_cmd WORKDIR '/workspace'
-
-    # Setup
-    docker_start || {
-	set -e
-	apt-get update
-	apt-get install -y build-essential bzip2 ca-certificates curl gfortran git
-    } ; docker_commit "Install Debian"
+    build_base condabuild
 
     docker_start || {
-	set -e
-
 	curl -L https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
 	    > miniconda.sh
 	bash miniconda.sh -b -p /opt/conda
 
-	/opt/conda/bin/conda clean -tipsy
+	conda clean -tipsy
 	ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
 
 	echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc 
@@ -103,8 +87,17 @@ guest_script() {
 
     } ; docker_commit "Download and install miniconda"
 
+    docker_cmd
+    build_base qebuild
+
     # docker_cmd ARG 'QE_VER=6.4.1'
+    # docker_cmd ARG 'MPI_VER=4.0'
+    # docker_cmd ARG 'MPI_BLD=1'
+
     docker_cmd ARG 'QE_VER=6.5'
+    docker_cmd ARG 'MPI_VER=4.0'
+    docker_cmd ARG 'MPI_BLD=4'
+    docker_cmd
 
     docker_start || {
 	echo "Downloading qe..."
@@ -112,22 +105,22 @@ guest_script() {
 	    tar -xj
 
 	echo "Downloading openmpi ..."
-	curl https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.1.tar.bz2 |
+	curl https://download.open-mpi.org/release/open-mpi/v${MPI_VER}/openmpi-${MPI_VER}.${MPI_BLD}.tar.bz2 |
 	    tar -xj
 
-    } ; docker_commit "Download"
+    } ; docker_commit "Download qe and mpi"
 
+    docker_cmd
     docker_cmd ARG VARIANT=$1
+    docker_cmd
 
     if [ "$1" != openmp ]
     then
 	docker_start || {
-	    set -e
-
 	    if [ "$VARIANT" != openmp ]
 	    then
 		echo "Install openmpi ..." && \
-		cd openmpi-4.0.1
+		cd openmpi-*
 		./configure --with-cma=no
 		make -j 4
 		echo "installing..."
@@ -139,12 +132,10 @@ guest_script() {
     fi
 
     docker_start || {
-	set -e
-
 	case "$VARIANT" in
-        openmp )  CONFIGURE_ARGS="--enable-openmp --enable-parallel=no" ;;
-        openmpi ) CONFIGURE_ARGS= ;;
-        * )       CONFIGURE_ARGS="--enable-openmp" ;;
+	openmp )  CONFIGURE_ARGS="--enable-openmp --enable-parallel=no" ;;
+	openmpi ) CONFIGURE_ARGS= ;;
+	* )       CONFIGURE_ARGS="--enable-openmp" ;;
 	esac
 
 	echo "Building qe..."
@@ -154,6 +145,7 @@ guest_script() {
 	echo "installing..."
 	make install
     } ; docker_commit "Install qe"
+    docker_cmd
 
     docker_cmd FROM debian as quantum-espresso
     docker_cmd ENV 'LANG=C.UTF-8'
@@ -161,8 +153,6 @@ guest_script() {
     docker_cmd WORKDIR '/workspace'
 
     docker_start || {
-	set -e
-
 	apt-get update
 	apt-get install -y libgfortran5 libgomp1
 	apt-get clean
@@ -174,7 +164,7 @@ guest_script() {
 
     } ; docker_commit 'Configure Linux'
 
-    docker_cmd COPY '--from=qebuild /opt/conda /opt/conda'
+    docker_cmd COPY '--from=condabuild /opt/conda /opt/conda'
     docker_cmd COPY '--from=qebuild /usr/local /usr/local'
 
     docker_start || {
@@ -211,6 +201,20 @@ guest_script() {
     docker_cmd
 }
 
+build_base() {
+    docker_cmd FROM debian as "$1"
+    docker_cmd ENV 'LANG=C.UTF-8'
+    docker_cmd ENV 'PATH=/opt/conda/bin:$PATH'
+    docker_cmd WORKDIR '/workspace'
+
+    # Setup
+    docker_start || {
+	apt-get update
+	apt-get install -y build-essential bzip2 ca-certificates curl gfortran git
+    } ; docker_commit "Install Debian"
+    docker_cmd
+}
+
 ################################################################################
 # Dockerfile building scriptlets
 #
@@ -225,6 +229,8 @@ docker_commit() {
 }
 
 docker_cmd() {
+    [ "$1" = FROM ] &&
+	echo '#--------------------------------------------------------------------------#'
     [ "$RUNNOW" != yes ] && { echo "$@" ; return 0; }
 
     case "$1" in
@@ -262,14 +268,14 @@ make_docker_runcmd() {
 	    while IFS= read -r line
 	    do echo echo "${line@Q};"\\
 	    done
-	echo ")>$sn;sh $sn;rm -f $sn"
+	echo ")>$sn;sh -e $sn;rm -f $sn"
 	return 0;
     }
     # Limit per "run" is library exec arg length (approx 128k)
     # Encode the script
-    echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'
+    echo "RUN ${1:+: $1 ;}"'set -e;_() { echo "$@";};(\'
     gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
-    echo ')|base64 -d|gzip -d>'"$sn;sh $sn;rm -f $sn"
+    echo ')|base64 -d|gzip -d>'"$sn;sh -e $sn;rm -f $sn"
 }
 
 ################################################################################
