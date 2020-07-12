@@ -55,7 +55,7 @@ main() {
     "" ) for ar in "${arg[@]}" ;do make_dockerrun "$ar" ; done ;;
     * )
 	ar=$(bash "$0" "${arg[@]}")
-	echo "$ar" | docker build -q "${barg[@]}" -
+	echo "$ar" | docker build "${barg[@]}" -
 	;;
     esac
     exit
