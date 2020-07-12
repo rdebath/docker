@@ -313,17 +313,6 @@ make_docker_files() {
 }
 
 ################################################################################
-# Uninstall apk from alpine linux.
-
-docker_remove_apk() {
-    # Remove apk
-    apk del --repositories-file /dev/null apk-tools alpine-keys libc-utils
-
-    # Delete apk installation data
-    rm -rf /var/cache/apk /lib/apk /etc/apk
-}
-
-################################################################################
 #
 unmake_docker_runcmd() {
     grep ^_ "$1" | base64 -di | gzip -d
