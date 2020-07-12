@@ -62,14 +62,13 @@ do_build() {
     b="build-$distro-$variant${arch:+-$arch}"
 
     git worktree remove -f "$T" 2>/dev/null ||:
+    git update-ref refs/tempref "$NULL"
     git worktree add "$T" "$NULL"
 
     (
 	set -e
 	cd "$T"
-	git branch -D "$b" 2>/dev/null ||:
-	git checkout -b "$b" --track origin/"$b" 2>/dev/null ||
-	    git checkout -f --orphan "$b"
+	git checkout "$b" ||:
 
 	if [ "$variant" = latest ]
 	then dvar=stable
@@ -94,45 +93,51 @@ do_build() {
 	if [ "$ID" = '' ]
 	then
 	    docker build -t "rdebath/$distro:$fullvar" \
-		--build-arg=RELEASE=$variant \
+		--build-arg=RELEASE="$variant" \
 		${arch:+--build-arg=ARCH=$arch} \
 		-< ../Dockerfile
 	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar")
 	fi
 
-	cat packages.txt > /tmp/_savedpackages.txt ||:
+	cat packages.txt > savedpackages.txt ||:
 	rm -f packages.txt
 	docker run --rm -t -v "$(pwd)":/home/user \
 	    "rdebath/$distro:$fullvar" \
-	    bash -c 'apt-get -y -qq update &&
+	    bash -c 'echo "Checking for upgraded packages" &&
+		apt-get -y -qq update &&
 		apt-get -y upgrade &&
 		dpkg -l > /home/user/packages.txt'
 
-	if ! cmp /tmp/_savedpackages.txt packages.txt
+	if ! cmp savedpackages.txt packages.txt
 	then
-	    docker build -t "rdebath/$distro:$fullvar" \
-		--build-arg=RELEASE=$variant \
-		${arch:+--build-arg=ARCH=$arch} \
-		-< ../Dockerfile
-
-	    docker run --rm -t -v "$(pwd)":/home/user \
-		"rdebath/$distro:$fullvar" \
-		bash -c 'apt-get -y -qq update &&
-		    apt-get -y upgrade &&
-		    dpkg -l > /home/user/packages.txt'
-
-	    git add -A
-	    export GIT_AUTHOR_NAME=autocommit
-	    export GIT_AUTHOR_EMAIL=''
-	    export GIT_COMMITTER_NAME=autocommit
-	    export GIT_COMMITTER_EMAIL=''
-	    git commit -m "Update build tree for $fullvar"
-	    git push origin "$b"
+	    mktag "$b" "Update build tree for $fullvar"
 	fi
-	rm -f /tmp/_savedpackages.txt
     )
+    git update-ref -d refs/tempref
     git worktree remove -f "$T" ||:
-    git branch -D "$b" ||:
+}
+
+mktag() {
+    TAG="$1"
+    TAB=$(echo .|tr . '\011')
+
+    git update-ref refs/tags/"$TAG" "$(
+    {
+	echo "100644 blob $(git hash-object -w Dockerfile )${TAB}Dockerfile"
+	echo "100644 blob $(git hash-object -w README.md)${TAB}README.md"
+	echo "100644 blob $(git hash-object -w packages.txt )${TAB}packages.txt"
+
+    } | {
+	echo "tree $(git mktree)"
+	echo "author Autopost <> $(date +%s) +0000"
+	echo "committer Autopost <> $(date +%s) +0000"
+	echo
+	echo "$2"
+	echo
+	echo '👻'
+    } | git hash-object -t commit -w --stdin )"
+
+    git push -f origin "$TAG"
 }
 
 init() {
