@@ -12,9 +12,9 @@ set -e
 host_main() {
     docker_init
     ENC_OFF=
-    REPOPREFIX=
+    REPOPREFIX=localhost/devel:
     DOPUSH=
-    SRCREPO=rdebath/
+    SRCREPO=
     while [ "${1#-}" != "$1" ]
     do
 	case "$1" in
@@ -25,8 +25,8 @@ host_main() {
 	# Disable encoding
 	-X ) ENC_OFF=yes ; shift ;;
 
-	-R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
-	-S ) SRCREPO="${2:+$2/}" ; shift 2;;
+	-R ) REPOPREFIX="${2}" ; shift 2;;
+	-S ) SRCREPO="${2}" ; shift 2;;
 	-P ) DOPUSH=yes; shift;;
 
 	* ) echo >&2 "Unknown Option $1" ; exit 1;;
@@ -36,33 +36,22 @@ host_main() {
     grep -q vsyscall /proc/cmdline ||
 	echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
 
-    # $1 is the FROM image.
-    if [ "$1" != '' ]||[ "$RUNNOW" = yes ]
-    then build_one "$1" ; wait
-    else
-	for base in \
-	    debian ubuntu alpine centos fedora opensuse/leap archlinux \
-	    ${SRCREPO}debian:unstable-i386 ${SRCREPO}debian:unstable \
-	    ${SRCREPO}debian:bullseye ${SRCREPO}debian:bullseye-i386 \
-	    ${SRCREPO}debian:buster-i386 ${SRCREPO}debian:jessie-i386 \
-	    ${SRCREPO}debian:jessie ${SRCREPO}debian:buster \
-	    ${SRCREPO}debian:wheezy-i386 ${SRCREPO}debian:squeeze-i386 \
-	    ${SRCREPO}debian:wheezy ${SRCREPO}debian:stretch-i386 \
-	    ${SRCREPO}debian:stretch ${SRCREPO}debian:squeeze \
-	    ${SRCREPO}debian:lenny-i386 ${SRCREPO}debian:lenny
-	do build_one $base
-	done
+    [ "$1" = deblist ] &&
+	set -- \
+	    unstable-i386 unstable bullseye bullseye-i386 buster-i386 \
+	    jessie-i386 jessie buster wheezy-i386 squeeze-i386 wheezy \
+	    stretch-i386 stretch squeeze lenny-i386 lenny etch-i386 etch \
+	    sarge woody potato
 
-	ENC_OFF=yes
-	for base in \
-	    ${SRCREPO}debian:etch-i386 ${SRCREPO}debian:etch \
-	    ${SRCREPO}debian:sarge ${SRCREPO}debian:woody \
-	    ${SRCREPO}debian:potato
-	do build_one $base
-	done
+    [ "$1" = '' ] &&
+	set -- \
+	    ubuntu alpine centos fedora opensuse/leap archlinux
 
-	wait
-    fi
+    for base
+    do build_one $base "${SRCREPO}$base" "${REPOPREFIX}$base"
+    done
+
+    wait
 }
 
 build_one() {
@@ -75,41 +64,33 @@ build_one() {
 	;;
 
     *suse*|amazonlinux ) DISABLE_ENCODE=yes ;;
+    *etch*|*sarge*|*woody*|*potato*) DISABLE_ENCODE=yes ;;
     * ) DISABLE_ENCODE="$ENC_OFF" ;;
     esac
 
-    local I
-    I="$(echo :"$1"- | tr ':/' '--' | tr -d . | \
-	sed -e 's/-latest-/-/' \
-	    -e 's/-debian-/-/' \
-	    -e "s/-${SRCREPO}-/-/" \
-	    -e 's/^-//' -e 's/-$//' )"
-
-    [ "$I" = '' ] && I="$1"
-    I="${REPOPREFIX}devel:$I"
-
     if [ "$BUILD" = yes ]
     then
-	echo "# Build $1 -> $I"
+	echo "# Build $2 -> $3"
 	(
-	    NEWID=$(guest_script "$1" | docker build -q - -t "$I")
+	    guest_script "$1" "$2" | docker build  - -t "$3"
 
-	    echo "# Push -> $I"
+	    echo "# Push -> $3"
 	    [ "$DOPUSH" = yes ] && {
 		lockfile /tmp/pushlock.lock
-		docker push "$I" ||:
+		docker push "$3" ||:
 		rm -f /tmp/pushlock.lock
 	    }
-	    echo "# Done $1 -> $I = $NEWID"
-	) &
+	    echo "# Done $2 -> $3"
+	)
+return
 
 	cnt=$((cnt + 1))
 	if [ "$cnt" -gt 3 ]
 	then wait -n && cnt=$((cnt - 1)) ;:
 	fi
     else
-	echo "# Script to build $I from $1"
-	guest_script "$1"
+	echo "# Script to build $3 from $2"
+	guest_script "$1" "$2"
     fi
 }
 
@@ -117,7 +98,7 @@ build_one() {
 # shellcheck disable=SC1091,SC2086
 guest_script() {
 
-    [ -n "$1" ] && docker_cmd FROM "$1"
+    [ -n "$2" ] && docker_cmd FROM "$2"
 
 docker_start || {
 
