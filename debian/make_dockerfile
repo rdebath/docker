@@ -74,7 +74,6 @@ cat <<\@
     } ; docker_commit "Configure host"
 
     docker_start || {
-	set -ex
 	DIR=/usr/share/debootstrap/scripts
 
 	: 'Repair Debian scripts'
@@ -160,7 +159,6 @@ cat <<\@
     docker_cmd "ARG STAMP"
 
     docker_start || {
-	set -ex
 	: "Stage 1 for $RELEASE $ARCH $STAMP"
 
 	DIR=/usr/share/debootstrap/scripts
@@ -250,7 +248,7 @@ cat <<\@
 
     # Split off so errors don't dump Base64 to screen and space due to
     # deleted layers is not important here.
-    docker_cmd 'RUN set -ex;: $RELEASE; sh /tmp/stage1 && rm -f /tmp/stage1'
+    docker_cmd 'RUN sh -ex /tmp/stage1 && rm -f /tmp/stage1'
 
     docker_cmd '# Configure apt and dpkg for docker'
     docker_cmd '# Note: standard used "#" for comment not "//"'
@@ -261,7 +259,7 @@ cat <<\@
     docker_cmd '#--------------------------------------------------------------------------#'
 
     docker_start || {
-	set -ex
+	: Start stage 2 for $RELEASE
 	export DEBIAN_FRONTEND=noninteractive
 
 	: init sometimes uses ischroot to disable updates.
@@ -375,7 +373,7 @@ cat <<\@
 	    apt-get install -y $INSTALL
 	}
 
-	: Clean lists, cache and history.
+	: "Clean lists, cache and history."
 	apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
 	apt-get clean
 	dpkg --clear-avail
@@ -394,10 +392,10 @@ cat <<\@
     docker_cmd 'FROM scratch AS stage2'
     docker_cmd 'COPY --from=unpack /opt/chroot /'
     docker_cmd 'ARG RELEASE'
-    docker_cmd 'RUN set -ex;: $RELEASE; sh /tmp/stage2 && rm -f /tmp/stage2'
+    docker_cmd 'RUN sh -ex /tmp/stage2 && rm -f /tmp/stage2'
     docker_cmd
     docker_cmd 'ARG INSTALL'
-    docker_cmd 'RUN sh /tmp/stage3 && rm -f /tmp/stage3'
+    docker_cmd 'RUN sh -ex /tmp/stage3 && rm -f /tmp/stage3'
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd '# Finally squash all the layers.'
@@ -440,7 +438,7 @@ make_docker_runcmd() {
     local sn="/tmp/install"
     echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'
     gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
-    echo ')|base64 -d|gzip -d>'"$sn;sh $sn;rm -f $sn"
+    echo ')|base64 -d|gzip -d>'"$sn;sh -ex $sn;rm -f $sn"
 }
 
 docker_save() {

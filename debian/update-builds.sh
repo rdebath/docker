@@ -105,6 +105,8 @@ do_build() {
 	    sed -i -e 's;^\(ARG DEBSCRIPT\>\).*;\1="'"$5"'";' \
 		Dockerfile
 
+	cp -p Dockerfile ../Dockerfile.tmp
+
 	if [ "$distro" = debian ]
 	then cp -p ../README.md README.md
 	else cp -p ../README-Generic.md README.md
