@@ -363,8 +363,11 @@ cat <<\@
     } ; docker_save "Stage 2" tmp/stage2
 
     docker_start || {
-	[ "$RELEASE" = jessie ] &&
+	# Workaround for Jessie apt-get very slow issue
+	[ "$RELEASE" = jessie ] && {
 	    ulimit -n 1024 ||: Docker gives us 1M fds, apt cries.
+	    echo >>/root/.bashrc ulimit -n 1024
+	}
 
 	# Download and install any defined packages
 	[ "$INSTALL" != '' ] && {
@@ -383,10 +386,6 @@ cat <<\@
 
 	# Workaround for old "dpkg --clear-avail" bug.
 	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
-
-	# Workaround for Jessie apt-get very slow issue
-	[ "$RELEASE" != jessie ] ||
-	    echo >>/root/.bashrc ulimit -n 1024
 
     } ; docker_save "Extras and Cleanup" tmp/stage3
 

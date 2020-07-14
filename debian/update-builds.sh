@@ -128,16 +128,20 @@ do_build() {
 	    "rdebath/$distro:$fullvar" \
 	    bash -c "echo 'Checking for upgraded packages' &&
 		dpkg -l > /home/user/packages-before.txt &&
+		rm -f /home/user/packages.txt &&
 		apt-get -y -qq update &&
 		apt-get -y $UPCMD &&
-		dpkg -l > /home/user/packages.txt"
+		dpkg -l > /home/user/packages.txt ||:"
 
 	if ! cmp savedpackages.txt packages.txt
 	then
-	    mktag "$b" "Update build tree for $fullvar"
+	    [ -s packages.txt ] &&
+		mktag "$b" "Update build tree for $fullvar"
 	fi
 	if ! cmp packages-before.txt packages.txt
 	then
+	    [ -s packages.txt ] || date > packages.txt
+
 	    sed -i -e 's;^\(ARG STAMP\>\).*;\1="'"$( \
 		md5sum < packages.txt | awk '{print $1;}')"'";' \
 		Dockerfile
