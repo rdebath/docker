@@ -35,6 +35,10 @@
 # The INSTALL arg is a list of packages to install just before the
 # final cleanup.
 #
+# The INCLUDE arg is a list of packages to include during stage 1.
+#
+# STAMP is a flag to invalidate the docker cache for stage 1.
+#
 # I'm using the base64 stuff to make things prettier :-)
 
 #--------------------------------------------------------------------------#
@@ -107,28 +111,31 @@ ARG ARCH
 ARG MIRROR
 ARG DEBSCRIPT
 ARG DEBOPTIONS
+ARG INCLUDE
+ARG STAMP
 RUN : Stage 1 ;set -eu; _() { echo "$@";};(\
-_ H4sIAAAAAAACA91W227bRhB9Fr9iQhMWYogm6hZB4VQBVFtABdQXSE5RwE6DFTkSNyJ36b1I;\
-_ UU3/e2eXlE3XdvLWhwoQVtTO9czMGfY0Gojxa9A7hnBm2BLhB1hIBdF0/Pt4NBtDNJqe/BYG;\
-_ Qe90Mh0mVqtE50xhkuFcSqONYlWiU8Uro4NeyjRCuNMNgYugV0nDjKw3UmbbWjNFLt6CMzoM;\
-_ ozt3Hsf8x5/f3Yfw/j25QZPmdYFCkPCtRfwb601OxxbeBj2gD1/ANfnwYcGbIThl+NTcmRzJ;\
-_ Y2+psIL4FtZ6q1NWFJBUSqZJFCUlqzTUNdyRlFPANJfwYf8IwvF0ejE9hlOccyYe01d4a7lC;\
-_ 7Uw/2iuxlGoLGlPDpTgMn1kbZdmD9BBLWzCDQLA+/CeY4WsEI2GFSmABqSxLJjIouMCXDBaG;\
-_ 5LxSsQVLMLuAfO5MpTk3FIpVHc2v3MDRET3dN9AseHN6kDdMmW2dS6a29Vw5dOuMVRWqGrPl;\
-_ tl4g13S/tEaTFFNUOC4Mgcqz+guzgu5WTJU8/W9q8nFOLu3/vSYHNBZ7MFmAkKBtmkMzVQNY;\
-_ WtQauOlrCmRF86V5FjaK1/CGppeQp+FMorvT8a+zk+nk8uo43oFFY/UJ9vfJZyEgXmgg5W/L;\
-_ P4TUQ83SoPd0VFmZvfvp3vEB1XxX0/5fK9wqLpaHB9bXqv89F64p4OTi7HIYxjHBXEmBwuhh;\
-_ ybgYUGmN4qnBbGAFgas0DqhcpvlJ2lgQ1q9pp5Jalc8HQop4Qb1N8oRz0HsMds0UzbjRhwcl;\
-_ F3OirO+E6/FzoPwxmk5G51fOa2tj2FpwgOzBmdWGqpwWNsOEC3+6dloSyRKpWJGxkig2A+o4;\
-_ g+XLfPmFqs0dR47/vJqOhv04bi0OG61s0J4xnWuI49aRu15zwQ0hoiglV8HOnO9G9ZlV+q4H;\
-_ TdliD0anJxtS+Laqc9kugMEuBFcELQuMjZSFfnhy8yTFa846dPOqx64zW2lD+fkGYMaj0UIT;\
-_ a1RrnqLummc65byeo9zYYlHTeJYMFatTdEzSQXsHJ+VmmYjbzm7wXLGCxwcvSfsbP/VrfKrj;\
-_ p4igfNyXVDNasciXNJFeZ+iZE6K2vyByvQ0RNePF5dXk4nwGN00ikffb7Zg0V2QWorOJ40qv;\
-_ 0zQwuUwzSGRlkkYmcDv+VKbEbZAzDaxQyDJHmMZWDRsHPU3NGXPHKX2d3Pzi7z57oj6GzkMf;\
-_ nqx/S1QXN2UhL9fd+IbQ7H/PQo7iXRp7cGKVopHtmvFBze2yEXkSiKfcm+ju42z82UFzcT4+;\
-_ v5rdN/+Hzy/CfwW4sMIvBXpDuX8eYDtw3QDdy1AzZMA1zW3FCLYMGsAoGS6o9Wjn4JpojIhw;\
-_ g5BJ0TewIU4gqj4MH+1IoA3LVn43tNXy9G5y5kRJEbVTZbQsyObWs0XrALOdpQ4eSTv/Nx8O;\
-_ D5LsaabtasxcolTu3RudG5ECad11X+2CfwDiM0Lq/QkAAA==;\
+_ H4sIAAAAAAACA91WbW/iRhD+DL9izrGCLsWxmlaniisn0QSpSJcXAakqJdfTYg+wF3vX2Rc4;\
+_ GvPfO7s2wWmSu2/9UCS0tnfe9pmZZ7al0UCEX9utHgQTwxYIP8JcKgjHw4/DwWQI4WB8+juE;\
+_ k+ng/Cpot1tno3E/tlrFeskUxinOpDTaKFbEOlG8MLrdSphGCHYmAuCi3SqkYUaWaynTTamZ;\
+_ Ik9vwdnuB+GDW3sR/+mXd9sA3r8nN2iSZZmhECR8bxH/xnK9pGUDb9stoB+fww35cJoBvOmD;\
+_ U4ZP1Z5ZInlsLRQWEN3DSm90wrIM4kLJJA7DOGeFhrKEB5JyCpgsJXw4PIFgOB5fjntwhjPO;\
+_ xB4FhfeWK9TO9N5ejrlUG9CYGC7FcfDM2iBNH6X7mNuMGQRC9/GbYIavEIyEO1QCM0hknjOR;\
+_ QsYFvmQwMyTnlbINWILZBeTPzlSy5IZCsaqh+ZUbODmht20FzZxXqwd5zZTZlEvJ1KacKYdu;\
+_ mbKiQFViutiUc+Sa9hfWaJJiihLHhSFQeVp+YVbQ3h1TOU/+m5xcz8il/b/n5Ija4gBGcxAS;\
+_ tE2WUHVVFxYWtQZuOpoCuaP+0jwNKsUbeENNTMhTc8bhw9nwt8npeHQ17UU7sKitPsHhIfnM;\
+_ BERzDaT8bfnHkFqoWdJuPW1Vlqfvft46PqCc73La+esON4qLxfGR9bnqfM+FKwo4vTy/6gdR;\
+_ RDAXUqAwup8zLrqUWqN4YjDtWkHgKo1dSpepHkkbM8L6Ne1EUqnyWVdIEc2ptkmecG639sGu;\
+_ mKIeN/r4KOdiRpT1nXA9fg6UPwbj0eBi6rzWNvq1BQfIAZxbbSjLSWZTjLnwqyunBXEtkYoV;\
+_ KcuJaVOgijOYv8yXXyjb3HHk8M/peNDvRFFtsV9ppd16jWhdQRTVjtz2igtuCBFFR3IZbPT5;\
+_ rlWfWaX/qlulLfJgNGqyIoVvqzqX9QDo7kJwSdAyw8hImenHN9dPUrzmrEE3r3psOrOFNnQ+;\
+_ XwDMeDRqaCKNasUT1E3zTCeclzOUa5vNS2rPnKFiZYKOSRpo7+Cks1kmorqyKzzvWMajo5ek;\
+_ /Y7v+hU+1fFdRFDu5yXljCYt8gV1pNfp17O2ri8IXW1DSMV4eTUdXV5M4LY6SOj9Qvgwujj9;\
+_ eH027P0Q7EMI64/BdifeqKxkqcg9hOcjx6nedlXoFFqSQiwLE1cybXclOJMJcSAsmQaWKWSp;\
+_ I1Zji4q12y1NRRxxxz0dHd/+6vc+e0LvQeOlA0+uCZYoMarSR15umvH1oboneLZyo8DFfwCn;\
+_ Vilq7aYZH9TMLiqRJ4F4ar4NH64nw88OwsuL4cV0sq2+B883gn8FOLfCDw+6yWyfB1g3ZjNA;\
+_ d3eqmhG4pv4uGMGWQgUYHYYLKlGaTbgiuiPCXCOkUnQMrIk7iNKPg70dCTSJ2Z2fIXW2/Bgw;\
+_ S+ZESRG1U2U0VMjmxrNK7QDTnaUGHnHNE7cfjo/i9OlJ6xGauoNSuncXQNdKGdJYbN4E2/8A;\
+_ 3rcboSwKAAA=;\
 )|base64 -d|gzip -d>/tmp/stage1
 RUN set -ex;: $RELEASE; sh /tmp/stage1 && rm -f /tmp/stage1
 # Configure apt and dpkg for docker

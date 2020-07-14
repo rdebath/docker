@@ -113,25 +113,36 @@ do_build() {
 	ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar" 2>/dev/null ||:)
 	if [ "$ID" = '' ]
 	then
-	    docker build -t "rdebath/$distro:$fullvar" \
-		--build-arg=RELEASE="$dvar" \
-		${arch:+--build-arg=ARCH=$arch} \
-		-< ../Dockerfile
+	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
 	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar")
 	fi
 
 	cat packages.txt > savedpackages.txt ||:
 	rm -f packages.txt
+	case "$fullvar" in
+	potato|dapper|dapper-i386)
+	    UPCMD=upgrade ;;
+	* ) UPCMD=dist-upgrade ;;
+	esac
 	docker run --rm -t -v "$(pwd)":/home/user \
 	    "rdebath/$distro:$fullvar" \
-	    bash -c 'echo "Checking for upgraded packages" &&
+	    bash -c "echo 'Checking for upgraded packages' &&
+		dpkg -l > /home/user/packages-before.txt &&
 		apt-get -y -qq update &&
-		apt-get -y dist-upgrade &&
-		dpkg -l > /home/user/packages.txt'
+		apt-get -y $UPCMD &&
+		dpkg -l > /home/user/packages.txt"
 
 	if ! cmp savedpackages.txt packages.txt
 	then
 	    mktag "$b" "Update build tree for $fullvar"
+	fi
+	if ! cmp packages-before.txt packages.txt
+	then
+	    sed -i -e 's;^\(ARG STAMP\>\).*;\1="'"$( \
+		md5sum < packages.txt | awk '{print $1;}')"'";' \
+		Dockerfile
+
+	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
 	fi
     )
     git update-ref -d refs/tempref
