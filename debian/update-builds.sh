@@ -38,7 +38,8 @@ all_debian() {
 	stable testing unstable latest \
 	\
 	etch-i386 lenny-i386 squeeze-i386 wheezy-i386 \
-	jessie-i386 stretch-i386 buster-i386 bullseye-i386
+	jessie-i386 stretch-i386 buster-i386 bullseye-i386 \
+	unstable-i386
     do do_build "$fullvar" debian
     done
 }
