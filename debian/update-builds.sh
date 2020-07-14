@@ -7,6 +7,13 @@ main() {
     case "$1" in
     debian ) DIST=debian; shift ;;
     ubuntu ) DIST=ubuntu; shift ;;
+    sid-x32 )
+	DIST=debian
+	do_build "$1" "$DIST" \
+	    '--no-check-gpg\ --include=debian-ports-archive-keyring' \
+	    http://ftp.ports.debian.org/debian-ports
+	exit
+	;;
     esac
 
     if [ "$#" -gt 0 ]
@@ -61,6 +68,8 @@ do_build() {
 
     b="build-$distro-$variant${arch:+-$arch}"
 
+    echo "#### Starting $b"
+
     git worktree remove -f "$T" 2>/dev/null ||:
     git update-ref refs/tempref "$NULL"
     git worktree add "$T" "$NULL"
@@ -84,6 +93,18 @@ do_build() {
 		Dockerfile
 	}
 
+	[ "$3" != '' ] &&
+	    sed -i -e 's;^\(ARG DEBOPTIONS\>\).*;\1="'"$3"'";' \
+		Dockerfile
+
+	[ "$4" != '' ] &&
+	    sed -i -e 's;^\(ARG MIRROR\>\).*;\1="'"$4"'";' \
+		Dockerfile
+
+	[ "$5" != '' ] &&
+	    sed -i -e 's;^\(ARG DEBSCRIPT\>\).*;\1="'"$5"'";' \
+		Dockerfile
+
 	if [ "$distro" = debian ]
 	then cp -p ../README.md README.md
 	else cp -p ../README-Generic.md README.md
@@ -93,7 +114,7 @@ do_build() {
 	if [ "$ID" = '' ]
 	then
 	    docker build -t "rdebath/$distro:$fullvar" \
-		--build-arg=RELEASE="$variant" \
+		--build-arg=RELEASE="$dvar" \
 		${arch:+--build-arg=ARCH=$arch} \
 		-< ../Dockerfile
 	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar")
@@ -105,7 +126,7 @@ do_build() {
 	    "rdebath/$distro:$fullvar" \
 	    bash -c 'echo "Checking for upgraded packages" &&
 		apt-get -y -qq update &&
-		apt-get -y upgrade &&
+		apt-get -y dist-upgrade &&
 		dpkg -l > /home/user/packages.txt'
 
 	if ! cmp savedpackages.txt packages.txt

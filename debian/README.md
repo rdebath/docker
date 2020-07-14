@@ -1,6 +1,6 @@
 This repo contains debootstrap images for all Debian versions since "potato".
 
-Version-|Tag            |Notes
+Version |Tag            |Notes
 --------|---------------|--------------------
 2.2     |potato         |i386 only
 3.0     |woody          |i386 only
