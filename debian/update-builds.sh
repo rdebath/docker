@@ -127,7 +127,12 @@ do_build() {
 	    UPCMD=upgrade ;;
 	* ) UPCMD=dist-upgrade ;;
 	esac
-	docker run --rm -t -v "$(pwd)":/home/user \
+	case "$arch" in
+	i386 ) DOCKERSECOPT="$DOCKERI386" ;;
+	* )    DOCKERSECOPT='' ;;
+	esac
+
+	docker run $DOCKERSECOPT --rm -t -v "$(pwd)":/home/user \
 	    "rdebath/$distro:$fullvar" \
 	    bash -c "echo 'Checking for upgraded packages' &&
 		dpkg -l > /home/user/packages-before.txt &&
@@ -190,6 +195,8 @@ committer nobody <> 1 +0000
 " | git hash-object -t commit -w --stdin )
 
     T="$(pwd)/temptree"
+
+    DOCKERI386='--security-opt seccomp:unconfined'
 }
 
 main "$@"

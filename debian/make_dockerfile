@@ -66,8 +66,8 @@ cat <<\@
 @
     fi
 
-    docker_cmd 'FROM alpine AS unpack'
-    docker_cmd 'WORKDIR /root'
+    docker_cmd FROM 'alpine AS unpack'
+    docker_cmd WORKDIR '/root'
 
     docker_start || {
 	apk add --no-cache debootstrap perl git
@@ -143,20 +143,20 @@ cat <<\@
     docker_savefile 'Debian Potato key' /root/potato-key.gpg < potato-key.gpg
 
     docker_cmd
-    docker_cmd 'WORKDIR /opt'
+    docker_cmd WORKDIR '/opt'
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd
 
     [ "$1" = baseonly ] && return 0
 
-    docker_cmd "ARG RELEASE=stable"
-    docker_cmd "ARG ARCH"
-    docker_cmd "ARG MIRROR"
-    docker_cmd "ARG DEBSCRIPT"
-    docker_cmd "ARG DEBOPTIONS"
-    docker_cmd "ARG INCLUDE"
-    docker_cmd "ARG STAMP"
+    docker_cmd ARG 'RELEASE=stable'
+    docker_cmd ARG 'ARCH'
+    docker_cmd ARG 'MIRROR'
+    docker_cmd ARG 'DEBSCRIPT'
+    docker_cmd ARG 'DEBOPTIONS'
+    docker_cmd ARG 'INCLUDE'
+    docker_cmd ARG 'STAMP'
 
     docker_start || {
 	: "Stage 1 for $RELEASE $ARCH $STAMP"
@@ -248,11 +248,11 @@ cat <<\@
 
     # Split off so errors don't dump Base64 to screen and space due to
     # deleted layers is not important here.
-    docker_cmd 'RUN sh -ex /tmp/stage1 && rm -f /tmp/stage1'
+    docker_cmd RUN 'sh -ex /tmp/stage1 && rm -f /tmp/stage1'
 
     docker_cmd '# Configure apt and dpkg for docker'
     docker_cmd '# Note: standard used "#" for comment not "//"'
-    docker_cmd 'WORKDIR /opt/chroot'
+    docker_cmd WORKDIR '/opt/chroot'
     base64_extras
 
     docker_cmd
@@ -389,20 +389,20 @@ cat <<\@
 
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
-    docker_cmd 'FROM scratch AS stage2'
-    docker_cmd 'COPY --from=unpack /opt/chroot /'
-    docker_cmd 'ARG RELEASE'
-    docker_cmd 'RUN sh -ex /tmp/stage2 && rm -f /tmp/stage2'
+    docker_cmd FROM 'scratch AS stage2'
+    docker_cmd COPY '--from=unpack /opt/chroot /'
+    docker_cmd ARG 'RELEASE'
+    docker_cmd RUN 'sh -ex /tmp/stage2 && rm -f /tmp/stage2'
     docker_cmd
-    docker_cmd 'ARG INSTALL'
-    docker_cmd 'RUN sh -ex /tmp/stage3 && rm -f /tmp/stage3'
+    docker_cmd ARG 'INSTALL'
+    docker_cmd RUN 'sh -ex /tmp/stage3 && rm -f /tmp/stage3'
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd '# Finally squash all the layers.'
-    docker_cmd 'FROM scratch'
-    docker_cmd 'COPY --from=stage2 / /'
-    docker_cmd 'WORKDIR /root'
-    docker_cmd 'CMD ["bash"]'
+    docker_cmd FROM 'scratch'
+    docker_cmd COPY '--from=stage2 / /'
+    docker_cmd WORKDIR '/root'
+    docker_cmd CMD '["bash"]'
 }
 
 ################################################################################
