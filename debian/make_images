@@ -84,9 +84,9 @@ build_images() {
 	    [ "$RELEASE" = woody -a "$ARCH" = i386 ] && continue # Is default
 	    [ "$RELEASE" = sarge -a "$ARCH" = i386 ] && continue # Is default
 
-	    # These fail on touching a file !?
-	    [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue # Humm.
-	    [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue # Humm.
+	    # These fail if libseccomp2 < 2.4.3-1+b1
+	    # [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue # Humm.
+	    # [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue # Humm.
 
 	    # vdso nuisance
 	    [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue

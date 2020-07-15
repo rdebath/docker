@@ -183,9 +183,19 @@ cat <<\@
 		grep -q vsyscall /proc/$$/maps || {
 		    echo >&2 "ERROR: Ubuntu $RELEASE requires the vsyscall memory section."
 		    echo >&2 "Add vsyscall=emulate or vsyscall=native to kernel command line."
-		    echo >&2 "Alternatively use the i386 architecture."
 		    exit 22
 		}
+	    fi
+	    if [ "$ARCH" = i386 ]
+	    then
+		case "$RELEASE" in
+		warty|hoary )
+		    [ "$(cat /proc/sys/vm/mmap_min_addr)" -gt 4096 ] && {
+			echo >&2 "ERROR: Ubuntu $RELEASE needs /proc/sys/vm/mmap_min_addr"
+			echo >&2 "reduced to 4096 on the host and vdso disabled"
+			exit 23
+		    }
+		esac
 	    fi
 	    ;;
 
@@ -217,6 +227,11 @@ cat <<\@
 
 	gutsy|hardy )
 	    EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
+	    EXTRA="$EXTRA "'--include=gpgv'
+	    ;;
+
+	intrepid|jaunty|karmic|lucid|maverick|natty )
+	    EXTRA='--include=gpgv'
 	    ;;
 
 	ascii|beowulf|chimaera|ceres ) EXTRA='--include=devuan-keyring' ;;

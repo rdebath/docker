@@ -3,23 +3,26 @@
 main() {
     init
     bash make_dockerfile
-    DIST=debian
     case "$1" in
-    debian ) DIST=debian; shift ;;
-    ubuntu ) DIST=ubuntu; shift ;;
-    sid-x32 )
-	DIST=debian
-	do_build "$1" "$DIST" \
-	    '--no-check-gpg\ --include=debian-ports-archive-keyring' \
-	    http://ftp.ports.debian.org/debian-ports
-	exit
-	;;
+    debian|ubuntu|devuan|kali ) DIST=$1; shift ;;
+    * ) DIST=debian ;;
     esac
 
     if [ "$#" -gt 0 ]
     then
 	for fullvar
-	do do_build "$fullvar" $DIST
+	do
+	    case "$fullvar" in
+	    sid-x32 )
+		DIST=debian
+		do_build "$1" "$DIST" \
+		    '--no-check-gpg\ --include=debian-ports-archive-keyring' \
+		    http://ftp.ports.debian.org/debian-ports
+		;;
+	    *)  choose_distro "$fullvar"
+		do_build "$fullvar" $DIST
+		;;
+	    esac
 	done
     elif [ "$DIST" = debian ]
     then all_debian
@@ -161,6 +164,42 @@ do_build() {
     git worktree remove -f "$T" ||:
 }
 
+choose_distro() {
+    case "${1%-*}" in
+    stable|testing|unstable )
+	DIST=debian ;;
+
+    jessie )
+	[ "$DIST" != debian ]&&[ "$DIST" != devuan ] &&
+	    DIST=debian
+	;;
+
+    potato|woody|sarge|etch|lenny|squeeze|wheezy )
+	DIST=debian ;;
+    stretch|buster|bullseye|bookworm)
+	DIST=debian ;;
+
+    kali-rolling|kali-last-snapshot|kali-dev )
+	DIST=kali ;;
+    ascii|beowulf|chimaera|ceres )
+	DIST=devuan ;;
+
+    dapper|hardy|lucid|precise|trusty|xenial|bionic|focal ) # LTS
+	DIST=ubuntu ;;
+    warty|hoary|breezy|edgy|feisty|gutsy|intrepid|jaunty|karmic|maverick )
+	DIST=ubuntu ;;
+    natty|oneiric|quantal|raring|saucy|utopic|vivid|wily|yakkety|zesty )
+	DIST=ubuntu ;;
+    artful|cosmic|disco|eoan|groovy )
+	DIST=ubuntu ;;
+
+    amber ) DIST=pureos ;;
+
+    aequorea|bartholomea|chromodoris|dasyatis)
+	DIST=tanglu ;;
+    esac
+}
+
 mktag() {
     TAG="$1"
     TAB=$(echo .|tr . '\011')
@@ -196,7 +235,8 @@ committer nobody <> 1 +0000
 
     T="$(pwd)/temptree"
 
-    DOCKERI386='--security-opt seccomp:unconfined'
+    DOCKERI386=''
+    # '--security-opt seccomp:unconfined'
 }
 
 main "$@"
