@@ -257,12 +257,15 @@ cat <<\@
 	    : "So break the chroot such that it doesn't actually get installed."
 	    sed -i -e '/systemd\>.*/d' debootstrap/required
 	}
+
+	echo export RELEASE="'$RELEASE'" > tmp/release
+
 	: Stage 1 complete for $RELEASE
 
     } ; docker_save "Stage 1" /tmp/stage1
 
-    # Split off so errors don't dump Base64 to screen and space due to
-    # deleted layers is not important here.
+    # Split off so errors don't dump Base64 to screen
+    # space used by deleted layers is not important here.
     docker_cmd RUN 'sh -ex /tmp/stage1 && rm -f /tmp/stage1'
 
     docker_cmd '# Configure apt and dpkg for docker'
@@ -274,7 +277,10 @@ cat <<\@
     docker_cmd '#--------------------------------------------------------------------------#'
 
     docker_start || {
+	. /tmp/release
 	: Start stage 2 for $RELEASE
+	rm -f /tmp/release
+
 	export DEBIAN_FRONTEND=noninteractive
 
 	: init sometimes uses ischroot to disable updates.
@@ -288,8 +294,13 @@ cat <<\@
 	    sed -i -e '/^#<off> force-unsafe-io/s/#[^ ]* //' \
 	        /etc/dpkg/dpkg.cfg.d/docker-apt-speedup ||:
 
+	# The script policy-rc.d was designed for debootstrap
+	mv /usr/sbin/policy-rc.d /usr/sbin/policy-rc.docker
+
 	/debootstrap/debootstrap --second-stage ||
 	    echo "WARNING: Exit status from debootstrap --second-stage is $?" >&2
+
+	mv /usr/sbin/policy-rc.docker /usr/sbin/policy-rc.d
 
 	case "$RELEASE" in
 	jessie )
@@ -341,10 +352,11 @@ cat <<\@
 		$(dpkg -l | awk '/^i[UF]/{print $2;}')
 	    ;;
 
-	potato ) # Potato isn't a minbase
+	potato )
+	    # Potato isn't a minbase, but apt and netbase aren't "essential"!
 	    yes yes |
 	    dpkg --purge --force-remove-essential \
-		pcmcia-cs modconf modutils pppconfig ppp console-tools sysvinit ||:
+		pcmcia-cs modconf modutils pppconfig ppp console-tools
 
 	    for pkg in \
 		adduser ae base-config console-data console-tools-libs \
@@ -355,6 +367,8 @@ cat <<\@
 
 	    do  dpkg --purge "$pkg"
 	    done
+	    # Allow sysvinit to be reinstalled, but disable restart.
+	    ln -s /bin/true /usr/local/sbin/init
 	    ;;
 	esac
 
@@ -365,23 +379,14 @@ cat <<\@
 	    apt-mark auto -qq $(apt-mark showmanual) ||:
 	}
 
-	: Clean up the ischroot divert.
-	if [ -x /sbin/init -a -x /usr/bin/ischroot ]
-	then
-	    rm -f /usr/bin/ischroot
-	    dpkg-divert --local --rename --remove /usr/bin/ischroot
-	fi
+	# Workaround for Jessie apt-get is very slow issue
+	[ "$RELEASE" = jessie ] &&
+	    echo >>/root/.bashrc ulimit -n 1024
 
 	: Stage 2 complete for $RELEASE
     } ; docker_save "Stage 2" tmp/stage2
 
     docker_start || {
-	# Workaround for Jessie apt-get very slow issue
-	[ "$RELEASE" = jessie ] && {
-	    ulimit -n 1024 ||: Docker gives us 1M fds, apt cries.
-	    echo >>/root/.bashrc ulimit -n 1024
-	}
-
 	# Download and install any defined packages
 	[ "$INSTALL" != '' ] && {
 	    apt-get update -y
@@ -397,8 +402,18 @@ cat <<\@
 	rm -rf /var/tmp/* /tmp/*
 	:|find /var/log -type f ! -exec tee {} \;
 
+	# Label
+	[ -e /etc/debian_chroot ] || echo docker > /etc/debian_chroot
+
 	# Workaround for old "dpkg --clear-avail" bug.
 	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
+
+#	: Clean up the ischroot divert.
+#	if [ "$(dpkg-divert --listpackage /usr/bin/ischroot)" = LOCAL ]
+#	then
+#	    rm -f /usr/bin/ischroot
+#	    dpkg-divert --local --rename --remove /usr/bin/ischroot
+#	fi
 
     } ; docker_save "Extras and Cleanup" tmp/stage3
 
@@ -406,14 +421,13 @@ cat <<\@
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd FROM 'scratch AS stage2'
     docker_cmd COPY '--from=unpack /opt/chroot /'
-    docker_cmd ARG 'RELEASE'
     docker_cmd RUN 'sh -ex /tmp/stage2 && rm -f /tmp/stage2'
     docker_cmd
     docker_cmd ARG 'INSTALL'
     docker_cmd RUN 'sh -ex /tmp/stage3 && rm -f /tmp/stage3'
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
-    docker_cmd '# Finally squash all the layers.'
+    docker_cmd '# Finally squash the layers.'
     docker_cmd FROM 'scratch'
     docker_cmd COPY '--from=stage2 / /'
     docker_cmd WORKDIR '/root'

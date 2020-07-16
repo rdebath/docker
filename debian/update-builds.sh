@@ -1,6 +1,10 @@
 #!/bin/sh
 
 main() {
+    [ "$1" = -f ] && { FORCEBUILD=1 ; shift ; }
+    [ "$1" = -P ] && { FORCEBUILD=1 ; FORCEPUSH=1 ; shift ; }
+    [ "$1" = -p ] && { FORCEPUSH=1 ; shift ; }
+
     init
     bash make_dockerfile
     case "$1" in
@@ -59,7 +63,8 @@ all_ubuntu() {
 	maverick-i386 natty-i386 oneiric-i386 precise-i386 quantal-i386 \
 	raring-i386 saucy-i386 trusty-i386 utopic-i386 vivid-i386 \
 	wily-i386 xenial-i386 yakkety-i386 zesty-i386 artful-i386 \
-	bionic-i386 cosmic-i386 disco-i386 eoan-i386
+	bionic-i386 cosmic-i386 disco-i386 eoan-i386 focal-i386 \
+	groovy-i386
 
     do do_build "$fullvar" ubuntu
     done
@@ -69,6 +74,8 @@ do_build() {
     distro="$2"
     fullvar="$1"
     variant=${fullvar%-*}; arch=${fullvar#$variant}; arch="${arch#-}"
+    fullvar="$(echo "$fullvar" | tr _ -)"
+    variant="$(echo "$variant" | tr _ -)"
 
     b="build-$distro-$variant${arch:+-$arch}"
 
@@ -117,13 +124,15 @@ do_build() {
 	fi
 
 	ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar" 2>/dev/null ||:)
-	if [ "$ID" = '' ]
+	if [ "$ID" = '' ]||[ "$FORCEBUILD" = 1 ]
 	then
 	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
 	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar")
 	fi
 
-	cat packages.txt > savedpackages.txt ||:
+	[ "$FORCEPUSH" != 1 ] && {
+	    cat packages.txt > savedpackages.txt ||:
+	}
 	rm -f packages.txt
 	case "$fullvar" in
 	potato|dapper|dapper-i386)
@@ -179,7 +188,7 @@ choose_distro() {
     stretch|buster|bullseye|bookworm)
 	DIST=debian ;;
 
-    kali-rolling|kali-last-snapshot|kali-dev )
+    kali_rolling|kali_last_snapshot|kali_dev )
 	DIST=kali ;;
     ascii|beowulf|chimaera|ceres )
 	DIST=devuan ;;
@@ -198,6 +207,7 @@ choose_distro() {
     aequorea|bartholomea|chromodoris|dasyatis)
 	DIST=tanglu ;;
     esac
+    :
 }
 
 mktag() {
