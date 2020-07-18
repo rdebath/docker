@@ -41,11 +41,7 @@ cat <<\@
 # From PureOS:
 #   amber
 #
-# However, some of the older ones have expired keys so you'll need to include
-#   DEBOPTIONS='--no-check-gpg'
-# and use a https MIRROR.
-#
-# The ARCH option from be set to i386 for most of these (and is set to
+# The ARCH option can be set to i386 for most of these (and is defaulted to
 # i386 for some like Debian Woody)
 #
 # The MIRROR allows you to set the mirror to use and then
@@ -142,22 +138,6 @@ cat <<\@
 
     } ; docker_commit "Configure debootstrap"
 
-    docker_savefile 'Debian Potato key' /root/potato-key.gpg < potato-key.gpg
-
-    docker_cmd
-    docker_cmd WORKDIR '/opt'
-    docker_cmd
-    docker_cmd '#--------------------------------------------------------------------------#'
-    docker_cmd
-
-    [ "$1" = baseonly ] && return 0
-
-    docker_cmd ARG 'RELEASE=stable'
-    docker_cmd ARG 'ARCH'
-    docker_cmd ARG 'MIRROR'
-    docker_cmd ARG 'DEBSCRIPT'
-    docker_cmd ARG 'DEBOPTIONS'
-    docker_cmd ARG 'INCLUDE'
     docker_cmd
 
     docker_start || {
@@ -282,21 +262,11 @@ cat <<\@
 
 	echo export RELEASE="'$RELEASE'" > tmp/release
 
+	mv /tmp/stage* tmp
+
 	: Stage 1 complete for $RELEASE
 
     } ; docker_save "Stage 1" /tmp/stage1
-
-    # Split off so errors don't dump Base64 to screen
-    # space used by deleted layers is not important here.
-    docker_cmd RUN 'sh -ex /tmp/stage1 && rm -f /tmp/stage1'
-
-    docker_cmd '# Configure apt and dpkg for docker'
-    docker_cmd '# Note: standard used "#" for comment not "//"'
-    docker_cmd WORKDIR '/opt/chroot'
-    base64_extras
-
-    docker_cmd
-    docker_cmd '#--------------------------------------------------------------------------#'
 
     docker_start || {
 	touch /tmp/release
@@ -407,7 +377,7 @@ cat <<\@
 	    echo >>/root/.bashrc ulimit -n 1024
 
 	: Stage 2 complete for $RELEASE
-    } ; docker_save "Stage 2" tmp/stage2
+    } ; docker_save "Stage 2" /tmp/stage2
 
     docker_start || {
 	# Download and install any defined packages
@@ -431,7 +401,35 @@ cat <<\@
 	# Workaround for old "dpkg --clear-avail" bug.
 	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
 
-    } ; docker_save "Extras and Cleanup" tmp/stage3
+    } ; docker_save "Extras and Cleanup" /tmp/stage3
+
+    docker_cmd
+    docker_savefile 'Debian Potato key' /root/potato-key.gpg < potato-key.gpg
+    docker_cmd
+    docker_cmd WORKDIR '/opt'
+    docker_cmd
+    docker_cmd '#--------------------------------------------------------------------------#'
+    docker_cmd
+
+    [ "$1" = baseonly ] && return 0
+
+    docker_cmd ARG 'RELEASE=stable'
+    docker_cmd ARG 'ARCH'
+    docker_cmd ARG 'MIRROR'
+    docker_cmd ARG 'DEBSCRIPT'
+    docker_cmd ARG 'DEBOPTIONS'
+    docker_cmd ARG 'INCLUDE'
+    docker_cmd
+
+    docker_cmd RUN 'sh -ex /tmp/stage1 && rm -f /tmp/stage1'
+
+    docker_cmd
+    docker_cmd '#--------------------------------------------------------------------------#'
+
+    docker_cmd '# Patch apt and dpkg for docker'
+    docker_cmd '# Note: standard used "#" for comment not "//"'
+    docker_cmd WORKDIR '/opt/chroot'
+    base64_extras
 
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'

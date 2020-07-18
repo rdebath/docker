@@ -20,11 +20,7 @@
 # From PureOS:
 #   amber
 #
-# However, some of the older ones have expired keys so you'll need to include
-#   DEBOPTIONS='--no-check-gpg'
-# and use a https MIRROR.
-#
-# The ARCH option from be set to i386 for most of these (and is set to
+# The ARCH option can be set to i386 for most of these (and is defaulted to
 # i386 for some like Debian Woody)
 #
 # The MIRROR allows you to set the mirror to use and then
@@ -64,6 +60,80 @@ _ bdhM+UT2Tx6eyNNa4JczlzOvGTAJH87PT8/C4JuR05YqLRZ6csN3ePbMCp0J1Ng/GsEvBuSW;\
 _ Uf+mudcdW7sM6lKigqP3x5cN3uWnk9nsy6x/r+H5keYMVlSC1qzxDRaox/BKG3UJPgxLl03Q;\
 _ vtX9MNon26fF/McGpsmK+Ti0DjoEwl80Jv988QgAAA==;\
 )|base64 -d|gzip -d>/tmp/install;sh -ex /tmp/install;rm -f /tmp/install
+
+RUN : Stage 1 ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA81XbW/bNhD+bP+Kq+LVi2dZW1sUmzcXyBIDM9C8wE6HAc0W0OLZZiORKkk5;\
+_ 9aL89x0p2ZYTp92+FAsQyCLvjQ/vnjs1+hBMLJsj/AAzpaE1Hr4dHk2G0DoaH/8WQGtyeXR6;\
+_ 0Ww2TkbjQZQbHZkF0xhxnCpljdUsi0ysRWZNsxEzgxCsTQQgZLORKcusKm6V4qvCME2eDsHZ;\
+_ HgStO/fsh+Llj6/vA/j5Z3KDNl4UCUpJwh9zxL+xuF3QYwWHzQbQn5jBe/JRRvdsAE4Z/iz3;\
+_ 7ALJY2OuMYPwIyzNysQsSSDKtIqjVitKWWagKOCOpJwCxgsFb56/gGA4Hp+P+3CCU8HkFgWN;\
+_ H3Oh0TjTW3sppkqvwGBshZK94JG1I8430gNM84RZBEJ3syaZFUsEq+AGtcQEYpWmTHJIhMR9;\
+_ BhNLcl4pWUFOMLuA/NmZjhfCUii5rml+EhZevKC3+xKamSifHuRbpu2qWCimV8VUO3QLzrIM;\
+_ dYF8vipmKAztz3NrSIppujghLYEqePGB5ZL2bphORfx17uTdlFzm/5s7eQrZHRD2YrCvPOp3;\
+_ 4eD08s7OtzGzFUgUYLRMIwomu06FvGac68MAwrmFV9//RF7g+XMPX+OL2ElEbj5jNti1opHn;\
+_ MXKHifekpAd9oYwFh8ySGwVcGDZNkJe6Hp6X1UEIogYaFu/JQU8FvWkuEs5Ldqhe1km1jyPK;\
+_ nZPhr5Pj8ejicrAFs9yp3pxa9fObXmettk39tVuP+gO3/9V431hed9Dpd9am3DVuzLmcaLf9;\
+_ XREo7yF0qUCkGm2sHRx0+kSDlcTDWHalmmsPz+qGNvL9cBtjv3O/tZpICGcGjOD/Qql+KiLt;\
+_ AxjNQCowebyAkvO7MM/RGBC2bahMbigUMh181eCqBNtNF5by1688TFSWa+5p/3WDKy3kvNfJ;\
+_ fV209/qp3DgXrnDh+Pz0YhCEIdFBpiRKawYpE7JLFGS1iC3ybi6JObTBLtGKLX+SNiZU709p;\
+_ x4ooVUy7UslwRhxM8lQfzcY22CXT1Ius6XWoOqfEHV8I14PoQPn9aDw6Ort0Xisbg8qCA+QA;\
+_ TnMqX/wUJznHSEj/dCU+R1fVkEvOUpoIOBBDWEz39/UPdO/C9fLhH5fjo0E7DCuLg1KLd6tn;\
+_ SM8lhGHlyG0vhRSWENF0JHeDDzjQneGRVfpfdstrCz0Ytewsm9fnVZ3LalDprkNwl2BUgqFV;\
+_ KjGbN8f7Sj7lrNYWn/RYd5ZnxtL5fAIw69GooAkN6qWI0bTrZoKWf0LQ3mI2z+bLegz723GR;\
+_ 5DGtpYwSUMQ3BTU0+zjGp2wyEwtRTFHd5smsoJkiZahZEaNrtYeP9QnUnMmwKqnyIm9YIsLO;\
+_ Pmm/40eVJe7q+PKlO9wOlJQsNIqimBMfeJ2B76rQqhIbWq6owHHr+cXl6PxsAlflQSroWnej;\
+_ s+O3706G/e+CbQitajG4X4sHO5wSQLzQFAMtn45c+wx2+JtijDlEKrNRKUcLNDCqmKYFWDAD;\
+_ LNHIuBtBbJ6VPZbaHJVRKBwPtk109Yvfu/bttw+1lzbsDNQ5DXRhmUDk5X299gZQTtSbru8O;\
+_ cgDHudZELnUzPqhpPi9FdgLxHf6qdfduMrx2WJ6fDc8uJ/flevB4I3gQ4CyXfsyimf/+cYAV;\
+_ NdQDdF8ZJR2AMMQwGSPYOJSA0WGEpCKhKQ6XRLhE2bcIXMm2hVtiL2ovvWBrRwHNrOzGTyLV;\
+_ jfmWZBfMiZIiGqfKaCQmmyvPa5UD5GtLNTyiiqmu3vQ6Ed89aTVs8vKgHh/8lCltt+NAe332;\
+_ dgBvwKZOKUFiDVJIlxC5FeM+sTpu02fN+ovLcUKCNIfWP72a/wBkWRBilA0AAA==;\
+)|base64 -d|gzip -d>/tmp/stage1
+RUN : Stage 2 ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA61XbW8bNxL+LP2KqW3kpQ21kZter07rQw5xDy1a95D2kA9pWlAkd5cnLsny;\
+_ RS+o+987Q65kyXGCHnACtEsuOeS8PPNwOEkuix6aNPgmKKN4VNPJ7E7/An5MPCSIiXcKzqF1;\
+_ Ac5eXX139eLHq+kkDMDaY4npRG28Q4mXV//85sX1r1+/+uH6p6vrl19ZZ7VNKnCR9IrmXYC2;\
+_ Gld2g0p6UBFyxIeOog/OJUgOpI58YRRkL3lScTad6BbeANtAExfaNkWe8fIhx9CUbzv5t9NJ;\
+_ 6pUF6Zcdk7gl6sSYcYIbfAdl+aCwwaV8V3g6AfoZCyxCGUkhq/vmtbpY8lOvIziftLOwCIov;\
+_ Y7ELLUTHGRNBdReQF9mm3AwcddFiOZ2QaqgC+lQolm3krWLa4Rcf0FWMB9HrpETKAV1/2Ui1;\
+_ amw2Bh48qApGJYFpYAoeNr+cfuna9hLuLNbE5vTNL/D2Y2iah/DzaBj+GpVEQwqUx0y03Uw2;\
+_ 0omlCoz7xKJXSmYPNzcXaOEpWqggiqB9Au+MFlsWxEzCmkeQKurOoi4EDqkW6JiYAvfTybCq;\
+_ PivROhS792vZHDdrDtY4bKNjohLOSlbReHNTzVGid3Dy+sWr62+u/3UBVxtd8JpyhDa4AT6w;\
+_ BEbt7B8ncPngfPp+bYte9w+hlEDUw8kuJ04w5NPJf1WMWsHjqh/m0DYmNUjAFFkhxjkg3OMT;\
+_ yNZzsQRUl3dcW4RMQSsIbiGowa1QwTSri4xYGUV2oJHKKysRoyseGsFFrxoMXlOQgzs1sW78;\
+_ 68czdMJeG931kAixO6hu46rk0mz2/9iN0XrHW76q1mBCDkcb+Bw69c764zoFe395dtn1VuQC;\
+_ fuifALeISr3ZW3i4nP6QHWU2Ey6o0ZA7lpBfEEARTeIYPkxQi5yDUVU2aWQY2hjXpSwnuUfT;\
+_ ySQbPRBfWZg/PX9GmsLLCq2OdkX6g/n30EoEBmoDmGuF8iaUjQMPS+AZOZH99hucPdp/i71b;\
+_ D9xmbh6PUzuVyswRQHuvbQ/GK6Eef0OyTSz7LnBZR0jvEcHPn6P9azwHtvAYTuF1aeloHybC;\
+_ sraLcla8E6mfaXkTOctJIweWJk0Fo/HlspXnZY5ZDfOngM9zeqDXhwF5tHfJm9yVGYOTdQ0v;\
+_ dG3QF4MMR2FKzpn4vv2RlFNGkzBMtDeublvdASay/IL1LuLnKAdMv7ouyeCU6IzaKbLros/4;\
+_ vlP2xCDhOHpOoKvDvAjve3W+tLEurFZDfTArcqCjrk0e0PNJbVJ1C4l3AWm8drUPLid6lxXw;\
+_ PPDadvsu8plQnqcelsZ1snry1rHUTMOc3qPO1LzVlTo2zv+2kyuqnc8+pYFOlPFOLoba90NX;\
+_ vmhp57URxec7STxTl602qgyYdVCxtEYz159Rxwvun84+v23+fSeNFCSNtuoZjeFBIj75hM1n;\
+_ 5+wzgWlC33JcsKezOcMJDr2TCLlFNvZrMNG1YIorAINoNvi0TC7o5UuCDpLLAUE6KBazL6VJ;\
+_ QVQKLGm7hSGnBJZbBxaPRESJxbDgv2SIQ4qJsWfCaEzsIugR/HjWeeez4UGnLSEKqxM6F2Mi;\
+_ shnfLBFeva9S3o/Aw5ajI6gFv009wqe+yPNB6ajCMwx7V4EYFOm7wCQIcWsFxGpozNIRpdW4;\
+_ J+FlHjwkZdCCIocuq6Bb6YH+OySvPx1g08aywUFmS+69CjdKdtubFnWgNN8fFlTG7NkOTybi;\
+_ uYWCag1WJnL2AY6uJMRueZG0O3tU5xq4Ab5eUvGi3/zn67fN76XugbPz5388PGQeT0F3O51O;\
+_ 4d+1f4eAngAaXaiTyBddUZIIqZlmnexVOPmoLrNFc+h/87+q78UgNGeicFAJ5C07HUb5mCrG;\
+_ A4RKJNoJT/vCTlJi1RuAqyNyej/jMEqSIqrMSscK4XYRMfCtbE2OPb6rMvfSC1bU3vpKXneS;\
+_ zzgo1THlDF8qrDZhWITR5JF1PQENN0OdyR17DGIDl8kbSDwuo6qOGgG5WWkpFdWxow8QvMfu;\
+_ PjnD3slu0KpdnF8Y49a31QmGHIGHSVKLaiVrxHe3BOQduqqMcLy3di/23d4d9hCbqMjFdF+Q;\
+_ 77FNGmKNgay7GzNVc0JZCRjxHsX2TbkI7e4H++P5LdbqeGM5KA8/+grG6rCM/V51+KtnfK1v;\
+_ /igV+WsXljwQ2RdUfVtX3R3nWN0hzW8hkgt1jFmRkgeKHOlxUEhfXjZ0tWlmaF8fBByXLdPx;\
+_ Slgug8gq3mBkj2+FfwKsFkp6WA4AAA==;\
+)|base64 -d|gzip -d>/tmp/stage2
+RUN : Extras and Cleanup ;set -eu; _() { echo "$@";};(\
+_ H4sIAAAAAAACA21RwU7jMBA9J1/xCCuQEK6Xa1ZUQsABqeICEofdFZrYkzaqawfHKUSUf99J;\
+_ C+wCa8myPfPemzfjbB8X4dG7QBbkLRrfJXJO7gMs141ni5bMkubc5dlPFN+urm9uz2azAnun;\
+_ ODzEbxwc4DnPIIvapOac0LeWEkMNH8Nv2mrAm0qeveR5VqI4d0werulSdwxDZsFbOwsJhDhM;\
+_ ijz7LP7wAKVGgjIjt2+hwkUTy/IymbK8CX00PJP0qba81r537q/GlpFntl3ORWR8RUVragQS;\
+_ V1A1NCejBT3uiQm+nlj9/YR6McOrsGa15OjZde/4NUXtmkqPkvpIBWd3qfiaS6tWH2F3SMMb;\
+_ max9ZQXxkIaWUWMPip/YIDHj+QW/fshw9jGjit04fMU7Y5arhvy9WcQQkvzAZgM2iwAbjPjC;\
+_ 9D+ordBdiEuKoZfSdYgQkyi+zqBA1c8nYz2x8wTdd1FXjde2Y8fm33rT6afGt3yqHOd/AONr;\
+_ kBdYAgAA;\
+)|base64 -d|gzip -d>/tmp/stage3
+
 RUN : Debian Potato key ;set -eu; _() { echo "$@";};(\
 _ H4sIAAAAAAACA42U+T/UCQPHv3PlGs0gYzbHzjhzDxO9WtdYx5SUcZ85Z4YZzRDjWjeRlljb;\
 _ EsKYlUKEMQm76NAmYVlyhMgRoYwMyTi2fZ4fnl+eH/YP+Lw/P3w+r3cx6FeoqXmfrhQU2Kfj;\
@@ -112,36 +182,10 @@ ARG DEBSCRIPT
 ARG DEBOPTIONS
 ARG INCLUDE
 
-RUN : Stage 1 ;set -eu; _() { echo "$@";};(\
-_ H4sIAAAAAAACA81XbW/bNhD+bP+Kq+LVi2dZW1sUmzcXyBIDM9C8wE6HAc0W0OLZZiORKkk5;\
-_ 9aL89x0p2ZYTp92+FAsQ0BLvjQ/vnjs1+hBMLJsj/AAzpaE1Hr4dHk2G0DoaH/8WQGtyeXR6;\
-_ 0Ww2TkbjQZQbHZkF0xhxnCpljdUsi0ysRWZNsxEzgxCsTQQgZLORKcusKm6V4qvCME2eDsHZ;\
-_ HgStO7f2Q/Hyx9f3Afz8M7lBGy+KBKUk4Y854t9Y3C5oWcFhswH0J2bwnnyU0T0bgFOGP8s9;\
-_ u0Dy2JhrzCD8CEuzMjFLEogyreKo1YpSlhkoCrgjKaeA8ULBm+cvIBiOx+fjPpzgVDC5RUHj;\
-_ x1xoNM701l6KqdIrMBhboWQveGTtiPON9ADTPGEWgdDdvJPMiiWCVXCDWmICsUpTJjkkQuI+;\
-_ g4klOa+UrCAnmF1A/uxMxwthKZRc1zQ/CQsvXtDTfQnNTJSrB/mWabsqForpVTHVDt2CsyxD;\
-_ XSCfr4oZCkP789wakmKaLk5IS6AKXnxguaS9G6ZTEX+dO3k3JZf5/+ZOnkJ2B4S9GOwrj/pd;\
-_ ODi9vLPzbcxsBRIFGC3TiILJrlMhrxnn+jCAcG7h1fc/kRd4/tzD1/gidhKRm8+YDXataOR5;\
-_ jNxh4j0p6UFfKGPBIbPkRgEXhk0T5KWuh+dldRCCqIGGxXty0FNBb5qLhPOSHaqHdVLt44hy;\
-_ 52T46+R4PLq4HGzBLHeqJ6dW/fym11mrbVN/7daj/sDtfzXeN5bXHXT6nbUpd40bcy4n2m1/;\
-_ VwTKewhdKhCpRhtrBwedPtFgJfEwll2p5trDs7qhjXw/3MbY79xvrSYSwpkBI/i/UKqfikj7;\
-_ AEYzkApMHi+g5PwuzHM0BoRtGyqTGwqFTAdfNbgqwXbThaX89SsPE5Xlmnvaf93gSgs573Vy;\
-_ XxftvX4qN86FK1w4Pj+9GARhSHSQKYnSmkHKhOwSBVktYou8m0tiDm2wS7Riy5+kjQnV+1Pa;\
-_ sSJKFdOuVDKcEQeTPNVHs7ENdsk09SJreh2qzilxxxfC9SA6UH4/Go+Ozi6d18rGoLLgADmA;\
-_ 05zKFz/FSc4xEtKvrsTn6KoacslZShMBB2IIi+n+vv6B7l24Xj7843J8NGiHYWVxUGrxbrWG;\
-_ tC4hDCtHbnsppLCEiKYjuRt8wIHuDI+s0v+yW15b6MGoZWfZvD6v6lxWg0p3HYK7BKMSDK1S;\
-_ idk8Od5X8ilntbb4pMe6szwzls7nE4BZj0YFTWhQL0WMpl03E7T8CkF7i9k8my/rMexvx0WS;\
-_ x/QuZZSAIr4pqKHZxzE+ZZOZWIhiiuo2T2YFzRQpQ82KGF2rPXysT6DmTIZVSZUXecMSEXb2;\
-_ SfsdP6oscVfHly/d4XagpGShURTFnPjA6wx8V4VWldjQckUFjlvPLy5H52cTuCoPUkHXuhud;\
-_ Hb99dzLsfxdsQ2hVL4P7tXiwwykBxAtNMdDr05Frn8EOf1OMMYdIZTYq5egFDYwqpmkBFswA;\
-_ SzQy7kYQm2dlj6U2R2UUCseDbRNd/eL3rn377UPtoQ07A3VOA11YJhB5eV+vvQGUE/Wm67uD;\
-_ HMBxrjWRS92MD2qaz0uRnUB8h79q3b2bDK8dludnw7PLyX35Pni8ETwIcJZLP2bRzH//OMCK;\
-_ GuoBuq+Mkg5AGGKYjBFsHErA6DBCUpHQFIdLIlyi7FsErmTbwi2xF7WXXrC1o4BmVnbjJ5Hq;\
-_ xnxLsgvmREkRjVNlNBKTzZXntcoB8rWlGh5RxVRXb3qdiO+etBo2eXlQjw9+ypS223GgvT57;\
-_ O4A3YFOnlCCxhk+Q9ceVK/8EaeSsf2U1/wGgRFF4fw0AAA==;\
-)|base64 -d|gzip -d>/tmp/stage1
 RUN sh -ex /tmp/stage1 && rm -f /tmp/stage1
-# Configure apt and dpkg for docker
+
+#--------------------------------------------------------------------------#
+# Patch apt and dpkg for docker
 # Note: standard used "#" for comment not "//"
 WORKDIR /opt/chroot
 RUN set -eu; _() { echo "$@";};(\
@@ -183,52 +227,6 @@ _ KnB9uE5DSgnyUBCMOQK/lhGyglhtWAlZcTkA1r7Whuia7xtsH95QGkDWGsNvQ4Q6Ad/GsXZ4;\
 _ RWG5py5007SlhdtuVkbXwOWBuomvOejoC6UA+FY6GA1H6W4hSZIkSZIkSZIkSZIkSZIkSZIk;\
 _ SZIkSZIkSZIkSZIkSZIkSZIkSZIkf135FamKBFYAUAAA;\
 )|base64 -d|gzip -d|tar xvf -
-
-#--------------------------------------------------------------------------#
-RUN : Stage 2 ;set -eu; _() { echo "$@";};(\
-_ H4sIAAAAAAACA61XbW8bNxL+LP2KqW3kpQ21kZter07rQw5xDy1a95D2kA9pWlAkd5cnLsny;\
-_ RS+o+987Q65kyXGCHnACtEsuOeS8PPNwOEkuix6aNPgmKKN4VNPJ7E7/An5MPCSIiXcKzqF1;\
-_ Ac5eXX139eLHq+kkDMDaY4npRG28Q4mXV//85sX1r1+/+uH6p6vrl19ZZ7VNKnCR9IrmXYC2;\
-_ Gld2g0p6UBFyxIeOog/OJUgOpI58YRRkL3lScTad6BbeANtAExfaNkWe8fIhx9CUbzv5t9NJ;\
-_ 6pUF6Zcdk7gl6sSYcYIbfAdl+aCwwaV8V3g6AfoZCyxCGUkhq/vmtbpY8lOvIziftLOwCIov;\
-_ Y7ELLUTHGRNBdReQF9mm3AwcddFiOZ2QaqgC+lQolm3krWLa4Rcf0FWMB9HrpETKAV1/2Ui1;\
-_ amw2Bh48qApGJYFpYAoeNr+cfuna9hLuLNbE5vTNL/D2Y2iah/DzaBj+GpVEQwqUx0y03Uw2;\
-_ 0omlCoz7xKJXSmYPNzcXaOEpWqggiqB9Au+MFlsWxEzCmkeQKurOoi4EDqkW6JiYAvfTybCq;\
-_ PivROhS792vZHDdrDtY4bKNjohLOSlbReHNTzVGid3Dy+sWr62+u/3UBVxtd8JpyhDa4AT6w;\
-_ BEbt7B8ncPngfPp+bYte9w+hlEDUw8kuJ04w5NPJf1WMWsHjqh/m0DYmNUjAFFkhxjkg3OMT;\
-_ yNZzsQRUl3dcW4RMQSsIbiGowa1QwTSri4xYGUV2oJHKKysRoyseGsFFrxoMXlOQgzs1sW78;\
-_ 68czdMJeG931kAixO6hu46rk0mz2/9iN0XrHW76q1mBCDkcb+Bw69c764zoFe395dtn1VuQC;\
-_ fuifALeISr3ZW3i4nP6QHWU2Ey6o0ZA7lpBfEEARTeIYPkxQi5yDUVU2aWQY2hjXpSwnuUfT;\
-_ ySQbPRBfWZg/PX9GmsLLCq2OdkX6g/n30EoEBmoDmGuF8iaUjQMPS+AZOZH99hucPdp/i71b;\
-_ D9xmbh6PUzuVyswRQHuvbQ/GK6Eef0OyTSz7LnBZR0jvEcHPn6P9azwHtvAYTuF1aeloHybC;\
-_ sraLcla8E6mfaXkTOctJIweWJk0Fo/HlspXnZY5ZDfOngM9zeqDXhwF5tHfJm9yVGYOTdQ0v;\
-_ dG3QF4MMR2FKzpn4vv2RlFNGkzBMtDeublvdASay/IL1LuLnKAdMv7ouyeCU6IzaKbLros/4;\
-_ vlP2xCDhOHpOoKvDvAjve3W+tLEurFZDfTArcqCjrk0e0PNJbVJ1C4l3AWm8drUPLid6lxXw;\
-_ PPDadvsu8plQnqcelsZ1snry1rHUTMOc3qPO1LzVlTo2zv+2kyuqnc8+pYFOlPFOLoba90NX;\
-_ vmhp57URxec7STxTl602qgyYdVCxtEYz159Rxwvun84+v23+fSeNFCSNtuoZjeFBIj75hM1n;\
-_ 5+wzgWlC33JcsKezOcMJDr2TCLlFNvZrMNG1YIorAINoNvi0TC7o5UuCDpLLAUE6KBazL6VJ;\
-_ QVQKLGm7hSGnBJZbBxaPRESJxbDgv2SIQ4qJsWfCaEzsIugR/HjWeeez4UGnLSEKqxM6F2Mi;\
-_ shnfLBFeva9S3o/Aw5ajI6gFv009wqe+yPNB6ajCMwx7V4EYFOm7wCQIcWsFxGpozNIRpdW4;\
-_ J+FlHjwkZdCCIocuq6Bb6YH+OySvPx1g08aywUFmS+69CjdKdtubFnWgNN8fFlTG7NkOTybi;\
-_ uYWCag1WJnL2AY6uJMRueZG0O3tU5xq4Ab5eUvGi3/zn67fN76XugbPz5388PGQeT0F3O51O;\
-_ 4d+1f4eAngAaXaiTyBddUZIIqZlmnexVOPmoLrNFc+h/87+q78UgNGeicFAJ5C07HUb5mCrG;\
-_ A4RKJNoJT/vCTlJi1RuAqyNyej/jMEqSIqrMSscK4XYRMfCtbE2OPb6rMvfSC1bU3vpKXneS;\
-_ zzgo1THlDF8qrDZhWITR5JF1PQENN0OdyR17DGIDl8kbSDwuo6qOGgG5WWkpFdWxow8QvMfu;\
-_ PjnD3slu0KpdnF8Y49a31QmGHIGHSVKLaiVrxHe3BOQduqqMcLy3di/23d4d9hCbqMjFdF+Q;\
-_ 77FNGmKNgay7GzNVc0JZCRjxHsX2TbkI7e4H++P5LdbqeGM5KA8/+grG6rCM/V51+KtnfK1v;\
-_ /igV+WsXljwQ2RdUfVtX3R3nWN0hzW8hkgt1jFmRkgeKHOlxUEhfXjZ0tWlmaF8fBByXLdPx;\
-_ Slgug8gq3mBkj2+FfwKsFkp6WA4AAA==;\
-)|base64 -d|gzip -d>tmp/stage2
-RUN : Extras and Cleanup ;set -eu; _() { echo "$@";};(\
-_ H4sIAAAAAAACA21RwU7jMBA9J1/xCCuQEK6Xa1ZUQsABqeICEofdFZrYkzaqawfHKUSUf99J;\
-_ C+wCa8myPfPemzfjbB8X4dG7QBbkLRrfJXJO7gMs141ni5bMkubc5dlPFN+urm9uz2azAnun;\
-_ ODzEbxwc4DnPIIvapOac0LeWEkMNH8Nv2mrAm0qeveR5VqI4d0werulSdwxDZsFbOwsJhDhM;\
-_ ijz7LP7wAKVGgjIjt2+hwkUTy/IymbK8CX00PJP0qba81r537q/GlpFntl3ORWR8RUVragQS;\
-_ V1A1NCejBT3uiQm+nlj9/YR6McOrsGa15OjZde/4NUXtmkqPkvpIBWd3qfiaS6tWH2F3SMMb;\
-_ max9ZQXxkIaWUWMPip/YIDHj+QW/fshw9jGjit04fMU7Y5arhvy9WcQQkvzAZgM2iwAbjPjC;\
-_ 9D+ordBdiEuKoZfSdYgQkyi+zqBA1c8nYz2x8wTdd1FXjde2Y8fm33rT6afGt3yqHOd/AONr;\
-_ kBdYAgAA;\
-)|base64 -d|gzip -d>tmp/stage3
 
 #--------------------------------------------------------------------------#
 FROM scratch AS stage2
