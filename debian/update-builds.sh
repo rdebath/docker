@@ -26,7 +26,6 @@
 # [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue
 # [ "$RELEASE" = hoary -a "$ARCH" = i386 ] && continue
 
-
 main() {
     init
 
@@ -84,7 +83,7 @@ all_debian() {
 	buster-i386 buster bullseye-i386 bullseye \
 	\
 	stable-i386 stable testing-i386  testing \
-	unstable latest
+	unstable-i386 unstable latest
 
     do do_build "$fullvar" debian
     done
@@ -99,20 +98,7 @@ all_devuan() {
 }
 
 all_ubuntu() {
-    for fullvar in \
-	warty hoary breezy dapper edgy feisty gutsy hardy intrepid \
-	jaunty karmic lucid maverick natty oneiric precise \
-	quantal raring saucy trusty utopic vivid wily xenial \
-	yakkety zesty artful bionic cosmic disco eoan focal groovy \
-	\
-	breezy-i386 dapper-i386 edgy-i386 feisty-i386 gutsy-i386 \
-	hardy-i386 intrepid-i386 jaunty-i386 karmic-i386 lucid-i386 \
-	maverick-i386 natty-i386 oneiric-i386 precise-i386 quantal-i386 \
-	raring-i386 saucy-i386 trusty-i386 utopic-i386 vivid-i386 \
-	wily-i386 xenial-i386 yakkety-i386 zesty-i386 artful-i386 \
-	bionic-i386 cosmic-i386 disco-i386 eoan-i386 focal-i386 \
-	groovy-i386
-
+    for fullvar in $UBUNTU1 $UBUNTU2 $UBUNTU3 $UBUNTU4 $UBUNTU5
     do do_build "$fullvar" ubuntu
     done
 }
@@ -139,7 +125,7 @@ do_build() {
 	git checkout "$b" ||:
 
 	if [ "$variant" = latest ]
-	then dvar=stable
+	then dvar=unstable
 	else dvar="$variant"
 	fi
 	if [ "$dvar" = jessie ]&&[ "$distro" = devuan ]

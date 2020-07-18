@@ -48,7 +48,7 @@ host_main() {
 	    ubuntu alpine centos fedora opensuse/leap archlinux
 
     for base
-    do build_one $base "${SRCREPO}$base" "${REPOPREFIX}$base"
+    do build_one "$base" "${SRCREPO}$base" "${REPOPREFIX}$base"
     done
 
     wait

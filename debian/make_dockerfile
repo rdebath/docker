@@ -244,15 +244,16 @@ cat <<\@
 	    $EXTRA ${INCLUDE:+"--include=$INCLUDE"} \
 	    "${RELEASE%:*}" chroot "$MIRROR" "$DEBSCRIPT"
 
+	(cd chroot-patch && tar cf - .) | (cd chroot && tar xf - )
+
 	cd /opt/chroot
 
 	: Docker has already setup /proc
 	sed -i -e 's/\<setup_proc/: setup_proc/' debootstrap/suite-script
 
-	[ "$RELEASE" = potato ] && {
-	    # Current debootstrap has bug
-	    sed -i -e 's/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/' debootstrap/functions
-	}
+	: Current debootstrap has bug
+	sed -i -e 's/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/' \
+	    debootstrap/functions
 
 	[ "$RELEASE" = jessie ] && {
 	    : "Systemd is unpacked ready to install even if we don't want it."
@@ -264,36 +265,39 @@ cat <<\@
 
 	mv /tmp/stage* tmp
 
-	: Stage 1 complete for $RELEASE
+	: "Stage 1 complete for $RELEASE"
 
     } ; docker_save "Stage 1" /tmp/stage1
 
     docker_start || {
+	: "Start stage 2 for $RELEASE"
+
 	touch /tmp/release
 	. /tmp/release
-	: Start stage 2 for $RELEASE
 	rm -f /tmp/release
 
 	export DEBIAN_FRONTEND=noninteractive
 
 	: init sometimes uses ischroot to disable updates.
-	if [ -x /sbin/init -a -x /usr/bin/ischroot ]
+	if [ -x /usr/bin/ischroot ]
 	then dpkg-divert --local --rename --add /usr/bin/ischroot
 	     ln -s /bin/true /usr/bin/ischroot
 	fi
 
-	: This option breaks some installs eg: ubuntu/maverick
+	: This option breaks old versions of dpkg
 	dpkg --force-unsafe-io --print-architecture 2>/dev/null &&
 	    sed -i -e '/^#<off> force-unsafe-io/s/#[^ ]* //' \
 	        /etc/dpkg/dpkg.cfg.d/docker-apt-speedup ||:
 
-	# The script policy-rc.d was designed for debootstrap
-	mv /usr/sbin/policy-rc.d /usr/sbin/policy-rc.docker
+	# The script policy-rc.d is used by debootstrap
+	mv /usr/sbin/policy-rc.d /usr/sbin/policy-rc.d-docker
 
 	/debootstrap/debootstrap --second-stage ||
 	    echo "WARNING: Exit status from debootstrap --second-stage is $?" >&2
 
-	mv /usr/sbin/policy-rc.docker /usr/sbin/policy-rc.d
+	# Install correctly.
+	update-alternatives --install /usr/sbin/policy-rc.d policy-rc.d \
+	    /usr/sbin/policy-rc.d-docker 50
 
 	case "$RELEASE" in
 	jessie )
@@ -376,7 +380,7 @@ cat <<\@
 	[ "$RELEASE" = jessie ] &&
 	    echo >>/root/.bashrc ulimit -n 1024
 
-	: Stage 2 complete for $RELEASE
+	: "Stage 2 complete for $RELEASE"
     } ; docker_save "Stage 2" /tmp/stage2
 
     docker_start || {
@@ -405,6 +409,14 @@ cat <<\@
 
     docker_cmd
     docker_savefile 'Debian Potato key' /root/potato-key.gpg < potato-key.gpg
+
+    docker_cmd
+    docker_cmd '#--------------------------------------------------------------------------#'
+    docker_cmd '# Patch apt and dpkg for docker'
+    docker_cmd '# Note: standard used "#" for comment not "//"'
+    docker_cmd WORKDIR '/opt/chroot-patch'
+    base64_extras
+
     docker_cmd
     docker_cmd WORKDIR '/opt'
     docker_cmd
@@ -425,14 +437,6 @@ cat <<\@
 
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
-
-    docker_cmd '# Patch apt and dpkg for docker'
-    docker_cmd '# Note: standard used "#" for comment not "//"'
-    docker_cmd WORKDIR '/opt/chroot'
-    base64_extras
-
-    docker_cmd
-    docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd FROM 'scratch AS stage2'
     docker_cmd COPY '--from=unpack /opt/chroot /'
     docker_cmd RUN 'sh -ex /tmp/stage2 && rm -f /tmp/stage2'
@@ -444,7 +448,10 @@ cat <<\@
     docker_cmd '# Finally remove all the *.deb files.'
     docker_cmd FROM 'scratch'
     docker_cmd COPY '--from=stage2 / /'
+    docker_cmd
     docker_cmd WORKDIR '/root'
+    docker_cmd '# UTF-8 is a more reasonable default these days.'
+    docker_cmd ENV 'LANG=C.UTF-8'
     docker_cmd CMD '["bash"]'
 }
 
@@ -462,7 +469,7 @@ base64_extras() {
     {
 	echo 'RUN set -eu; _() { echo "$@";};(\'
 	gzip -n9 | base64 -w 72 | sed 's/.*/_ &;\\/'
-	echo ')|base64 -d|gzip -d|tar xvf -'
+	echo ')|base64 -d|gzip -d|tar xf -'
     }
 }
 
