@@ -147,7 +147,8 @@ build_image() {
     local NARCH="$ARCH"; [ "$NARCH" = amd64 ] && NARCH=
 
     [ "$LISTCMD" != '' ] && {
-	echo docker build $Q -t $REPOPREFIX$DISTRO:$RELEASE${NARCH:+-$ARCH} \
+	echo docker build $Q \
+	    -t $REPOPREFIX$DISTRO:${RELEASE%:*}${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
 	    ${NARCH:+--build-arg=ARCH=$ARCH} \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
@@ -159,7 +160,8 @@ build_image() {
 
     echo "Building $RELEASE${NARCH:+-$ARCH}"
     (   set -ex
-	docker build $Q -t $REPOPREFIX$DISTRO:$RELEASE${NARCH:+-$ARCH} \
+	docker build $Q \
+	    -t $REPOPREFIX$DISTRO:${RELEASE%:*}${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
 	    ${NARCH:+--build-arg=ARCH=$ARCH} \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
@@ -169,12 +171,12 @@ build_image() {
     ) || return 1
 
     [ "$DOPUSH" = yes ] &&
-	docker push $REPOPREFIX$DISTRO:$RELEASE${NARCH:+-$ARCH}
+	docker push $REPOPREFIX$DISTRO:${RELEASE%:*}${NARCH:+-$ARCH}
 
     for STAGE in $(sed -n 's/^FROM.*AS \+//p' "$DOCKERFILE")
     do
 	docker build -q --target=$STAGE \
-		-t temp/$STAGE:$RELEASE${NARCH:+-$ARCH} \
+		-t temp/$STAGE:${RELEASE%:*}${NARCH:+-$ARCH} \
 	    --build-arg=RELEASE=$RELEASE \
 	    ${NARCH:+--build-arg=ARCH=$ARCH} \
 	    ${MIRROR:+--build-arg=MIRROR=$MIRROR} \
@@ -248,10 +250,8 @@ ubuntu_versions() {
 devuan_versions() {
     local RELEASE="$1"
     case "$RELEASE" in
-    jessie )
-	MIRROR=http://deb.devuan.org/merged
+    jessie|jessie:devuan )
 	DISTRO=devuan
-	DEBSCRIPT=ascii
 	;;
     ascii|beowulf|chimaera|ceres )
 	DISTRO=devuan

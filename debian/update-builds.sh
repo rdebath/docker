@@ -4,7 +4,6 @@
 #  From make_image
 #    Option -j
 #    Option for docker push to private repo.
-#    devuan/jessie
 
 #   Uncompiled combinations.
 #
@@ -29,13 +28,14 @@
 
 
 main() {
+    init
+
     [ "$1" = -f ] && { FORCEBUILD=1 ; shift ; }
     [ "$1" = -P ] && { FORCEBUILD=1 ; FORCEPUSH=1 ; shift ; }
     [ "$1" = -p ] && { FORCEPUSH=1 ; shift ; }
     [ "$1" = -n ] && { NOPUSH=1 ; shift ; }
 
-    init
-    bash make_dockerfile
+    # shellcheck disable=SC2086
     case "$1" in
     debian|ubuntu|devuan|kali ) DIST=$1; shift ;;
 
@@ -66,6 +66,8 @@ main() {
 	done
     elif [ "$DIST" = debian ]
     then all_debian
+    elif [ "$DIST" = devuan ]
+    then all_devuan
     elif [ "$DIST" = ubuntu ]
     then for fullvar in $UBUNTU5 ; do do_build "$fullvar" "$DIST" ; done
     else echo >&2 "Nothing to do" ; exit 1
@@ -88,6 +90,13 @@ all_debian() {
     done
 }
 
+all_devuan() {
+    for fullvar in \
+	jessie ascii beowulf chimaera ceres \
+	jessie-i386 ascii-i386 beowulf-i386 chimaera-i386 ceres-i386
+    do do_build "$fullvar" devuan
+    done
+}
 
 all_ubuntu() {
     for fullvar in \
@@ -125,6 +134,7 @@ do_build() {
 
     (
 	set -e
+	P="$(pwd)"
 	cd "$T"
 	git checkout "$b" ||:
 
@@ -132,8 +142,12 @@ do_build() {
 	then dvar=stable
 	else dvar="$variant"
 	fi
+	if [ "$dvar" = jessie ]&&[ "$distro" = devuan ]
+	then dvar="$dvar$distro"
+	fi
 
-	cp -p ../Dockerfile Dockerfile
+	( cd "$P" ; bash make_dockerfile - ) > Dockerfile
+
 	sed -i -e 's/^\(ARG RELEASE\>\).*/\1='"$dvar"'/' \
 	    Dockerfile
 
@@ -154,26 +168,26 @@ do_build() {
 	    sed -i -e 's;^\(ARG DEBSCRIPT\>\).*;\1="'"$5"'";' \
 		Dockerfile
 
-	cp -p Dockerfile ../Dockerfile.tmp
+	cp -p Dockerfile "$P"/Dockerfile.tmp
 
 	if [ "$distro" = debian ]
-	then cp -p ../README.md README.md
-	else cp -p ../README-Generic.md README.md
+	then cp -p "$P"/README.md README.md
+	else cp -p "$P"/README-Generic.md README.md
 	fi
 
-	ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar" 2>/dev/null ||:)
+	ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$fullvar" 2>/dev/null ||:)
 	if [ "$ID" = '' ]||[ "$FORCEBUILD" = 1 ]
 	then
-	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
-	    ID=$(docker image inspect --format '{{.Id}}' "rdebath/$distro:$fullvar")
+	    docker build -t "$REGISTRY$distro:$fullvar" -<Dockerfile
+	    ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$fullvar")
 	fi
 
-	[ "$FORCEPUSH" != 1 ] && {
-	    cat packages.txt > savedpackages.txt ||:
-	}
-	rm -f packages.txt
+	:>> packages.txt
+	cat packages.txt > savedpackages.txt
+	[ "$FORCEPUSH" = 1 ] && :> savedpackages.txt
+
 	case "$fullvar" in
-	potato|dapper|dapper-i386)
+	dapper|dapper-i386)
 	    UPCMD=upgrade ;;
 	* ) UPCMD=dist-upgrade ;;
 	esac
@@ -183,8 +197,9 @@ do_build() {
 	esac
 
 	docker run $DOCKERSECOPT --rm -t -v "$(pwd)":/home/user \
-	    "rdebath/$distro:$fullvar" \
-	    bash -c "echo 'Checking for upgraded packages' &&
+	    "$REGISTRY$distro:$fullvar" \
+	    bash -c "echo 'Checking for upgraded packages' ;\
+		ulimit -n 1024 ||:;\
 		dpkg -l > /home/user/packages-before.txt &&
 		rm -f /home/user/packages.txt &&
 		apt-get -y -qq update &&
@@ -201,11 +216,11 @@ do_build() {
 	then
 	    [ -s packages.txt ] || date > packages.txt
 
-	    sed -i -e '/^ARG INCLUDE\>/a ARG STAMP="'"$( \
+	    sed -i -e '/^ARG RELEASE\>/a ARG STAMP="'"$( \
 		md5sum < packages.txt | awk '{print $1;}')"'"' \
 		Dockerfile
 
-	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
+	    docker build -t "$REGISTRY$distro:$fullvar" -<Dockerfile
 	fi
     )
     git update-ref -d refs/tempref
@@ -274,6 +289,8 @@ mktag() {
 
 init() {
     set -e
+
+    REGISTRY=rdebath/
 
     NULL=$(echo "tree $(git hash-object -t tree -w /dev/null)
 author nobody <> 1 +0000

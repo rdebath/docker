@@ -3,7 +3,7 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
 main() {
     set -e
-    if [ "$1" = base ]
+    if [ "$1" = -b ]
     then make_dockerfile baseonly
     elif [ ".$1." = .-. ]
     then make_dockerfile
@@ -85,8 +85,9 @@ cat <<\@
 	sed -i -e 's@^\(keyring\) .*@\1 /root/potato-key.gpg@' "$DIR/potato"
 
 	: Repair Ubuntu scripts
-	sed -i -e '4i force_md5' "$DIR/warty"
-	sed -i -e '4i force_md5' "$DIR/hoary"
+	for SCRIPT in warty hoary warty.buildd hoary.buildd
+	do sed -i -e '4i force_md5' "$DIR/$SCRIPT"
+	done
 	ln -fs gutsy "$DIR/groovy"
 	sed -i -e 's/archive\.ubuntu/old-releases.ubuntu/' "$DIR/dapper"
 
@@ -96,6 +97,7 @@ cat <<\@
 	sed -i -e '/default_mirror.*archive\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg' "$DIR/gutsy"
 	sed -i -e '/default_mirror.*ports\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg' "$DIR/gutsy"
 
+	: Add newer Ubuntu releases
 	awk < "$DIR/gutsy" > "$DIR/gutsy.2" \
 	'F==1{print;next;}
 	 /zesty)/ {
@@ -199,9 +201,29 @@ cat <<\@
 	    fi
 	    ;;
 
+	sarge.buildd|woody.buildd )
+	    ARCH="${ARCH:-i386}"
+	    DEBSCRIPT="$RELEASE"
+	    RELEASE="${RELEASE%.*}"
+	    ;;
+
+	warty.buildd|hoary.buildd )
+	    DEBSCRIPT="$RELEASE"
+	    RELEASE="${RELEASE%.*}:std"
+	    ;;
+
+	*:* )
+	    [ "$DEBSCRIPT" = '' ] &&
+		[ -e "$DIR/${RELEASE##*:}" ] &&
+		    DEBSCRIPT="${RELEASE##*:}"
+
+	    [ ! -e "$DIR/${DEBSCRIPT:-${RELEASE%:*}}" ] &&
+		ln -fs sid "$DIR/${DEBSCRIPT:-${RELEASE%:*}}"
+	    ;;
+
 	* ) # If no such script, guess it's like "sid"
-	    [ ! -e "$DIR/${DEBSCRIPT:-$RELEASE}" ] &&
-		ln -fs sid "$DIR/${DEBSCRIPT:-$RELEASE}"
+	    [ ! -e "$DIR/${DEBSCRIPT:-${RELEASE%:*}}" ] &&
+		ln -fs sid "$DIR/${DEBSCRIPT:-${RELEASE%:*}}"
 	    ;;
 	esac
 	ARCH="${ARCH:-amd64}"
@@ -240,7 +262,7 @@ cat <<\@
 
 	debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \
 	    $EXTRA ${INCLUDE:+"--include=$INCLUDE"} \
-	    "$RELEASE" chroot $MIRROR $DEBSCRIPT
+	    "${RELEASE%:*}" chroot "$MIRROR" "$DEBSCRIPT"
 
 	cd /opt/chroot
 
@@ -277,6 +299,7 @@ cat <<\@
     docker_cmd '#--------------------------------------------------------------------------#'
 
     docker_start || {
+	touch /tmp/release
 	. /tmp/release
 	: Start stage 2 for $RELEASE
 	rm -f /tmp/release
@@ -290,7 +313,7 @@ cat <<\@
 	fi
 
 	: This option breaks some installs eg: ubuntu/maverick
-	dpkg --force-unsafe-io -l dpkg >/dev/null 2>&1 &&
+	dpkg --force-unsafe-io --print-architecture 2>/dev/null &&
 	    sed -i -e '/^#<off> force-unsafe-io/s/#[^ ]* //' \
 	        /etc/dpkg/dpkg.cfg.d/docker-apt-speedup ||:
 
@@ -407,13 +430,6 @@ cat <<\@
 
 	# Workaround for old "dpkg --clear-avail" bug.
 	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
-
-#	: Clean up the ischroot divert.
-#	if [ "$(dpkg-divert --listpackage /usr/bin/ischroot)" = LOCAL ]
-#	then
-#	    rm -f /usr/bin/ischroot
-#	    dpkg-divert --local --rename --remove /usr/bin/ischroot
-#	fi
 
     } ; docker_save "Extras and Cleanup" tmp/stage3
 
