@@ -1,14 +1,50 @@
 #!/bin/sh
 
+# TODO:
+#  From make_image
+#    Option -j
+#    Option for docker push to private repo.
+#    devuan/jessie
+
+#   Uncompiled combinations.
+#
+# Not compiled for i386
+# [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
+
+# Only compiled for i386 and has inode number issue
+# [ "$RELEASE" = potato -a "$ARCH" = i386 ] && continue # Is default
+
+# Only compiled for i386
+# [ "$RELEASE" = woody -a "$ARCH" = i386 ] && continue # Is default
+# [ "$RELEASE" = sarge -a "$ARCH" = i386 ] && continue # Is default
+
+# These fail if libseccomp2 < 2.4.3-1+b1
+# [ "$RELEASE" = unstable -a "$ARCH" = i386 ] && continue
+# [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue
+# [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue
+
+# i386 vdso needs to be at fixed address.
+# [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue
+# [ "$RELEASE" = hoary -a "$ARCH" = i386 ] && continue
+
+
 main() {
     [ "$1" = -f ] && { FORCEBUILD=1 ; shift ; }
     [ "$1" = -P ] && { FORCEBUILD=1 ; FORCEPUSH=1 ; shift ; }
     [ "$1" = -p ] && { FORCEPUSH=1 ; shift ; }
+    [ "$1" = -n ] && { NOPUSH=1 ; shift ; }
 
     init
     bash make_dockerfile
     case "$1" in
     debian|ubuntu|devuan|kali ) DIST=$1; shift ;;
+
+    ubuntu1 ) shift ; set -- $UBUNTU1 ;;
+    ubuntu2 ) shift ; set -- $UBUNTU2 ;;
+    ubuntu3 ) shift ; set -- $UBUNTU3 ;;
+    ubuntu4 ) shift ; set -- $UBUNTU4 ;;
+    ubuntu5 ) shift ; set -- $UBUNTU5 ;;
+
     * ) DIST=debian ;;
     esac
 
@@ -31,25 +67,27 @@ main() {
     elif [ "$DIST" = debian ]
     then all_debian
     elif [ "$DIST" = ubuntu ]
-    then all_ubuntu
+    then for fullvar in $UBUNTU5 ; do do_build "$fullvar" "$DIST" ; done
     else echo >&2 "Nothing to do" ; exit 1
     fi
 }
 
 all_debian() {
-    # potato doesn't build on "Docker hub".
+    # Note: potato doesn't build on "Docker hub".
 
     for fullvar in \
-	woody sarge etch lenny squeeze wheezy \
-	jessie stretch buster bullseye \
-	stable testing unstable latest \
+	potato woody sarge \
+	etch-i386   etch   lenny-i386    lenny  squeeze-i386 squeeze \
+	wheezy-i386 wheezy jessie-i386   jessie stretch-i386 stretch \
+	buster-i386 buster bullseye-i386 bullseye \
 	\
-	etch-i386 lenny-i386 squeeze-i386 wheezy-i386 \
-	jessie-i386 stretch-i386 buster-i386 bullseye-i386 \
-	unstable-i386
+	stable-i386 stable testing-i386  testing \
+	unstable latest
+
     do do_build "$fullvar" debian
     done
 }
+
 
 all_ubuntu() {
     for fullvar in \
@@ -156,14 +194,15 @@ do_build() {
 	if ! cmp savedpackages.txt packages.txt
 	then
 	    [ -s packages.txt ] &&
-		mktag "$b" "Update build tree for $fullvar"
+		[ "$NOPUSH" != 1 ] &&
+		    mktag "$b" "Update build tree for $fullvar"
 	fi
 	if ! cmp packages-before.txt packages.txt
 	then
 	    [ -s packages.txt ] || date > packages.txt
 
-	    sed -i -e 's;^\(ARG STAMP\>\).*;\1="'"$( \
-		md5sum < packages.txt | awk '{print $1;}')"'";' \
+	    sed -i -e '/^ARG INCLUDE\>/a ARG STAMP="'"$( \
+		md5sum < packages.txt | awk '{print $1;}')"'"' \
 		Dockerfile
 
 	    docker build -t "rdebath/$distro:$fullvar" -<Dockerfile
@@ -247,6 +286,20 @@ committer nobody <> 1 +0000
 
     DOCKERI386=''
     # '--security-opt seccomp:unconfined'
+
+UBUNTU1='warty hoary breezy-i386 breezy dapper-i386 dapper edgy-i386 edgy
+feisty-i386 feisty gutsy-i386 gutsy hardy-i386 hardy intrepid-i386 intrepid'
+
+UBUNTU2='jaunty-i386 jaunty karmic-i386 karmic lucid-i386 lucid maverick-i386
+maverick natty-i386 natty oneiric-i386 oneiric precise-i386 precise'
+
+UBUNTU3='quantal-i386 quantal raring-i386 raring saucy-i386 saucy trusty-i386
+trusty utopic-i386 utopic vivid-i386 vivid wily-i386 wily'
+
+UBUNTU4='xenial-i386 xenial yakkety-i386 yakkety zesty-i386 zesty artful-i386
+artful bionic-i386 bionic cosmic-i386 cosmic disco-i386 disco'
+
+UBUNTU5='eoan-i386 eoan focal-i386 focal groovy-i386 groovy'
 }
 
 main "$@"

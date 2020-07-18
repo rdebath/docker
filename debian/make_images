@@ -264,21 +264,21 @@ devuan_versions() {
 
 version_notes() {
 case `cat /etc/debian_version` in
-1.1* ) APTID=deb.buzz ;;
-1.2* ) APTID=deb.rex ;;
-1.3* ) APTID=deb.bo ;;
-2.0* ) APTID=deb.hamm ;;
-2.1* ) APTID=deb.slink ;;
-2.2* ) APTID=deb.potato ;;
-3.0* ) APTID=deb.woody ;;
-3.1* ) APTID=deb.sarge ;;
-4.* ) APTID=deb.etch ;;
-5.* ) APTID=deb.lenny ;;
-6.* ) APTID=deb.squeeze ;;
-7.* ) APTID=deb.wheezy ;;
-8.* ) APTID=deb.jessie ;;
-9.* ) APTID=deb.stretch ;;
-10.* ) APTID=deb.buster ;;
+1.1* ) APTID=buzz ;;
+1.2* ) APTID=rex ;;
+1.3* ) APTID=bo ;;
+2.0* ) APTID=hamm ;;
+2.1* ) APTID=slink ;;
+2.2* ) APTID=potato ;;
+3.0* ) APTID=woody ;;
+3.1* ) APTID=sarge ;;
+4.* ) APTID=etch ;;
+5.* ) APTID=lenny ;;
+6.* ) APTID=squeeze ;;
+7.* ) APTID=wheezy ;;
+8.* ) APTID=jessie ;;
+9.* ) APTID=stretch ;;
+10.* ) APTID=buster ;;
 esac
 }
 

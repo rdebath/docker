@@ -58,8 +58,6 @@ cat <<\@
 #
 # The INCLUDE arg is a list of packages to include during stage 1.
 #
-# STAMP is a flag to invalidate the docker cache for stage 1.
-#
 # I'm using the base64 stuff to make things prettier :-)
 
 #--------------------------------------------------------------------------#
@@ -72,6 +70,8 @@ cat <<\@
     docker_start || {
 	apk add --no-cache debootstrap perl git
     } ; docker_commit "Configure host"
+
+    # Note: https://salsa.debian.org/installer-team/debootstrap.git
 
     docker_start || {
 	DIR=/usr/share/debootstrap/scripts
@@ -156,10 +156,10 @@ cat <<\@
     docker_cmd ARG 'DEBSCRIPT'
     docker_cmd ARG 'DEBOPTIONS'
     docker_cmd ARG 'INCLUDE'
-    docker_cmd ARG 'STAMP'
+    docker_cmd
 
     docker_start || {
-	: "Stage 1 for $RELEASE $ARCH $STAMP"
+	: "Stage 1 for $RELEASE $ARCH" $STAMP
 
 	DIR=/usr/share/debootstrap/scripts
 	case "$RELEASE" in
