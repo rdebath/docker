@@ -140,6 +140,7 @@ cat <<\@
 
     docker_cmd
 
+    # shellcheck disable=SC2016,SC2086
     docker_start || {
 	: "Stage 1 for $RELEASE $ARCH" $STAMP
 
@@ -238,9 +239,24 @@ cat <<\@
 
 	ascii|beowulf|chimaera|ceres ) EXTRA='--include=devuan-keyring' ;;
 	kali-* ) EXTRA='--include=kali-archive-keyring' ;;
+
+	potato|woody )
+	    # This aren't needed and some are messy to remove.
+	    # This is nearly a minbase, but apt and netbase aren't "essential"!
+	    EXTRA='--exclude=mbr,modconf,pciutils,pcmcia-cs,modutils,lilo'
+	    EXTRA="$EXTRA,ppp,pppoe,pppconfig,pppoeconf,console-tools"
+	    EXTRA="$EXTRA,console-tools-libs,exim,cron,at,mailx,logrotate"
+	    EXTRA="$EXTRA,libident,libldap2,liblockfile1,libpcap0,libpcre3"
+	    EXTRA="$EXTRA,sysklogd,klogd,fdutils,dhcp-client,setserial"
+	    EXTRA="$EXTRA,libreadline4,libsasl7,makedev,syslinux,makedev"
+	    EXTRA="$EXTRA,console-data,base-config,adduser,tasksel"
+	    EXTRA="$EXTRA,ae,fbset,fdflush,pump,isapnptools,xviddetect"
+	    EXTRA="$EXTRA,telnet,ftp,gettext-base,elvis-tiny"
+	    ;;
 	esac
 
-	debootstrap --foreign --arch=$ARCH $VARIANT $COMP $DEBOPTIONS \
+	debootstrap --foreign ${ARCH:+--arch="$ARCH"} \
+	    $VARIANT $COMP $DEBOPTIONS \
 	    $EXTRA ${INCLUDE:+"--include=$INCLUDE"} \
 	    "${RELEASE%:*}" chroot "$MIRROR" "$DEBSCRIPT"
 
@@ -269,6 +285,7 @@ cat <<\@
 
     } ; docker_save "Stage 1" /tmp/stage1
 
+    # shellcheck disable=SC2015,SC2016,SC1091,SC2046,SC2086
     docker_start || {
 	: "Start stage 2 for $RELEASE"
 
@@ -350,23 +367,16 @@ cat <<\@
 	    ;;
 
 	potato )
-	    # Potato isn't a minbase, but apt and netbase aren't "essential"!
-	    yes yes |
-	    dpkg --purge --force-remove-essential \
-		pcmcia-cs modconf modutils pppconfig ppp console-tools
-
-	    for pkg in \
-		adduser ae base-config console-data console-tools-libs \
-		elvis-tiny fbset fdflush fdutils ftp gettext-base \
-		isapnptools libreadline4 lilo locales makedev mbr \
-		pciutils pump setserial sysklogd syslinux tasksel \
-		telnet xviddetect
-
-	    do  dpkg --purge "$pkg"
-	    done
-	    # Allow sysvinit to be reinstalled, but disable restart.
+	    : Allow sysvinit to be reinstalled, but disable restart.
 	    ln -s /bin/true /usr/local/sbin/init
 	    ;;
+
+	lenny|squeeze )
+	    # It appears lenny and squeeze cannot be convinced to ignore
+	    # the expiry timestamp on the key. Debootstrap did, so INCLUDE=
+	    # packages will be authenticated.
+	    echo 'APT::Get::AllowUnauthenticated "true";' \
+		> /etc/apt/apt.conf.d/insecure-repository
 	esac
 
 	dpkg --configure --pending
@@ -380,15 +390,25 @@ cat <<\@
 	[ "$RELEASE" = jessie ] &&
 	    echo >>/root/.bashrc ulimit -n 1024
 
+	# We want UTF-8, if supported.
+	{
+	    echo '[ "$(LANG=C.UTF-8 locale charmap 2>/dev/null)" = UTF-8 ]&&'
+	    echo '    export LANG=C.UTF-8'
+	} >> /root/.bashrc
+
 	: "Stage 2 complete for $RELEASE"
     } ; docker_save "Stage 2" /tmp/stage2
 
+    # shellcheck disable=SC2086
     docker_start || {
+	# Test that apt is working
+	apt-get update -y
+	apt-get install -y dc
+	apt-get remove --purge -y dc
+
 	# Download and install any defined packages
-	[ "$INSTALL" != '' ] && {
-	    apt-get update -y
+	[ "$INSTALL" != '' ] &&
 	    apt-get install -y $INSTALL
-	}
 
 	: "Clean lists, cache and history."
 	apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
@@ -403,7 +423,11 @@ cat <<\@
 	[ -e /etc/debian_chroot ] || echo docker > /etc/debian_chroot
 
 	# Workaround for old "dpkg --clear-avail" bug.
-	[ ! -x /usr/bin/dselect ] || echo >> /var/lib/dpkg/available
+	# Done on potato, woody, sarge and etch.
+	[ ! -x /usr/bin/dselect ] || {
+	    echo Package: dpkg > /var/lib/dpkg/available
+	    echo Version: 0.1 >> /var/lib/dpkg/available
+	}
 
     } ; docker_save "Extras and Cleanup" /tmp/stage3
 
@@ -450,14 +474,17 @@ cat <<\@
     docker_cmd COPY '--from=stage2 / /'
     docker_cmd
     docker_cmd WORKDIR '/root'
-    docker_cmd '# UTF-8 is a more reasonable default these days.'
-    docker_cmd ENV 'LANG=C.UTF-8'
     docker_cmd CMD '["bash"]'
+
+    # UTF-8 is a more reasonable default these days but
+    # UTF-8 in this way is only supported on wheezy and later.
+    # docker_cmd ENV 'LANG=C.UTF-8'
 }
 
 ################################################################################
 # Dockerfile building scriptlets
 #
+# shellcheck disable=SC1003
 base64_extras() {
 
     tar c \
@@ -483,6 +510,7 @@ docker_commit() {
     return 0
 }
 
+# shellcheck disable=SC1003
 make_docker_runcmd() {
     # Encode the script
     local sn="/tmp/install"
@@ -499,6 +527,7 @@ docker_save() {
     return 0
 }
 
+# shellcheck disable=SC1003
 docker_savefile() {
     # Encode the script
     local sn="${2:-/tmp/install}"

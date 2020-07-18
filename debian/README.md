@@ -15,15 +15,15 @@ Version |Tag            |Notes
 11.0    |bullseye       |AKA testing
 sid     |unstable
 
-The Dockerfile also works with several other distributions.
+This Dockerfile works with several distributions.
 
-Working 'RELEASE' files also include:
+Working 'ARG RELEASE=...' values include:
 
 From Ubuntu:
-  * artful bionic breezy cosmic disco eoan focal groovy intrepid jaunty karmic maverick natty oneiric precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty
+  * warty hoary breezy dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid maverick natty oneiric precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty artful bionic cosmic disco eoan focal groovy
 
 From Devuan:
-  * ascii beowulf chimaera ceres
+  * jessie:devuan ascii beowulf chimaera ceres
 
 From Kali:
   * kali-dev kali-rolling kali-last-snapshot
@@ -31,13 +31,9 @@ From Kali:
 From PureOS:
   * amber
 
-However, some of the older ones have expired keys so you'll need to include
-  `DEBOPTIONS='--no-check-gpg'`
-and, preferably, use a https `MIRROR`.
-
 The `ARCH` option can be set to i386 for most of these (and is forced to i386 for some like Debian Woody)
 
-The `MIRROR` allows you to set the mirror to use and then the DEBSCRIPT arg lets you use a deboostrap script different from the RELEASE name ("sid" is the normal fallback). The DEBOPTIONS arg allows you to add more options to debootstrap.
+The `MIRROR` allows you to set the mirror to use and then the DEBSCRIPT arg lets you use a deboostrap script different from the RELEASE name ("sid" is the normal fallback). The DEBOPTIONS arg allows you to add more options to debootstrap (eg if the GPG key fails).
 
 The `INSTALL` arg is a list of packages to install just before the final cleanup.
 

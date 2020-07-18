@@ -6,10 +6,10 @@ From Debian:
   * potato woody sarge etch lenny squeeze wheezy jessie stretch buster bullseye stable testing unstable
 
 From Ubuntu:
-  * artful bionic breezy cosmic disco eoan focal groovy intrepid jaunty karmic maverick natty oneiric precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty
+  * warty hoary breezy dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid maverick natty oneiric precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty artful bionic cosmic disco eoan focal groovy
 
 From Devuan:
-  * ascii beowulf chimaera ceres
+  * jessie:devuan ascii beowulf chimaera ceres
 
 From Kali:
   * kali-dev kali-rolling kali-last-snapshot
