@@ -14,7 +14,7 @@
 #   oneiric precise quantal raring saucy trusty
 #   utopic vivid wily xenial yakkety zesty
 # From Devuan:
-#   ascii beowulf chimaera ceres
+#   jessie:devuan ascii beowulf chimaera ceres
 # From Kali:
 #   kali-dev kali-rolling kali-last-snapshot
 # From PureOS:
@@ -237,7 +237,7 @@ ARG INSTALL
 RUN sh -ex /tmp/stage3 && rm -f /tmp/stage3
 
 #--------------------------------------------------------------------------#
-# Finally squash the layers.
+# Finally remove all the *.deb files.
 FROM scratch
 COPY --from=stage2 / /
 WORKDIR /root

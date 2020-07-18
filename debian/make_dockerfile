@@ -35,7 +35,7 @@ cat <<\@
 #   oneiric precise quantal raring saucy trusty
 #   utopic vivid wily xenial yakkety zesty
 # From Devuan:
-#   ascii beowulf chimaera ceres
+#   jessie:devuan ascii beowulf chimaera ceres
 # From Kali:
 #   kali-dev kali-rolling kali-last-snapshot
 # From PureOS:
@@ -441,7 +441,7 @@ cat <<\@
     docker_cmd RUN 'sh -ex /tmp/stage3 && rm -f /tmp/stage3'
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
-    docker_cmd '# Finally squash the layers.'
+    docker_cmd '# Finally remove all the *.deb files.'
     docker_cmd FROM 'scratch'
     docker_cmd COPY '--from=stage2 / /'
     docker_cmd WORKDIR '/root'
