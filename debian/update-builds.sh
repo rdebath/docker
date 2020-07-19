@@ -68,7 +68,7 @@ main() {
     elif [ "$DIST" = devuan ]
     then all_devuan
     elif [ "$DIST" = ubuntu ]
-    then for fullvar in $UBUNTU5 ; do do_build "$fullvar" "$DIST" ; done
+    then all_ubuntu
     else echo >&2 "Nothing to do" ; exit 1
     fi
 }
@@ -129,7 +129,7 @@ do_build() {
 	else dvar="$variant"
 	fi
 	if [ "$dvar" = jessie ]&&[ "$distro" = devuan ]
-	then dvar="$dvar$distro"
+	then dvar="$dvar:$distro"
 	fi
 
 	( cd "$P" ; bash make_dockerfile - ) > Dockerfile

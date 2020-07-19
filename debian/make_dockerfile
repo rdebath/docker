@@ -208,6 +208,7 @@ cat <<\@
 	    ;;
 	esac
 	ARCH="${ARCH:-amd64}"
+	INCEXTRA=''
 
 	if grep -q '^keyring.*ubuntu' "$DIR/${DEBSCRIPT:-$RELEASE}"
 	then COMP="--components=main,restricted,universe,multiverse"
@@ -219,7 +220,13 @@ cat <<\@
 
 	# Must exclude/include to get an undamaged system
 	case "$RELEASE" in
-	jessie ) EXTRA='--exclude=systemd,systemd-sysv --include=sysvinit-core' ;;
+	jessie )
+	    EXTRA='--exclude=systemd,systemd-sysv'
+	    EXTRA="$EXTRA,acl,adduser,dmsetup,libcap2,libcap2-bin"
+	    EXTRA="$EXTRA,libcryptsetup4,libdevmapper1.02.1,libkmod2"
+	    EXTRA="$EXTRA,libncursesw5,libprocps3,libudev1,udev"
+	    INCEXTRA='sysvinit-core'
+	    ;;
 	warty|hoary )
 	    EXTRA='--exclude=udev,ubuntu-base'
 	    ;;
@@ -230,15 +237,13 @@ cat <<\@
 
 	gutsy|hardy )
 	    EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
-	    EXTRA="$EXTRA "'--include=gpgv'
+	    INCEXTRA='gpgv'
 	    ;;
 
-	intrepid|jaunty|karmic|lucid|maverick|natty )
-	    EXTRA='--include=gpgv'
-	    ;;
+	intrepid|jaunty|karmic|lucid|maverick|natty ) INCEXTRA='gpgv' ;;
 
-	ascii|beowulf|chimaera|ceres ) EXTRA='--include=devuan-keyring' ;;
-	kali-* ) EXTRA='--include=kali-archive-keyring' ;;
+	ascii|beowulf|chimaera|ceres|*:devuan ) INCEXTRA='devuan-keyring' ;;
+	kali-* ) INCEXTRA='kali-archive-keyring' ;;
 
 	potato|woody )
 	    # This aren't needed and some are messy to remove.
@@ -255,9 +260,15 @@ cat <<\@
 	    ;;
 	esac
 
+	[ "$INCEXTRA$INCLUDE" != '' ] && {
+	    [ "$INCEXTRA" != '' ]&&[ "$INCLUDE" != '' ] &&
+		INCEXTRA="$INCEXTRA,"
+	    INCEXTRA="$INCEXTRA$INCLUDE"
+	    INCEXTRA="--include=$INCEXTRA"
+	}
+
 	debootstrap --foreign ${ARCH:+--arch="$ARCH"} \
-	    $VARIANT $COMP $DEBOPTIONS \
-	    $EXTRA ${INCLUDE:+"--include=$INCLUDE"} \
+	    $VARIANT $COMP $DEBOPTIONS $EXTRA $INCEXTRA \
 	    "${RELEASE%:*}" chroot "$MIRROR" "$DEBSCRIPT"
 
 	(cd chroot-patch && tar cf - .) | (cd chroot && tar xf - )
@@ -278,6 +289,7 @@ cat <<\@
 	}
 
 	echo export RELEASE="'$RELEASE'" > tmp/release
+	echo "-- $DEBOPTIONS $INCEXTRA"  > tmp/packages
 
 	mv /tmp/stage* tmp
 
@@ -327,15 +339,7 @@ cat <<\@
 	    dpkg --purge --force-depends systemd-sysv ||:
 	    : Oh, and fix sysvinit
 	    dpkg -i /var/cache/apt/archives/sysvinit-core_*.deb
-
-	    : Remove packages that are not essential and check
-	    (
-		ulimit -n 1024 ||: Docker gives us 1M fds, apt cries.
-		apt-mark auto -qq $(apt-mark showmanual)
-		apt-get autoremove --purge -y
-		apt-get update -y
-		apt-get dist-upgrade -y
-	    )
+	    # Don't removed the dependancies yet!
 	    ;;
 
 	warty ) # Warty isn't a minbase
@@ -382,13 +386,37 @@ cat <<\@
 	dpkg --configure --pending
 	dpkg -l dpkg apt base-files
 
-	[ -f /usr/bin/apt-mark ] && [ "$RELEASE" != jessie ] && {
-	    apt-mark auto -qq $(apt-mark showmanual) ||:
+	[ -f /usr/bin/apt-mark ] && {
+	    apt-mark auto -qq $(apt-mark showmanual) && {
+		[ -f /tmp/packages ] && (
+		    ulimit -n 128 ||: Docker gives us 1M fds, Jessie cries.
+		    set -- $(cat /tmp/packages)
+		    for i
+		    do
+			case "$i" in
+			--include=* )
+			    apt-mark manual \
+				$(echo "${i#--include=}" |tr , ' ') ||:
+			    ;;
+			esac
+		    done
+		)
+	    }
 	}
 
-	# Workaround for Jessie apt-get is very slow issue
-	[ "$RELEASE" = jessie ] &&
+	[ "$RELEASE" = jessie ] && {
+	    # Remove packages that were installed because systemd tried
+	    # to barge in uninvited.
+	    (
+		ulimit -n 128 ||: Docker gives us 1M fds, Jessie cries.
+		apt-get autoremove --purge -y
+		apt-get update -y
+		apt-get dist-upgrade -y
+	    )
+
+	    # Workaround for Jessie apt-get is very slow issue
 	    echo >>/root/.bashrc ulimit -n 1024
+	}
 
 	# We want UTF-8, if supported.
 	{
@@ -399,19 +427,22 @@ cat <<\@
 	: "Stage 2 complete for $RELEASE"
     } ; docker_save "Stage 2" /tmp/stage2
 
-    # shellcheck disable=SC2086
+    # shellcheck disable=SC2046,SC2086
     docker_start || {
-	# Test that apt is working
-	apt-get update -y
-	apt-get install -y dc
-	apt-get remove --purge -y dc
+	[ "$INSTALL" != - ] && {
+	    # Test that apt is working
+	    apt-get update -y
+	    apt-get install -y dc
+	    apt-get remove --purge -y dc
 
-	# Download and install any defined packages
-	[ "$INSTALL" != '' ] &&
-	    apt-get install -y $INSTALL
+	    # Download and install any defined packages
+	    [ "$INSTALL" != '' ] &&
+		apt-get install -y $(echo "$INSTALL" | tr , ' ')
+	}
 
 	: "Clean lists, cache and history."
-	apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
+	apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null ||
+	    rm -rf /var/lib/apt/lists/*
 	apt-get clean
 	dpkg --clear-avail
 	rm -f /etc/apt/apt.conf.d/01autoremove-kernels

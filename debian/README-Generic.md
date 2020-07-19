@@ -1,6 +1,6 @@
 This Dockerfile works with several distributions.
 
-Working 'ARG RELEASE=...' values include:
+Working `ARG RELEASE=...` values include:
 
 From Debian:
   * potato woody sarge etch lenny squeeze wheezy jessie stretch buster bullseye stable testing unstable
@@ -19,7 +19,7 @@ From PureOS:
 
 The `ARCH` option can be set to i386 for most of these (and is forced to i386 for some like Debian Woody)
 
-The `MIRROR` allows you to set the mirror to use and then the DEBSCRIPT arg lets you use a deboostrap script different from the RELEASE name ("sid" is the normal fallback). The DEBOPTIONS arg allows you to add more options to debootstrap (eg if the GPG key fails).
+The `MIRROR` allows you to set the mirror to use and then the `DEBSCRIPT` arg lets you use a deboostrap script different from the `RELEASE` name ("sid" is the normal fallback). The `DEBOPTIONS` arg allows you to add more options to debootstrap (eg if the GPG key fails).
 
 The `INSTALL` arg is a list of packages to install just before the final cleanup.
 
