@@ -168,45 +168,48 @@ do_build() {
 	    ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$fullvar")
 	fi
 
-	:>> packages.txt
-	cat packages.txt > savedpackages.txt
-	[ "$FORCEPUSH" = 1 ] && :> savedpackages.txt
-
-	case "$fullvar" in
-	dapper|dapper-i386)
-	    UPCMD=upgrade ;;
-	* ) UPCMD=dist-upgrade ;;
-	esac
-	case "$arch" in
-	i386 ) DOCKERSECOPT="$DOCKERI386" ;;
-	* )    DOCKERSECOPT='' ;;
-	esac
-
-	docker run $DOCKERSECOPT --rm -t -v "$(pwd)":/home/user \
-	    "$REGISTRY$distro:$fullvar" \
-	    bash -c "echo 'Checking for upgraded packages' ;\
-		ulimit -n 1024 ||:;\
-		dpkg -l > /home/user/packages-before.txt &&
-		rm -f /home/user/packages.txt &&
-		apt-get -y -qq update &&
-		apt-get -y $UPCMD &&
-		dpkg -l > /home/user/packages.txt ||:"
-
-	if ! cmp savedpackages.txt packages.txt
+	if [ "$FORCEBUILD" != 1 ] || [ "$NOPUSH" != 1 ]
 	then
-	    [ -s packages.txt ] &&
-		[ "$NOPUSH" != 1 ] &&
-		    mktag "$b" "Update build tree for $fullvar"
-	fi
-	if ! cmp packages-before.txt packages.txt
-	then
-	    [ -s packages.txt ] || date > packages.txt
+	    :>> packages.txt
+	    cat packages.txt > savedpackages.txt
+	    [ "$FORCEPUSH" = 1 ] && :> savedpackages.txt
 
-	    sed -i -e '/^ARG RELEASE\>/a ARG STAMP="'"$( \
-		md5sum < packages.txt | awk '{print $1;}')"'"' \
-		Dockerfile
+	    case "$fullvar" in
+	    dapper|dapper-i386)
+		UPCMD=upgrade ;;
+	    * ) UPCMD=dist-upgrade ;;
+	    esac
+	    case "$arch" in
+	    i386 ) DOCKERSECOPT="$DOCKERI386" ;;
+	    * )    DOCKERSECOPT='' ;;
+	    esac
 
-	    docker build -t "$REGISTRY$distro:$fullvar" -<Dockerfile
+	    docker run $DOCKERSECOPT --rm -t -v "$(pwd)":/home/user \
+		"$REGISTRY$distro:$fullvar" \
+		bash -c "echo 'Checking for upgraded packages' ;\
+		    ulimit -n 1024 ||:;\
+		    dpkg -l > /home/user/packages-before.txt &&
+		    rm -f /home/user/packages.txt &&
+		    apt-get -y -qq update &&
+		    apt-get -y $UPCMD &&
+		    dpkg -l > /home/user/packages.txt ||:"
+
+	    if ! cmp -s savedpackages.txt packages.txt
+	    then
+		[ -s packages.txt ] &&
+		    [ "$NOPUSH" != 1 ] &&
+			mktag "$b" "Update build tree for $fullvar"
+	    fi
+	    if ! cmp -s packages-before.txt packages.txt
+	    then
+		[ -s packages.txt ] || date > packages.txt
+
+		sed -i -e '/^ARG RELEASE\>/a ARG STAMP="'"$( \
+		    md5sum < packages.txt | awk '{print $1;}')"'"' \
+		    Dockerfile
+
+		docker build -t "$REGISTRY$distro:$fullvar" -<Dockerfile
+	    fi
 	fi
     )
     git update-ref -d refs/tempref
