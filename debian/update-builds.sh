@@ -91,8 +91,8 @@ all_debian() {
 
 all_devuan() {
     for fullvar in \
-	jessie ascii beowulf chimaera ceres \
-	jessie-i386 ascii-i386 beowulf-i386 chimaera-i386 ceres-i386
+	jessie-i386 jessie ascii-i386 ascii beowulf-i386 beowulf \
+	chimaera-i386 chimaera ceres-i386 ceres
     do do_build "$fullvar" devuan
     done
 }
