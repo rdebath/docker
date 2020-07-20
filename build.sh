@@ -10,32 +10,36 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 # ENV         - Probably needed -- keep                 #
 # ARG         - Probably needed -- keep                 #
 # WORKDIR     - Keep first, rest after                  #
-# LABEL       - Not significant                         #
+# LABEL       - Not significant, keep                   #
 #                                                       #
-# RUN         - Place after script                      #
-# USER        - Will break install script (place after) #
-# SHELL       - Will break install script (place after) #
+#########################################################
+# All others are placed after body script.              #
+#########################################################
 #                                                       #
-# ADD         - Place after script (more layers)        #
-# COPY        - Place after script (more layers)        #
-#                                                       #
+# RUN         -                                         #
+# USER        -                                         #
+# SHELL       -                                         #
+# ADD         -                                         #
+# COPY        -                                         #
 # CMD         - Only used by container                  #
 # EXPOSE      - Only used by container                  #
 # ENTRYPOINT  - Only used by container                  #
 # VOLUME      - Only used by container                  #
-# MAINTAINER  - Deprecated                              #
-# ONBUILD     - Only used later                         #
 # STOPSIGNAL  - Only used by container                  #
 # HEALTHCHECK - Only used by container                  #
+# ONBUILD     - Only used later                         #
+# MAINTAINER  - Deprecated                              #
 #########################################################
 
 main() {
     set -e
     local ar amode='f' arg=() barg=() bmode=''
+    ENCODED=yes
 
     for ar
     do  case "$ar" in
 	-b ) amode='b'; bmode=yes;;
+	-x ) ENCODED=no ;;
 	-h ) Usage ; exit 1 ;;
 	-?* ) echo >&2 "Unknown option '$1'; use -h for help" ; exit 1 ;;
 	* ) if [ "$amode" = f ] ; then arg+=("$ar")
@@ -45,27 +49,26 @@ main() {
 	    ;;
 	esac
     done
-    [ "${#arg}" -eq 0 ] && arg+=(-)
+    [ "${#arg}" -eq 0 ] && arg+=("$0")
 
     if [ "$bmode" != yes ]
     then
 	for ar in "${arg[@]}" ;do make_dockerrun "$ar" ; done
     else
-	ar=$(bash "$0" "${arg[@]}")
-	echo "$ar" | docker build "${barg[@]}" -
+	for ar in "${arg[@]}" ;do make_dockerrun "$ar" ; done |
+	docker build "${barg[@]}" -
     fi
     exit
 }
 
 Usage() {
     cat >&2 <<!
-Usage: ...
-
-Make a dockerfile from script with #DOCKER: lines
+Usage:
+Make a dockerfile from script.
     $0 script
 
-Forward to docker build
-    $0 -b ImageName ...
+Then forward to docker build.
+    $0 -b ImageName script
 !
 
 }
@@ -76,55 +79,106 @@ Forward to docker build
 
 make_dockerrun() {
     # Limit per "run" is library exec arg length (approx 128k)
-    local scriptfile scriptargs sc
+    local scriptfile scriptargs scriptinclude scripttail sc re
     scriptfile="$(cat "$1")"
-    scriptargs="$(echo "$scriptfile" | sed -n 's/^#DOCKER://p')"
-    scriptfile=$(echo "$scriptfile"|sed '/^#DOCKER:/d')
 
+    # Pick a script name.
     local sname="/tmp/install"
     [ "$2" != '' ] && sname="'${2}'"
 
-    # Keep 1*FROM, 1*WORKDIR, n*ARG, n*ENV, n*LABEL
-    echo "$scriptargs" |
-    awk '
-	/^FROM / && fc!=1 { fc=1; print ; next; }
-	/^WORKDIR / && wd!=1 { wd=1; print ; next; }
-	/^ARG|^ENV|^LABEL|^#/ { print; next ; }
-	/^INCLUDE/ {next;}
-	{exit;}'
+    # If the file has a "#DOCKERGUEST" line, the guest script follows it.
+    sc=$(echo "$scriptfile"|sed '1,/^#DOCKERGUEST/d')
+    [ "$sc" != '' ] && scriptfile="$sc"
 
-    echo 'RUN set -eu;_() { echo "$@";};\'
-    enc() { echo '(\';cat "$@"|gzip -cn9|base64 -w 72|sed 's/.*/_ &;\\/';}
+    # Extract the Dockerfile section(s) from the script.
+    re='^[ 	]*:  *[Dd][Oo][Cc][Kk][Ee][Rr] *[Ff][Ii][Ll][Ee] *<< *\\@'
+    scriptargs="$(echo "$scriptfile" |
+	sed -n "/$re/,/^@\$/p" |
+	sed -e "/$re/d" -e \$d -e 's/[ 	]\+$//')"
 
-    echo "$scriptargs" | sed -n 's/^INCLUDE[	 ]\+//p' |
-    while IFS= read -r line
-    do
-	src="${line%% *}" ; dst="${line#* }"
-	if [ -d "$src" ];then
-	    echo "mkdir -p $dst;\\"
-	    tar c --owner=root --group=root --mode=og=u-w,ug-s \
-		-f - -C "$src" . | enc
-	    echo ")|base64 -d|gzip -d|tar x -C $dst -f -;\\"
-	elif [ -e "$src" ];then
-	    enc "$src" ; echo ")|base64 -d|gzip -d>$dst;\\"
-	else
-	    echo >&2 "WARNING: Include file does not exist: '$src'"
-	fi
-    done
+    if [ "$scriptargs" = '' ]
+    then
+	# Fallback to "#DOCKER:FROM .." style lines.
+	scriptargs="$(echo "$scriptfile" | sed -n 's/^#DOCKER://p')"
+	scriptfile=$(echo "$scriptfile"|sed '/^#DOCKER:/d')
+    else
+	scriptfile=$(echo "$scriptfile"|sed "/$re/,/^@\$/d")
+    fi
+    scriptinclude=$(echo "$scriptargs" | sed -n 's/^INCLUDE[ 	]\+//p')
 
-    echo "$scriptfile" | enc
-    echo ")|base64 -d|gzip -d>$sname;sh $sname;rm -f $sname"
+    if [ "$scriptargs" != '' ]
+    then
+	# Split the dockerfile to choose where to insert the encoded script.
+	# Keep 1*FROM, 1*WORKDIR, n*ARG, n*ENV, n*LABEL
+	# Or split on the first "@"
+	sc=$(echo "$scriptargs" |
+	    awk 'BEGIN{rn=0;}
+		/^FROM / && fc!=1 { fc=1; next; }
+		/^WORKDIR / && wd!=1 { wd=1; next; }
+		/^ARG|^ENV|^LABEL|^#|^$/ { next; }
+		/^INCLUDE/ {next;}
+		/^@$/{rn=NR;exit;}
+		{if(rn==0)rn=NR;}
+		END{if(rn==0)rn=NR+1;print rn;}')
 
-    sc=$(echo "$scriptargs" |
-    awk '
-	/^FROM / && fc!=1 { fc=1; next; }
-	/^WORKDIR / && wd!=1 { wd=1; next; }
-	/^ARG|^ENV|^LABEL|^#/ && t!=1 { next ; }
-	/^INCLUDE/ {next;}
-	{fc=1;wd=1;t=1;print;}' )
+	scripttail=$(echo "$scriptargs" | sed -e "1,$((sc-1))d" -e '/^@$/d' )
 
-    [ "$sc" != '' ] && echo "$sc"
+	# Print out the coverted file.
+	echo "$scriptargs" | sed -e "$((sc)),\$d" -e '/^@$/d'
+    fi
+
+    enc() { cat "$@"|gzip -cn9|base64 -w 72|sed 's/.*/_ &;\\/';}
+
+    if [ "$scriptinclude" != '' ]
+    then
+	echo 'RUN set -eu;_() { echo "$@";};\'
+
+	echo "$scriptinclude" |
+	while IFS= read -r line
+	do
+	    src="${line%% *}" ; dst="${line#* }"
+	    if [ -d "$src" ];then
+		echo "mkdir -p $dst;(\\"
+		tar c --owner=root --group=root --mode=og=u-w,ug-s \
+		    -f - -C "$src" . | enc
+		echo ")|base64 -d|gzip -d|tar x -C $dst -f -;\\"
+	    elif [ -e "$src" ];then
+		echo '(\';enc "$src" ; echo ")|base64 -d|gzip -d>$dst;\\"
+	    else
+		echo >&2 "WARNING: Include file does not exist: '$src'"
+	    fi
+	done
+
+	echo '(\';
+	echo "$scriptfile" | enc
+	echo ")|base64 -d|gzip -d>$sname;sh -e $sname;rm -f $sname"
+
+    elif [ "$ENCODED" = yes ]
+    then
+	echo 'RUN set -eu;_() { echo "$@";};(\'
+	echo "$scriptfile" | enc
+	echo ")|base64 -d|gzip -d>$sname;sh -e $sname;rm -f $sname"
+    else
+	echo "$scriptfile" | make_docker_runtxt -
+    fi
+
+    [ "$scripttail" != '' ] && echo "$scripttail"
     return 0
 }
 
-main "$@"
+make_docker_runtxt() {
+    sname="/tmp/install"
+    echo "RUN set -e;(\\"
+    cat "$@" |
+	while IFS= read -r line
+	do echo echo "${line@Q};"\\
+	done
+    echo ")>$sname;sh -e $sname;rm -f $sname"
+    return 0;
+}
+
+main "$@" ; exit
+
+#DOCKERGUEST
+#!/bin/sh
+# Put your guest script here
