@@ -91,7 +91,7 @@ make_dockerrun() {
     [ "$sc" != '' ] && scriptfile="$sc"
 
     # Extract the Dockerfile section(s) from the script.
-    re='^[ 	]*:  *[Dd][Oo][Cc][Kk][Ee][Rr] *[Ff][Ii][Ll][Ee] *<< *\\@'
+    re='^[ 	]*:  *[Dd][Oo][Cc][Kk][Ee][Rr] *[Ff][Ii][Ll][Ee] *<< *\(\\\)\?@'
     scriptargs="$(echo "$scriptfile" |
 	sed -n "/$re/,/^@\$/p" |
 	sed -e "/$re/d" -e \$d -e 's/[ 	]\+$//')"
