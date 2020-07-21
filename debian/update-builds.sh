@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC2086
 
 # TODO:
 #  From make_image
@@ -28,24 +29,34 @@
 
 main() {
     init
+    TAGS=""
+    DIST=debian
 
-    [ "$1" = -f ] && { FORCEBUILD=1 ; shift ; }
-    [ "$1" = -P ] && { FORCEBUILD=1 ; FORCEPUSH=1 ; shift ; }
-    [ "$1" = -p ] && { FORCEPUSH=1 ; shift ; }
-    [ "$1" = -n ] && { NOPUSH=1 ; shift ; }
+    while [ "$#" -gt 0 ]
+    do
+	[ "$1" = -f ] && { FORCEBUILD=1 ; shift ; }
+	[ "$1" = -P ] && { FORCEBUILD=1 ; FORCEPUSH=1 ; shift ; }
+	[ "$1" = -p ] && { FORCEPUSH=1 ; shift ; }
+	[ "$1" = -n ] && { NOPUSH=1 ; shift ; }
 
-    # shellcheck disable=SC2086
-    case "$1" in
-    debian|ubuntu|devuan|kali ) DIST=$1; shift ;;
+	# shellcheck disable=SC2086
+	case "$1" in
+	i386 ) shift ; DEFAULT_ARCH=i386 ;;
 
-    ubuntu1 ) shift ; set -- $UBUNTU1 ;;
-    ubuntu2 ) shift ; set -- $UBUNTU2 ;;
-    ubuntu3 ) shift ; set -- $UBUNTU3 ;;
-    ubuntu4 ) shift ; set -- $UBUNTU4 ;;
-    ubuntu5 ) shift ; set -- $UBUNTU5 ;;
+	debian|ubuntu|devuan|kali ) DIST=$1; shift ;;
 
-    * ) DIST=debian ;;
-    esac
+	ubuntu1 ) shift ; set -- $UBUNTU1 ;;
+	ubuntu2 ) shift ; set -- $UBUNTU2 ;;
+	ubuntu3 ) shift ; set -- $UBUNTU3 ;;
+	ubuntu4 ) shift ; set -- $UBUNTU4 ;;
+	ubuntu5 ) shift ; set -- $UBUNTU5 ;;
+	ubuntults ) shift ; set -- $UBUNTULTS ;;
+
+	* ) TAGS="$TAGS $1"; shift ;;
+	esac
+    done
+
+    set -f ; set -- $TAGS ; set +f
 
     if [ "$#" -gt 0 ]
     then
@@ -76,17 +87,26 @@ main() {
 all_debian() {
     # Note: potato doesn't build on "Docker hub".
 
-    for fullvar in \
-	potato woody sarge \
-	etch-i386   etch   lenny-i386    lenny  squeeze-i386 squeeze \
-	wheezy-i386 wheezy jessie-i386   jessie stretch-i386 stretch \
-	buster-i386 buster bullseye-i386 bullseye \
-	\
-	stable-i386 stable testing-i386  testing \
-	unstable-i386 unstable latest
+    case "$DEFAULT_ARCH" in
+    i386 )
+	for fullvar in \
+	    potato woody sarge \
+	    etch lenny squeeze wheezy jessie stretch buster bullseye \
+	    stable
 
-    do do_build "$fullvar" debian
-    done
+	do do_build "$fullvar" debian
+	done
+	;;
+    * )
+	for fullvar in \
+	    potato woody sarge \
+	    etch lenny squeeze wheezy jessie stretch buster bullseye \
+	    stable testing unstable latest
+
+	do do_build "$fullvar" debian
+	done
+	;;
+    esac
 }
 
 all_devuan() {
@@ -109,8 +129,10 @@ do_build() {
     variant=${fullvar%-*}; arch=${fullvar#$variant}; arch="${arch#-}"
     fullvar="$(echo "$fullvar" | tr _ -)"
     variant="$(echo "$variant" | tr _ -)"
+    arch="${arch:-$DEFAULT_ARCH}"
 
-    b="build-$distro-$variant${arch:+-$arch}"
+    b="build/$distro${arch:+-$arch}+$variant"
+    # /^build\/debian-i386\+(.*)$/  {\1}
 
     echo "#### Starting $b"
 
@@ -179,26 +201,36 @@ do_build() {
 		UPCMD=upgrade ;;
 	    * ) UPCMD=dist-upgrade ;;
 	    esac
+
 	    case "$arch" in
 	    i386 ) DOCKERSECOPT="$DOCKERI386" ;;
 	    * )    DOCKERSECOPT='' ;;
 	    esac
 
+	    cat > test_state.sh <<-!
+		echo 'Checking for upgraded packages'
+		ulimit -n 1024
+		dpkg -l > /home/user/packages-before.txt
+		rm -f /home/user/packages.txt
+		apt-get -y -qq update
+		apt-get -y $UPCMD
+		dpkg -l > /home/user/packages.txt
+		!
+
 	    docker run $DOCKERSECOPT --rm -t -v "$(pwd)":/home/user \
 		"$REGISTRY$distro:$fullvar" \
-		bash -c "echo 'Checking for upgraded packages' ;\
-		    ulimit -n 1024 ||:;\
-		    dpkg -l > /home/user/packages-before.txt &&
-		    rm -f /home/user/packages.txt &&
-		    apt-get -y -qq update &&
-		    apt-get -y $UPCMD &&
-		    dpkg -l > /home/user/packages.txt ||:"
+		bash /home/user/test_state.sh
 
 	    if ! cmp -s savedpackages.txt packages.txt
 	    then
-		[ -s packages.txt ] &&
-		    [ "$NOPUSH" != 1 ] &&
-			mktag "$b" "Update build tree for $fullvar"
+		[ -s packages.txt ] && {
+		    if [ "$NOPUSH" != 1 ]
+		    then mktag "$b" "Update build tree for $fullvar"
+		    else
+			echo "# Tag '$b' needs to be pushed."
+			# diff savedpackages.txt packages.txt
+		    fi
+		}
 	    fi
 	    if ! cmp -s packages-before.txt packages.txt
 	    then
@@ -214,6 +246,7 @@ do_build() {
     )
     git update-ref -d refs/tempref
     git worktree remove -f "$T" ||:
+    echo "#### Done $b"
 }
 
 choose_distro() {
@@ -293,19 +326,13 @@ committer nobody <> 1 +0000
     DOCKERI386=''
     # '--security-opt seccomp:unconfined'
 
-UBUNTU1='warty hoary breezy-i386 breezy dapper-i386 dapper edgy-i386 edgy
-feisty-i386 feisty gutsy-i386 gutsy hardy-i386 hardy intrepid-i386 intrepid'
+    UBUNTU1='warty hoary breezy dapper edgy feisty gutsy hardy intrepid'
+    UBUNTU2='jaunty karmic lucid maverick natty oneiric precise'
+    UBUNTU3='quantal raring saucy trusty utopic vivid wily'
+    UBUNTU4='xenial yakkety zesty artful bionic cosmic disco'
+    UBUNTU5='eoan focal groovy'
 
-UBUNTU2='jaunty-i386 jaunty karmic-i386 karmic lucid-i386 lucid maverick-i386
-maverick natty-i386 natty oneiric-i386 oneiric precise-i386 precise'
-
-UBUNTU3='quantal-i386 quantal raring-i386 raring saucy-i386 saucy trusty-i386
-trusty utopic-i386 utopic vivid-i386 vivid wily-i386 wily'
-
-UBUNTU4='xenial-i386 xenial yakkety-i386 yakkety zesty-i386 zesty artful-i386
-artful bionic-i386 bionic cosmic-i386 cosmic disco-i386 disco'
-
-UBUNTU5='eoan-i386 eoan focal-i386 focal groovy-i386 groovy'
+    UBUNTULTS='dapper hardy lucid precise trusty xenial bionic focal'
 }
 
 main "$@"

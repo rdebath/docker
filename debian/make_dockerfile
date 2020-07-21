@@ -10,6 +10,9 @@ if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 #	Use git version instead of alpine version of debootstrap ?
 #	Patch debootstrap directly (with git?)
 #	Add other distros?
+#	Add "Parrot" https://github.com/ParrotSec/debootstrap
+#	Look at "febootstrap" ? https://linux.die.net/man/8/febootstrap
+#	? http://archive.gnewsense.org/gnewsense/dists/ ?
 
 main() {
     set -e
@@ -79,7 +82,13 @@ cat <<\@
 
     # Note: https://salsa.debian.org/installer-team/debootstrap.git
 
+    # shellcheck disable=SC2016
     docker_start || {
+
+	: Current debootstrap has bug
+	sed -i -e 's/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/' \
+	    /usr/share/debootstrap/functions
+
 	DIR=/usr/share/debootstrap/scripts
 
 	: 'Repair Debian scripts'
@@ -146,11 +155,15 @@ cat <<\@
 		-e 's@^\(default_mirror\) .*@\1 https://http.kali.org/kali@' \
 		"$DIR/kali"
 
+	: "Some old Ubuntu releases don't see that Docker has setup /proc"
+	sed -i -e 's/\<setup_proc/: setup_proc/' $DIR/edgy
+	sed -i -e 's/\<setup_proc/: setup_proc/' $DIR/feisty
+
     } ; docker_commit "Configure debootstrap"
 
     docker_cmd
 
-    # shellcheck disable=SC2016,SC2086
+    # shellcheck disable=SC2086
     docker_start || {
 	: "Stage 1 for $RELEASE $ARCH" $STAMP
 
@@ -192,17 +205,6 @@ cat <<\@
 	    fi
 	    ;;
 
-	sarge.buildd|woody.buildd )
-	    ARCH="${ARCH:-i386}"
-	    DEBSCRIPT="$RELEASE"
-	    RELEASE="${RELEASE%.*}"
-	    ;;
-
-	warty.buildd|hoary.buildd )
-	    DEBSCRIPT="$RELEASE"
-	    RELEASE="${RELEASE%.*}:std"
-	    ;;
-
 	*:* )
 	    [ "$DEBSCRIPT" = '' ] &&
 		[ -e "$DIR/${RELEASE##*:}" ] &&
@@ -225,49 +227,97 @@ cat <<\@
 	else COMP="--components=main,contrib,non-free"
 	fi
 
-	grep -q '^variants.*minbase' "$DIR/${DEBSCRIPT:-$RELEASE}" &&
-	    VARIANT="--variant=minbase"
+	[ "$VARIANT" = '' ] && {
+	    grep -q '^variants.*minbase' "$DIR/${DEBSCRIPT:-$RELEASE}" &&
+		VARIANT="minbase"
+	}
 
-	# Must exclude/include to get an undamaged system
+	[ "${VARIANT:-minbase}" = minbase ] && {
+	    case "$RELEASE" in
+
+	    potato|woody )
+		# This aren't needed and some are messy to remove.
+		# This is nearly a minbase, but apt and netbase aren't "essential"!
+		EXTRA='--exclude=mbr,modconf,pciutils,pcmcia-cs,modutils,lilo'
+		EXTRA="$EXTRA,ppp,pppoe,pppconfig,pppoeconf,console-tools"
+		EXTRA="$EXTRA,console-tools-libs,exim,cron,at,mailx,logrotate"
+		EXTRA="$EXTRA,libident,libldap2,liblockfile1,libpcap0,libpcre3"
+		EXTRA="$EXTRA,sysklogd,klogd,fdutils,dhcp-client,setserial"
+		EXTRA="$EXTRA,libreadline4,libsasl7,syslinux,makedev"
+		EXTRA="$EXTRA,console-data,base-config,adduser,tasksel"
+		EXTRA="$EXTRA,ae,fbset,fdflush,pump,isapnptools,xviddetect"
+		EXTRA="$EXTRA,telnet,ftp,gettext-base,elvis-tiny"
+		;;
+
+	    jessie )
+		EXTRA='--exclude=systemd,systemd-sysv'
+		EXTRA="$EXTRA,acl,adduser,dmsetup,libcap2,libcap2-bin"
+		EXTRA="$EXTRA,libcryptsetup4,libdevmapper1.02.1,libkmod2"
+		EXTRA="$EXTRA,libncursesw5,libprocps3,libudev1,udev"
+		INCEXTRA='sysvinit-core'
+		;;
+
+	    warty|hoary )
+		EXTRA="--exclude=adduser,alsa-base,alsa-utils,at,base-config"
+		EXTRA="$EXTRA,bind9-host,bsdmainutils,console-common"
+		EXTRA="$EXTRA,console-data,console-tools,cpio,cramfsprogs"
+		EXTRA="$EXTRA,cron,dbus-1,dhcp3-client,dhcp3-common,discover1"
+		EXTRA="$EXTRA,discover1-data,dmsetup,dnsutils,dosfstools"
+		EXTRA="$EXTRA,ed,eject,evms,evms-ncurses,fdutils,file,ftp"
+		EXTRA="$EXTRA,gettext-base,gnupg,groff-base,hdparm,hotplug"
+		EXTRA="$EXTRA,ifrename,ifupdown,info,initrd-tools,iproute"
+		EXTRA="$EXTRA,iptables,iputils-tracepath,jfsutils,klogd"
+		EXTRA="$EXTRA,libasound2,libatm1,libbz2-1.0,libconsole,libdb4.2"
+		EXTRA="$EXTRA,libdevmapper1.00,libdiscover1,libdns16,libevms-2.3"
+		EXTRA="$EXTRA,libexpat1,libfribidi0,libgc1,libgcrypt7"
+		EXTRA="$EXTRA,libgdbm3,libgnutls10,libgpg-error0,libgpmg1"
+		EXTRA="$EXTRA,libidn11,libisc7,libiw27,libldap2,liblockfile1"
+		EXTRA="$EXTRA,liblwres1,liblzo1,libmagic1,libncursesw5"
+		EXTRA="$EXTRA,libopencdk8,libparted1.6-0,libpcap0.7,libpcap0.8"
+		EXTRA="$EXTRA,libreiserfs0.3-0,libsasl2,libsigc++-1.2-5c102"
+		EXTRA="$EXTRA,libssl0.9.7,libtasn1-2,libusb-0.1-4,libwrap0"
+		EXTRA="$EXTRA,logrotate,lshw,lsof,ltrace,lvm-common,lvm10,lvm2"
+		EXTRA="$EXTRA,mailx,man-db,manpages,mdadm,mii-diag,mime-support"
+		EXTRA="$EXTRA,module-init-tools,mtr-tiny,mutt,nano,netcat"
+		EXTRA="$EXTRA,netkit-inetd,ntp,ntpdate,openssh-client,parted"
+		EXTRA="$EXTRA,pciutils,popularity-contest,postfix,postfix-tls"
+		EXTRA="$EXTRA,ppp,pppconfig,pppoeconf,psmisc,python,python2.3"
+		EXTRA="$EXTRA,reiser4progs,reiserfsprogs,reportbug,rsync"
+		EXTRA="$EXTRA,strace,sudo,sysklogd,tcpd,tcpdump,telnet,time"
+		EXTRA="$EXTRA,ubuntu-base,udev,usbutils,vim,vim-common,w3m"
+		EXTRA="$EXTRA,wget,wireless-tools,xfsprogs'"
+		;;
+
+	    dapper|edgy|feisty )
+		EXTRA='--exclude=initscripts,system-services,ubuntu-minimal'
+		EXTRA="$EXTRA,upstart-compat-sys,pcmciautils,alsa-utils"
+		EXTRA="$EXTRA,pciutils,libasound2,libfribidi0,libpci2"
+		EXTRA="$EXTRA,mii-diag,wireless-tools,wpasupplicant"
+		EXTRA="$EXTRA,alsa-base,console-tools,console-common"
+		EXTRA="$EXTRA,console-setup,console-terminus,libconsole"
+		EXTRA="$EXTRA,ethtool,upstart-logd,xkb-data,udev,sysvinit"
+		EXTRA="$EXTRA,initramfs-tools,volumeid,tasksel,tasksel-data"
+		EXTRA="$EXTRA,usbutils,libsysfs2,libvolumeid0,klibc-utils"
+		EXTRA="$EXTRA,linux-sound-base,module-init-tools"
+		EXTRA="$EXTRA,startup-tasks,x11-common,sysklogd,klogd"
+		EXTRA="$EXTRA,upstart,libklibc,dhcp3-client,dhcp3-common"
+		EXTRA="$EXTRA,eject,laptop-detect,libiw28,dmidecode"
+		EXTRA="$EXTRA,grepmap,console-data"
+		;;
+
+	    gutsy|hardy )
+		EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
+		;;
+
+	    esac
+	}
+
 	case "$RELEASE" in
-	jessie )
-	    EXTRA='--exclude=systemd,systemd-sysv'
-	    EXTRA="$EXTRA,acl,adduser,dmsetup,libcap2,libcap2-bin"
-	    EXTRA="$EXTRA,libcryptsetup4,libdevmapper1.02.1,libkmod2"
-	    EXTRA="$EXTRA,libncursesw5,libprocps3,libudev1,udev"
-	    INCEXTRA='sysvinit-core'
-	    ;;
-	warty|hoary )
-	    EXTRA='--exclude=udev,ubuntu-base'
-	    ;;
-
-	dapper )
-	    EXTRA='--exclude=udev,initscripts,sysvinit,console-tools,console-common,ubuntu-base'
-	    ;;
-
-	gutsy|hardy )
-	    EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
-	    INCEXTRA='gpgv'
-	    ;;
-
+	gutsy|hardy ) INCEXTRA='gpgv' ;;
 	intrepid|jaunty|karmic|lucid|maverick|natty ) INCEXTRA='gpgv' ;;
 
 	ascii|beowulf|chimaera|ceres|*:devuan ) INCEXTRA='devuan-keyring' ;;
 	kali-* ) INCEXTRA='kali-archive-keyring' ;;
-
-	potato|woody )
-	    # This aren't needed and some are messy to remove.
-	    # This is nearly a minbase, but apt and netbase aren't "essential"!
-	    EXTRA='--exclude=mbr,modconf,pciutils,pcmcia-cs,modutils,lilo'
-	    EXTRA="$EXTRA,ppp,pppoe,pppconfig,pppoeconf,console-tools"
-	    EXTRA="$EXTRA,console-tools-libs,exim,cron,at,mailx,logrotate"
-	    EXTRA="$EXTRA,libident,libldap2,liblockfile1,libpcap0,libpcre3"
-	    EXTRA="$EXTRA,sysklogd,klogd,fdutils,dhcp-client,setserial"
-	    EXTRA="$EXTRA,libreadline4,libsasl7,makedev,syslinux,makedev"
-	    EXTRA="$EXTRA,console-data,base-config,adduser,tasksel"
-	    EXTRA="$EXTRA,ae,fbset,fdflush,pump,isapnptools,xviddetect"
-	    EXTRA="$EXTRA,telnet,ftp,gettext-base,elvis-tiny"
-	    ;;
 	esac
 
 	[ "$INCEXTRA$INCLUDE" != '' ] && {
@@ -277,20 +327,16 @@ cat <<\@
 	    INCEXTRA="--include=$INCEXTRA"
 	}
 
+	[ "$VARIANT" = default ] && VARIANT=''
+
 	debootstrap --foreign ${ARCH:+--arch="$ARCH"} \
-	    $VARIANT $COMP $DEBOPTIONS $EXTRA $INCEXTRA \
+	    ${VARIANT:+--variant="$VARIANT"} \
+	    $COMP $DEBOPTIONS $EXTRA $INCEXTRA \
 	    "${RELEASE%:*}" chroot "$MIRROR" "$DEBSCRIPT"
 
 	(cd chroot-patch && tar cf - .) | (cd chroot && tar xf - )
 
 	cd /opt/chroot
-
-	: Docker has already setup /proc
-	sed -i -e 's/\<setup_proc/: setup_proc/' debootstrap/suite-script
-
-	: Current debootstrap has bug
-	sed -i -e 's/echo \${USE_COMPONENTS}/echo "\${USE_COMPONENTS}"/' \
-	    debootstrap/functions
 
 	[ "$RELEASE" = jessie ] && {
 	    : "Systemd is unpacked ready to install even if we don't want it."
@@ -309,17 +355,17 @@ cat <<\@
 
     # shellcheck disable=SC2015,SC2016,SC1091,SC2046,SC2086
     docker_start || {
-	: "Start stage 2 for $RELEASE"
-
 	touch /tmp/release
 	. /tmp/release
 	rm -f /tmp/release
 
+	: "Start stage 2 for $RELEASE"
+
 	export DEBIAN_FRONTEND=noninteractive
 
-	: init sometimes uses ischroot to disable updates.
-	if [ -x /usr/bin/ischroot ]
-	then dpkg-divert --local --rename --add /usr/bin/ischroot
+	: 'init sometimes uses ischroot to disable updates. (eg wheezy)'
+	if [ -x /usr/bin/ischroot ]&&[ ! -L /usr/bin/ischroot ]
+	then dpkg-divert --local --rename --add /usr/bin/ischroot 2>/dev/null &&
 	     ln -s /bin/true /usr/bin/ischroot
 	fi
 
@@ -352,32 +398,11 @@ cat <<\@
 	    # Don't removed the dependancies yet!
 	    ;;
 
-	warty ) # Warty isn't a minbase
-	    dpkg --purge \
-		alsa-utils alsa-base libasound2 \
-		lvm10 lvm2 lvm-common hotplug \
-		modutils pciutils module-init-tools
-	    dpkg --purge \
-		aptitude at base-config bind9-host bsdmainutils \
-		console-common console-data console-tools cron discover1 \
-		discover1-data dnsutils evms evms-ncurses ftp gettext-base \
-		groff-base iproute iputils-arping iputils-tracepath klogd \
-		libasound2 libatm1 libconsole libdiscover1 libdns16 \
-		libevms-2.3 libgc1 libgdbm3 libgpmg1 libidn11 libisc7 \
-		liblockfile1 liblwres1 libncursesw5 libpcap0.7 libpcap0.8 \
-		libreadline4 libsigc++-1.2-5c102 libusb-0.1-4 logrotate \
-		lshw lsof ltrace mailx man-db manpages mdadm mime-support \
-		mtr-tiny mutt nano netcat ntp ntpdate openssh-client \
-		parted popularity-contest postfix postfix-tls ppp \
-		pppconfig pppoeconf python python2.3 reiser4progs \
-		reportbug rsync strace sudo sysklogd tcpdump telnet \
-		usbutils vim vim-common w3m xfsprogs
-	    ;;
-
-	dapper|edgy|feisty )
+	edgy|feisty )
 	    : Some packages cannot be configured.
 	    dpkg --purge --force-remove-essential \
-		$(dpkg -l | awk '/^i[UF]/{print $2;}')
+		$(dpkg -l | awk '/^i[UF]/{print $2;}') ||:
+	    rm -rf /.root
 	    ;;
 
 	potato )
@@ -387,7 +412,7 @@ cat <<\@
 
 	lenny|squeeze )
 	    # It appears lenny and squeeze cannot be convinced to ignore
-	    # the expiry timestamp on the key. Debootstrap did, so INCLUDE=
+	    # the expired timestamp on the key. Debootstrap did, so INCLUDE=
 	    # packages will be authenticated.
 	    echo 'APT::Get::AllowUnauthenticated "true";' \
 		> /etc/apt/apt.conf.d/insecure-repository
@@ -493,6 +518,7 @@ cat <<\@
     docker_cmd ARG 'RELEASE=stable'
     docker_cmd ARG 'ARCH'
     docker_cmd ARG 'MIRROR'
+    docker_cmd ARG 'VARIANT'
     docker_cmd ARG 'DEBSCRIPT'
     docker_cmd ARG 'DEBOPTIONS'
     docker_cmd ARG 'INCLUDE'
