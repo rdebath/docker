@@ -1,0 +1,7 @@
+.*_history
+*.log
+*.tmp
+
+Repo.*.tags.json
+debian/temptree
+
