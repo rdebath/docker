@@ -52,9 +52,11 @@ main() {
 	ubuntu5 ) shift ; set -- $UBUNTU5 ;;
 	ubuntults ) shift ; set -- $UBUNTULTS ;;
 
-	* ) TAGS="$TAGS $1"; shift ;;
+	* ) TAGS="${TAGS:+$TAGS }$1"; shift ;;
 	esac
     done
+
+    [ "$TAGS" = all ] && { all_dists; exit; }
 
     set -f ; set -- $TAGS ; set +f
 
@@ -74,67 +76,79 @@ main() {
 		;;
 	    esac
 	done
+
     elif [ "$DIST" = debian ]
     then all_debian
     elif [ "$DIST" = devuan ]
     then all_devuan
+    elif [ "$DIST" = kali ]
+    then all_kali
     elif [ "$DIST" = ubuntu ]
     then all_ubuntu
     else echo >&2 "Nothing to do" ; exit 1
     fi
 }
 
+all_dists() {
+    for DEFAULT_ARCH in '' i386
+    do all_debian ; all_devuan ; all_kali
+    done
+
+    for DEFAULT_ARCH in '' i386
+    do all_ubuntu
+    done
+
+    DEFAULT_ARCH=
+    do_build amber pureos ||:
+}
+
 all_debian() {
     # Note: potato doesn't build on "Docker hub".
+    for fullvar in \
+	potato woody sarge \
+	etch lenny squeeze wheezy jessie stretch buster bullseye \
+	stable
 
-    case "$DEFAULT_ARCH" in
-    i386 )
-	for fullvar in \
-	    potato woody sarge \
-	    etch lenny squeeze wheezy jessie stretch buster bullseye \
-	    stable
+    do do_build "$fullvar" debian ||:
+    done
 
-	do do_build "$fullvar" debian
-	done
-	;;
-    * )
-	for fullvar in \
-	    potato woody sarge \
-	    etch lenny squeeze wheezy jessie stretch buster bullseye \
-	    stable testing unstable latest
-
-	do do_build "$fullvar" debian
-	done
-	;;
-    esac
+    [ "$DEFAULT_ARCH" = i386 ] || {
+	do_build testing debian ||:
+	do_build unstable debian ||:
+    }
 }
 
 all_devuan() {
-    for fullvar in \
-	jessie-i386 jessie ascii-i386 ascii beowulf-i386 beowulf \
-	chimaera-i386 chimaera ceres-i386 ceres
-    do do_build "$fullvar" devuan
+    for fullvar in jessie ascii beowulf chimaera ceres
+    do do_build "$fullvar" devuan ||:
+    done
+}
+
+all_kali() {
+    for fullvar in kali_rolling kali_last_snapshot kali_dev
+    do do_build "$fullvar" kali ||:
     done
 }
 
 all_ubuntu() {
     for fullvar in $UBUNTU1 $UBUNTU2 $UBUNTU3 $UBUNTU4 $UBUNTU5
-    do do_build "$fullvar" ubuntu
+    do do_build "$fullvar" ubuntu ||:
     done
 }
 
 do_build() {
     distro="$2"
-    fullvar="$1"
-    variant=${fullvar%-*}; arch=${fullvar#$variant}; arch="${arch#-}"
-    fullvar="$(echo "$fullvar" | tr _ -)"
+    relname="$1"
+    variant=${relname%-*}; arch=${relname#$variant}; arch="${arch#-}"
+    relname="$(echo "$relname" | tr _ -)"
     variant="$(echo "$variant" | tr _ -)"
     arch="${arch:-$DEFAULT_ARCH}"
+    release="$variant${arch:+-$arch}"
 
     b="build/$distro${arch:+-$arch}+$variant"
     # /^build\/debian-i386\+(.*)$/  {\1}
 
-    echo "#### Starting $b"
+    echo "#### Starting $REGISTRY$distro:$release"
 
     git worktree remove -f "$T" 2>/dev/null ||:
     git update-ref refs/tempref "$NULL"
@@ -183,11 +197,11 @@ do_build() {
 	else cp -p "$P"/README-Generic.md README.md
 	fi
 
-	ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$fullvar" 2>/dev/null ||:)
+	ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$release" 2>/dev/null ||:)
 	if [ "$ID" = '' ]||[ "$FORCEBUILD" = 1 ]
 	then
-	    docker build -t "$REGISTRY$distro:$fullvar" -<Dockerfile
-	    ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$fullvar")
+	    docker build -t "$REGISTRY$distro:$release" -<Dockerfile
+	    ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$release")
 	fi
 
 	if [ "$FORCEBUILD" != 1 ] || [ "$NOPUSH" != 1 ]
@@ -196,7 +210,7 @@ do_build() {
 	    cat packages.txt > savedpackages.txt
 	    [ "$FORCEPUSH" = 1 ] && :> savedpackages.txt
 
-	    case "$fullvar" in
+	    case "$variant" in
 	    dapper|dapper-i386)
 		UPCMD=upgrade ;;
 	    * ) UPCMD=dist-upgrade ;;
@@ -218,14 +232,14 @@ do_build() {
 		!
 
 	    docker run $DOCKERSECOPT --rm -t -v "$(pwd)":/home/user \
-		"$REGISTRY$distro:$fullvar" \
+		"$REGISTRY$distro:$release" \
 		bash /home/user/test_state.sh
 
 	    if ! cmp -s savedpackages.txt packages.txt
 	    then
 		[ -s packages.txt ] && {
 		    if [ "$NOPUSH" != 1 ]
-		    then mktag "$b" "Update build tree for $fullvar"
+		    then mktag "$b" "Update build tree for $release"
 		    else
 			echo "# Tag '$b' needs to be pushed."
 			# diff savedpackages.txt packages.txt
@@ -240,13 +254,13 @@ do_build() {
 		    md5sum < packages.txt | awk '{print $1;}')"'"' \
 		    Dockerfile
 
-		docker build -t "$REGISTRY$distro:$fullvar" -<Dockerfile
+		docker build -t "$REGISTRY$distro:$release" -<Dockerfile
 	    fi
 	fi
     )
     git update-ref -d refs/tempref
     git worktree remove -f "$T" ||:
-    echo "#### Done $b"
+    echo "#### Done $release"
 }
 
 choose_distro() {
