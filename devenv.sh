@@ -12,7 +12,7 @@ set -e
 host_main() {
     docker_init
     ENC_OFF=
-    REPOPREFIX=localhost/devel:
+    REPOPREFIX=reg.xz/devel:
     DOPUSH=
     SRCREPO=
     while [ "${1#-}" != "$1" ]
@@ -47,10 +47,16 @@ host_main() {
 	    jessie-i386 jessie buster wheezy-i386 squeeze-i386 wheezy \
 	    stretch-i386 stretch squeeze lenny-i386 lenny etch-i386 etch \
 	    sarge woody potato
+
+	SRCREPO="${SRCREPO:-reg.xz/debian}"
     }
 
     for base
-    do build_one "$base" "${SRCREPO}$base" "${REPOPREFIX}$base"
+    do
+	variant=${base%-*}; arch=${base#$variant}; arch="${arch#-}"
+	build_one "$base" \
+	    "${SRCREPO:+$SRCREPO${arch:+-$arch}:}$variant" \
+	    "${REPOPREFIX}${base//\//-}"
     done
 
     wait
