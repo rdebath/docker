@@ -96,13 +96,12 @@ make_dockerrun() {
 	sed -n "/$re/,/^@\$/p" |
 	sed -e "/$re/d" -e \$d -e 's/[ 	]\+$//')"
 
-    if [ "$scriptargs" = '' ]
-    then
+    if [ "$scriptargs" != '' ]
+    then scriptfile=$(echo "$scriptfile"|sed "/$re/,/^@\$/d")
+    else
 	# Fallback to "#DOCKER:FROM .." style lines.
 	scriptargs="$(echo "$scriptfile" | sed -n 's/^#DOCKER://p')"
 	scriptfile=$(echo "$scriptfile"|sed '/^#DOCKER:/d')
-    else
-	scriptfile=$(echo "$scriptfile"|sed "/$re/,/^@\$/d")
     fi
     scriptinclude=$(echo "$scriptargs" | sed -n 's/^INCLUDE[ 	]\+//p')
 
