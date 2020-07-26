@@ -6,27 +6,6 @@
 #    Option -j
 #    Option for docker push to private repo.
 
-#   Uncompiled combinations.
-#
-# Not compiled for i386
-# [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
-
-# Only compiled for i386 and has inode number issue
-# [ "$RELEASE" = potato -a "$ARCH" = i386 ] && continue # Is default
-
-# Only compiled for i386
-# [ "$RELEASE" = woody -a "$ARCH" = i386 ] && continue # Is default
-# [ "$RELEASE" = sarge -a "$ARCH" = i386 ] && continue # Is default
-
-# These fail if libseccomp2 < 2.4.3-1+b1
-# [ "$RELEASE" = unstable -a "$ARCH" = i386 ] && continue
-# [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue
-# [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue
-
-# i386 vdso needs to be at fixed address.
-# [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue
-# [ "$RELEASE" = hoary -a "$ARCH" = i386 ] && continue
-
 main() {
     init
     TAGS=""
@@ -143,12 +122,12 @@ do_build() {
     relname="$(echo "$relname" | tr _ -)"
     variant="$(echo "$variant" | tr _ -)"
     arch="${arch:-$DEFAULT_ARCH}"
-    release="$variant${arch:+-$arch}"
+    release="$REGISTRY$distro${arch:+-$arch}:$variant"
 
     b="build/$distro${arch:+-$arch}+$variant"
     # /^build\/debian-i386\+(.*)$/  {\1}
 
-    echo "#### Starting $REGISTRY$distro:$release"
+    echo "#### Starting $release"
 
     git worktree remove -f "$T" 2>/dev/null ||:
     git update-ref refs/tempref "$NULL"
@@ -197,11 +176,11 @@ do_build() {
 	else cp -p "$P"/README-Generic.md README.md
 	fi
 
-	ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$release" 2>/dev/null ||:)
+	ID=$(docker image inspect --format '{{.Id}}' "$release" 2>/dev/null ||:)
 	if [ "$ID" = '' ]||[ "$FORCEBUILD" = 1 ]
 	then
-	    docker build -t "$REGISTRY$distro:$release" -<Dockerfile
-	    ID=$(docker image inspect --format '{{.Id}}' "$REGISTRY$distro:$release")
+	    docker build -t "$release" -<Dockerfile
+	    ID=$(docker image inspect --format '{{.Id}}' "$release")
 	fi
 
 	if [ "$FORCEBUILD" != 1 ] || [ "$NOPUSH" != 1 ]
@@ -232,7 +211,7 @@ do_build() {
 		!
 
 	    docker run $DOCKERSECOPT --rm -t -v "$(pwd)":/home/user \
-		"$REGISTRY$distro:$release" \
+		"$release" \
 		bash /home/user/test_state.sh
 
 	    if ! cmp -s savedpackages.txt packages.txt
@@ -254,7 +233,7 @@ do_build() {
 		    md5sum < packages.txt | awk '{print $1;}')"'"' \
 		    Dockerfile
 
-		docker build -t "$REGISTRY$distro:$release" -<Dockerfile
+		docker build -t "$release" -<Dockerfile
 	    fi
 	fi
     )
@@ -326,7 +305,7 @@ mktag() {
 init() {
     set -e
 
-    REGISTRY=rdebath/
+    REGISTRY=reg.xz/
 
     NULL=$(echo "tree $(git hash-object -t tree -w /dev/null)
 author nobody <> 1 +0000
@@ -350,3 +329,24 @@ committer nobody <> 1 +0000
 }
 
 main "$@"
+
+#   Uncompilable combinations.
+#
+# Not compiled for i386
+# [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
+#
+# Only compiled for i386 and has inode number issue
+# [ "$RELEASE" = potato -a "$ARCH" = i386 ] && continue # Is default
+#
+# Only compiled for i386
+# [ "$RELEASE" = woody -a "$ARCH" = i386 ] && continue # Is default
+# [ "$RELEASE" = sarge -a "$ARCH" = i386 ] && continue # Is default
+#
+# These fail if host libseccomp2 < 2.4.3-1+b1
+# [ "$RELEASE" = unstable -a "$ARCH" = i386 ] && continue
+# [ "$RELEASE" = focal -a "$ARCH" = i386 ] && continue
+# [ "$RELEASE" = groovy -a "$ARCH" = i386 ] && continue
+#
+# i386 vdso needs to be at fixed address.
+# [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue
+# [ "$RELEASE" = hoary -a "$ARCH" = i386 ] && continue

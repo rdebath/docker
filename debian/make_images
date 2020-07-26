@@ -4,7 +4,7 @@ build_images() {
     local forkcount=1
 
     LISTCMD=
-    REPOPREFIX=rdebath/
+    REPOPREFIX=reg.xz/
     DOPUSH=
     while [ "${1#-}" != "$1" ]
     do

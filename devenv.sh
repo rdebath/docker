@@ -36,16 +36,18 @@ host_main() {
     grep -q vsyscall /proc/cmdline ||
 	echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
 
-    [ "$1" = deblist ] &&
+    [ "$#" -eq 0 ] &&
 	set -- \
+	    ubuntu alpine centos fedora opensuse/leap archlinux
+
+    [ "$1" = deblist ] && {
+	shift
+	set -- "$@" \
 	    unstable-i386 unstable bullseye bullseye-i386 buster-i386 \
 	    jessie-i386 jessie buster wheezy-i386 squeeze-i386 wheezy \
 	    stretch-i386 stretch squeeze lenny-i386 lenny etch-i386 etch \
 	    sarge woody potato
-
-    [ "$1" = '' ] &&
-	set -- \
-	    ubuntu alpine centos fedora opensuse/leap archlinux
+    }
 
     for base
     do build_one "$base" "${SRCREPO}$base" "${REPOPREFIX}$base"
@@ -138,7 +140,8 @@ install_os() {
 install_alpine() {
     echo >&2 "Installing build-base with apk for $PRETTY_NAME"
     apk add --no-cache -t build-packages \
-	build-base bash bison flex lua gmp-dev openssl-dev cmake gcc-gnat
+	build-base bash bison flex lua gmp-dev openssl-dev cmake \
+	nasm gcc-gnat
 }
 
 install_centos() {

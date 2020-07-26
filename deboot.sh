@@ -12,7 +12,8 @@
 FROM alpine AS unpack
 RUN apk add --no-cache debootstrap perl
 ARG RELEASE=stable
-RUN debootstrap --foreign --arch=amd64 --components=main,contrib,non-free \
+ARG ARCH=amd64
+RUN debootstrap --foreign --arch="$ARCH" --components=main,contrib,non-free \
     --variant=minbase "$RELEASE" /opt/chroot
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
