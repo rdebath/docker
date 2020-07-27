@@ -297,6 +297,7 @@ install_apt() {
 
 	mkdir /tmp/build
 	cd /tmp/build
+	DLIST="$(echo "$FOUND" | sed -e ':b;$!{;N;b b;};s/^[ \n\t]\+//;s/[ \n\t]\+$//;s/[ \n\t]\+/, /g')"
 
 	cat > control <<@
 Section: misc
@@ -304,7 +305,7 @@ Priority: optional
 Standards-Version: 3.9.2
 Package: packagelist-local
 Maintainer: Your Name <yourname@example.com>
-Depends: $(echo "$FOUND" | sed -e ':b;$!{;N;b b;};s/^[ \n\t]\+//;s/[ \n\t]\+$//;s/[ \n\t]\+/, /g')
+Depends: $DLIST
 Description: A list of build tools
  A list of build tools
  .

@@ -591,6 +591,7 @@ exit 0
 	dpkg --clear-avail
 	rm -f /etc/apt/apt.conf.d/01autoremove-kernels
 	rm -f /var/lib/dpkg/*-old
+	rm -f /etc/*-
 	rm -rf /var/tmp/* /tmp/*
 	:|find /var/log -type f ! -exec tee {} \;
 
