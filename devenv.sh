@@ -36,9 +36,12 @@ host_main() {
     grep -q vsyscall /proc/cmdline ||
 	echo >&2 WARNING: Old distros need vsyscall=emulate on the host.
 
-    [ "$#" -eq 0 ] &&
-	set -- \
-	    ubuntu alpine centos fedora opensuse/leap archlinux
+    [ "$#" -eq 0 ] && {
+	if [ "$RUNNOW" = yes ]
+	then set -- stable
+	else set -- ubuntu alpine centos fedora opensuse/leap archlinux
+	fi
+    }
 
     [ "$1" = deblist ] && {
 	shift
