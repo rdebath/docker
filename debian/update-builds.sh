@@ -36,6 +36,7 @@ main() {
 	    TAGS="$TAGS $UBUNTU5"
 	    TAGS="$TAGS beowulf chimaera ceres"
 	    TAGS="$TAGS sid-x32"
+	    shift
 	    ;;
 
 	* ) TAGS="${TAGS:+$TAGS }$1"; shift ;;
@@ -127,6 +128,8 @@ do_build() {
     relname="$(echo "$relname" | tr _ -)"
     variant="$(echo "$variant" | tr _ -)"
     arch="${arch:-$DEFAULT_ARCH}"
+    release2=
+    altname=
 
     if [ "$distro" = debian ]
     then
@@ -134,16 +137,14 @@ do_build() {
 	buster ) altname=stable ;;
 	bullseye ) altname=testing ;;
 	sid ) altname=unstable ;;
-	stable ) altname=buster ;;
-	testing ) altname=bullseye ;;
-	unstable ) altname=sid ;;
+	stable ) altname="$variant" ; variant=buster ;;
+	testing ) altname="$variant" ; variant=bullseye ;;
+	unstable ) altname="$variant" ; variant=sid ;;
 	esac
-	release2="$REGISTRY$distro${arch:+-$arch}:$altname"
-    else
-	altname=
-	release2=
     fi
 
+    [ "$altname" != '' ] &&
+	release2="$REGISTRY$distro${arch:+-$arch}:$altname"
     release="$REGISTRY$distro${arch:+-$arch}:$variant"
     b="build/$distro${arch:+-$arch}+$variant"
     # /^build\/debian-i386\+(.*)$/  {\1}
