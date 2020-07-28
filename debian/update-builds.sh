@@ -24,12 +24,19 @@ main() {
 
 	debian|ubuntu|devuan|kali ) DIST=$1; shift ;;
 
-	ubuntu1 ) shift ; set -- $UBUNTU1 ;;
-	ubuntu2 ) shift ; set -- $UBUNTU2 ;;
-	ubuntu3 ) shift ; set -- $UBUNTU3 ;;
-	ubuntu4 ) shift ; set -- $UBUNTU4 ;;
-	ubuntu5 ) shift ; set -- $UBUNTU5 ;;
-	ubuntults ) shift ; set -- $UBUNTULTS ;;
+	ubuntu1 ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTU1" ;;
+	ubuntu2 ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTU2" ;;
+	ubuntu3 ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTU3" ;;
+	ubuntu4 ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTU4" ;;
+	ubuntu5 ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTU5" ;;
+	ubuntults ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTULTS" ;;
+
+	current )
+	    TAGS="${TAGS:+$TAGS }stretch buster bullseye"
+	    TAGS="$TAGS $UBUNTU5"
+	    TAGS="$TAGS beowulf chimaera ceres"
+	    TAGS="$TAGS sid-x32"
+	    ;;
 
 	* ) TAGS="${TAGS:+$TAGS }$1"; shift ;;
 	esac
@@ -44,12 +51,7 @@ main() {
 	for fullvar
 	do
 	    case "$fullvar" in
-	    sid-x32 )
-		DIST=debian
-		do_build "$1" "$DIST" \
-		    '--no-check-gpg\ --include=debian-ports-archive-keyring' \
-		    http://ftp.ports.debian.org/debian-ports
-		;;
+	    sid-x32 ) debian_x32 ;;
 	    *)  choose_distro "$fullvar"
 		do_build "$fullvar" $DIST
 		;;
@@ -73,6 +75,8 @@ all_dists() {
     do all_debian ; all_devuan ; all_kali
     done
 
+    debian_x32
+
     for DEFAULT_ARCH in '' i386
     do all_ubuntu
     done
@@ -85,16 +89,17 @@ all_debian() {
     # Note: potato doesn't build on "Docker hub".
     for fullvar in \
 	potato woody sarge \
-	etch lenny squeeze wheezy jessie stretch buster bullseye \
-	stable
+	etch lenny squeeze wheezy jessie stretch buster bullseye
 
     do do_build "$fullvar" debian ||:
     done
+}
 
-    [ "$DEFAULT_ARCH" = i386 ] || {
-	do_build testing debian ||:
-	do_build unstable debian ||:
-    }
+debian_x32() {
+    DIST=debian
+    do_build "sid-x32" "$DIST" \
+	'--no-check-gpg\ --include=debian-ports-archive-keyring' \
+	http://ftp.ports.debian.org/debian-ports
 }
 
 all_devuan() {
@@ -122,8 +127,24 @@ do_build() {
     relname="$(echo "$relname" | tr _ -)"
     variant="$(echo "$variant" | tr _ -)"
     arch="${arch:-$DEFAULT_ARCH}"
-    release="$REGISTRY$distro${arch:+-$arch}:$variant"
 
+    if [ "$distro" = debian ]
+    then
+	case $variant in
+	buster ) altname=stable ;;
+	bullseye ) altname=testing ;;
+	sid ) altname=unstable ;;
+	stable ) altname=buster ;;
+	testing ) altname=bullseye ;;
+	unstable ) altname=sid ;;
+	esac
+	release2="$REGISTRY$distro${arch:+-$arch}:$altname"
+    else
+	altname=
+	release2=
+    fi
+
+    release="$REGISTRY$distro${arch:+-$arch}:$variant"
     b="build/$distro${arch:+-$arch}+$variant"
     # /^build\/debian-i386\+(.*)$/  {\1}
 
@@ -139,12 +160,9 @@ do_build() {
 	cd "$T"
 	git checkout "$b" ||:
 
-	if [ "$variant" = latest ]
-	then dvar=unstable
-	else dvar="$variant"
-	fi
 	if [ "$dvar" = jessie ]&&[ "$distro" = devuan ]
 	then dvar="$dvar:$distro"
+	else dvar="$variant"
 	fi
 
 	( cd "$P" ; bash make_dockerfile - ) > Dockerfile
@@ -239,6 +257,16 @@ do_build() {
     )
     git update-ref -d refs/tempref
     git worktree remove -f "$T" ||:
+
+    [ "$release2" != '' ] && {
+	docker tag "$(docker image inspect --format '{{.Id}}' "$release")" \
+	    "$release2"
+    }
+    [ "$altname" = stable ] && {
+	docker tag "$(docker image inspect --format '{{.Id}}' "$release")" \
+	    "$REGISTRY$distro${arch:+-$arch}:latest"
+    }
+
     echo "#### Done $release"
 }
 
