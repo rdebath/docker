@@ -4,19 +4,30 @@
 if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
 #########################################################
+# Use this (with the "#" characters)
+# : Dockerfile <<@
+# FROM ...
+# Etc
+# @
+#
+# An "@@" at the start of the line marks where a script
+# will be inserted; if missing this script guesses.
+#
+#########################################################
 # Dockerfile script command disposition                 #
 #                                                       #
 # FROM        - Keep first, rest after                  #
 # ENV         - Probably needed -- keep                 #
 # ARG         - Probably needed -- keep                 #
+# RUN         - Build image prereqs                     #
 # WORKDIR     - Keep first, rest after                  #
 # LABEL       - Not significant, keep                   #
+# Non-alpha   - Assumed to be a continuation            #
 #                                                       #
 #########################################################
 # All others are placed after body script.              #
 #########################################################
 #                                                       #
-# RUN         -                                         #
 # USER        -                                         #
 # SHELL       -                                         #
 # ADD         -                                         #
@@ -108,22 +119,22 @@ make_dockerrun() {
     if [ "$scriptargs" != '' ]
     then
 	# Split the dockerfile to choose where to insert the encoded script.
-	# Keep 1*FROM, 1*WORKDIR, n*ARG, n*ENV, n*LABEL
+	# Keep 1*FROM, 1*WORKDIR, n*RUN, n*ARG, n*ENV, n*LABEL
 	# Or split on the first "@"
 	sc=$(echo "$scriptargs" |
 	    awk 'BEGIN{rn=0;}
 		/^FROM / && fc!=1 { fc=1; next; }
 		/^WORKDIR / && wd!=1 { wd=1; next; }
-		/^ARG|^ENV|^LABEL|^#|^$/ { next; }
+		/^RUN|^ARG|^ENV|^LABEL|^[^A-Z@a-z]|^$/ { next; }
 		/^INCLUDE/ {next;}
-		/^@$/{rn=NR;exit;}
+		/^@/{rn=NR;exit;}
 		{if(rn==0)rn=NR;}
 		END{if(rn==0)rn=NR+1;print rn;}')
 
-	scripttail=$(echo "$scriptargs" | sed -e "1,$((sc-1))d" -e '/^@$/d' )
+	scripttail=$(echo "$scriptargs" | sed -e "1,$((sc-1))d" -e '/^@/d' )
 
-	# Print out the coverted file.
-	echo "$scriptargs" | sed -e "$((sc)),\$d" -e '/^@$/d'
+	# Print out the converted file.
+	echo "$scriptargs" | sed -e "$((sc)),\$d" -e '/^@/d'
     fi
 
     enc() { cat "$@"|gzip -cn9|base64 -w 72|sed 's/.*/_ &;\\/';}
@@ -138,7 +149,7 @@ make_dockerrun() {
 	    src="${line%% *}" ; dst="${line#* }"
 	    if [ -d "$src" ];then
 		echo "mkdir -p $dst;(\\"
-		tar c --owner=root --group=root --mode=og=u-w,ug-s \
+		tar c --owner=root --group=root --mode=og-w,ug-s \
 		    -f - -C "$src" . | enc
 		echo ")|base64 -d|gzip -d|tar x -C $dst -f -;\\"
 	    elif [ -e "$src" ];then

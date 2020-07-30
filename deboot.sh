@@ -18,9 +18,7 @@ RUN debootstrap --foreign --arch="$ARCH" --components=main,contrib,non-free \
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
 RUN /debootstrap/debootstrap --second-stage
-@
-
-: Dockerfile <<\@
+@@
 FROM scratch AS squashed
 COPY --from=stage2 / /
 WORKDIR /root
