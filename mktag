@@ -1,13 +1,18 @@
 #!/bin/sh
 
-TAG=build-qe-latest
+SCRIPT="$1"
+TAG="$2"
+shift 2
+COMMENT="$*"
 TAB=$(echo .|tr . '\011')
 git update-ref refs/tags/"$TAG" "$(
 {
-    echo 'Quantum Espresso with Miniconda' |
-    echo "100644 blob $(git hash-object -w --stdin)${TAB}README.md"
+    [ "$COMMENT" != '' ] && {
+	echo "$COMMENT" |
+	echo "100644 blob $(git hash-object -w --stdin)${TAB}README.md"
+    }
 
-    bash build.sh latest |
+    bash build.sh "$SCRIPT" |
     echo "100644 blob $(git hash-object -w --stdin)${TAB}Dockerfile"
 
 } | {
