@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 main() {
     case "$1" in
@@ -11,9 +11,10 @@ main() {
 	sn="/tmp/install"
 	echo "RUN (\\"
 	cat "$@" |
-	    while IFS= read -r line
-	    do echo echo "${line@Q};\\"
-	    done
+	    bash -c '
+		while IFS= read -r line
+		do echo echo "${line@Q};\\"
+		done'
 	echo ")>$sn;sh -e $sn;rm -f $sn"
 	exit
 	;;
