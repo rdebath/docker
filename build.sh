@@ -115,6 +115,7 @@ make_dockerrun() {
 	scriptfile=$(echo "$scriptfile"|sed '/^#DOCKER:/d')
     fi
     scriptinclude=$(echo "$scriptargs" | sed -n 's/^INCLUDE[ 	]\+//p')
+    scriptargs=$(echo "$scriptargs"|sed '/^INCLUDE/d')
 
     if [ "$scriptargs" != '' ]
     then
