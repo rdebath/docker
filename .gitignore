@@ -5,3 +5,14 @@
 Repo.*.tags.json
 debian/temptree
 
+# You don't need to see my identification.
+*.pem
+*.pfx
+*.crt
+*.cer
+*.key
+*.crl
+*.jks
+*.csr
+*.p7b
+*.ovpn
