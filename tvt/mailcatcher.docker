@@ -1,0 +1,20 @@
+#
+# docker run -d -p 25:1025 -p 88:1080 --restart always --name mailcatcher $(docker build -q -< $0)
+
+FROM alpine
+ARG MAILCATCHER_VERSION=0.7.1
+
+RUN apk add \
+	ca-certificates openssl \
+        ruby ruby-bigdecimal ruby-etc ruby-json \
+        libstdc++ sqlite-libs \
+    && apk add --virtual .build-deps \
+        make g++ ruby-dev sqlite-dev \
+    && gem install -v $MAILCATCHER_VERSION mailcatcher --no-document \
+    && apk del --purge .build-deps \
+    && rm -rf /root/.gem /var/cache/apk/*
+
+EXPOSE 1025 1080
+LABEL portlist="Port 1080 is the default http server, port 1025 is the default mail."
+ENTRYPOINT ["mailcatcher", "--foreground"]
+CMD ["--ip", "0.0.0.0", "--no-quit"]
