@@ -4,15 +4,15 @@
 if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
 #########################################################
-# Use this (with the "#" characters)
-# : Dockerfile <<@
-# FROM ...
-# Etc
-# @
-#
-# An "@@" at the start of the line marks where a script
-# will be inserted; if missing this script guesses.
-#
+# Use this (with the "#" characters)                    #
+# : Dockerfile <<@                                      #
+# FROM ...                                              #
+# Etc                                                   #
+# @                                                     #
+#                                                       #
+# An "@@" at the start of the line marks where a script #
+# will be inserted; if missing this script guesses.     #
+#                                                       #
 #########################################################
 # Dockerfile script command disposition                 #
 #                                                       #
@@ -85,12 +85,10 @@ Then forward to docker build.
 }
 
 ################################################################################
-# The input file is a shell script with docker commands in comments.
-# Docker commands use lines starting with "#DOCKER:"
 
 make_dockerrun() {
     # Limit per "run" is library exec arg length (approx 128k)
-    local scriptfile scriptargs scriptinclude scripttail sc re
+    local scriptfile scriptargs scripttail sc re
     scriptfile="$(cat "$1")"
 
     # Pick a script name.
@@ -109,13 +107,7 @@ make_dockerrun() {
 
     if [ "$scriptargs" != '' ]
     then scriptfile=$(echo "$scriptfile"|sed "/$re/,/^@\$/d")
-    else
-	# Fallback to "#DOCKER:FROM .." style lines.
-	scriptargs="$(echo "$scriptfile" | sed -n 's/^#DOCKER://p')"
-	scriptfile=$(echo "$scriptfile"|sed '/^#DOCKER:/d')
     fi
-    scriptinclude=$(echo "$scriptargs" | sed -n 's/^INCLUDE[ 	]\+//p')
-    scriptargs=$(echo "$scriptargs"|sed '/^INCLUDE/d')
 
     if [ "$scriptargs" != '' ]
     then
@@ -127,7 +119,6 @@ make_dockerrun() {
 		/^FROM / && fc!=1 { fc=1; next; }
 		/^WORKDIR / && wd!=1 { wd=1; next; }
 		/^RUN|^ARG|^ENV|^LABEL|^[^A-Z@a-z]|^$/ { next; }
-		/^INCLUDE/ {next;}
 		/^@/{rn=NR;exit;}
 		{if(rn==0)rn=NR;}
 		END{if(rn==0)rn=NR+1;print rn;}')
@@ -138,36 +129,10 @@ make_dockerrun() {
 	echo "$scriptargs" | sed -e "$((sc)),\$d" -e '/^@/d'
     fi
 
-    enc() { cat "$@"|gzip -cn9|base64 -w 72|sed 's/.*/_ &;\\/';}
-
-    if [ "$scriptinclude" != '' ]
-    then
-	echo 'RUN set -eu;_() { echo "$@";};\'
-
-	echo "$scriptinclude" |
-	while IFS= read -r line
-	do
-	    src="${line%% *}" ; dst="${line#* }"
-	    if [ -d "$src" ];then
-		echo "mkdir -p $dst;(\\"
-		tar c --owner=root --group=root --mode=og-w,ug-s \
-		    -f - -C "$src" . | enc
-		echo ")|base64 -d|gzip -d|tar x -C $dst -f -;\\"
-	    elif [ -e "$src" ];then
-		echo '(\';enc "$src" ; echo ")|base64 -d|gzip -d>$dst;\\"
-	    else
-		echo >&2 "WARNING: Include file does not exist: '$src'"
-	    fi
-	done
-
-	echo '(\';
-	echo "$scriptfile" | enc
-	echo ")|base64 -d|gzip -d>$sname;sh -e $sname;rm -f $sname"
-
-    elif [ "$ENCODED" = yes ]
+    if [ "$ENCODED" = yes ]
     then
 	echo 'RUN set -eu;_() { echo "$@";};(\'
-	echo "$scriptfile" | enc
+	echo "$scriptfile" | gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
 	echo ")|base64 -d|gzip -d>$sname;sh -e $sname;rm -f $sname"
     else
 	echo "$scriptfile" | make_docker_runtxt -
