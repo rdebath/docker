@@ -243,7 +243,8 @@ install_apt() {
     echo >&2 "Installing build-essential and more with apt for $PRETTY_NAME"
 
     # Only install what we ask for.
-    echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99NoRecommends
+    [ -d /etc/apt/apt.conf.d ] &&
+	echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99NoRecommends
 
     # Auto-remove everything?
     # echo 'APT::AutoRemove::RecommendsImportant "false";' > /etc/apt/apt.conf.d/99RemoveRecommends
@@ -454,7 +455,7 @@ make_docker_runcmd() {
     # Encode the script
     echo "RUN ${1:+: $1 ;}"'set -eu; _() { echo "$@";};(\'
     gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
-    echo ')|base64 -d|gzip -d>'"$sn;sh $sn;rm -f $sn"
+    echo ')|base64 -d|gzip -d>'"$sn;sh -e $sn;rm -f $sn"
 }
 
 ################################################################################

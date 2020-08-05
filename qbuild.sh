@@ -13,7 +13,7 @@ BEGIN {
     print "}"|sh
     in_sect=0;
 }
-/^#!\// && in_sect==0 { print ":<<\\@"|sh; in_sect=3; next;}
+/^#!\/bin\/[a-z]*sh\>/ && in_sect==0 { print ":<<\\@"|sh; in_sect=3; next;}
 /^FROM / && in_sect==3 { print "@"|sh; in_sect=0; }
 /^BEGIN *$/ && in_sect!=2 {
     if (in_sect) print "@"|sh
