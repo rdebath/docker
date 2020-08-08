@@ -105,9 +105,9 @@ make_dockerrun() {
 	sed -n "/$re/,/^@\$/p" |
 	sed -e "/$re/d" -e \$d -e 's/[ 	]\+$//')"
 
-    if [ "$scriptargs" != '' ]
-    then scriptfile=$(echo "$scriptfile"|sed "/$re/,/^@\$/d")
-    fi
+    [ "$scriptargs" = '' ] ||
+	scriptfile=$(echo "$scriptfile" |
+	    sed -e "/$re/,/^@\$/d" -e '1,/./{/^$/d}')
 
     if [ "$scriptargs" != '' ]
     then
@@ -129,7 +129,7 @@ make_dockerrun() {
 	echo "$scriptargs" | sed -e "$((sc)),\$d" -e '/^@/d'
     fi
 
-    if [ "$ENCODED" = yes ]
+    if [ "$ENCODED" = yes ]&&[ "$scriptargs" != '' ]
     then
 	echo 'RUN set -eu;_() { echo "$@";};(\'
 	echo "$scriptfile" | gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
