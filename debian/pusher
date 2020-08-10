@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+cd "$(dirname "$0")"
+
+./update-builds.sh i386 current
+
+for i in $(docker images reg.xz/*:* --format='{{.Repository}}:{{.Tag}}' |
+    grep -v '<')
+do docker push "$i"
+done
+
+# buster stable latest \
+for i in \
+    bullseye testing sid unstable
+do docker push rdebath/debian-i386:$i reg.xz/debian-i386:$i
+done
+for i in focal groovy
+do docker push rdebath/ubuntu-i386:$i reg.xz/ubuntu-i386:$i
+done
+for i in ceres chimaera
+do docker push rdebath/devuan:$i-i386 reg.xz/devuan-i386:$i
+done
+
+./update-builds.sh current

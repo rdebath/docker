@@ -1,4 +1,4 @@
-#!/bin/sh -
+
 : Dockerfile<<\@
 ################################################################################
 # Uninstall apk from alpine linux.
@@ -10,7 +10,11 @@ COPY --from=0 / /
 CMD ["/bin/sh"]
 
 @
+
 docker_remove_apk() {
+    # Might as well upgrade everything
+    apk upgrade
+
     # Remove apk
     apk del --repositories-file /dev/null apk-tools alpine-keys libc-utils
 
@@ -21,7 +25,6 @@ docker_remove_apk() {
 docker_remove_apk
 
 : Dockerfile<<@
-
 #   All:
 #   -> 6,397,952
 #
@@ -89,5 +92,4 @@ docker_remove_apk
 #       ssl_client-1.31.1-r9 description:
 #       EXternal ssl_client for busybox wget
 #       28672
-
 @
