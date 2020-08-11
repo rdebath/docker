@@ -23,3 +23,8 @@ do docker push rdebath/devuan:$i-i386 reg.xz/devuan-i386:$i
 done
 
 ./update-builds.sh current
+
+for i in $(docker images reg.xz/*:* --format='{{.Repository}}:{{.Tag}}' |
+    grep -v '<')
+do docker push "$i"
+done

@@ -56,6 +56,18 @@ host_main() {
 
     for base
     do
+	case "$base" in
+	*/*:* )
+	    SRCREPO="${base%:*}"
+	    base="${base##*:}"
+	    case "$SRCREPO" in
+	    *-i386 )
+		SRCREPO="${SRCREPO%-i386}"
+		base="$base-i386"
+		;;
+	    esac
+	    ;;
+	esac
 	variant=${base%-*}; arch=${base#$variant}; arch="${arch#-}"
 	build_one "$base" \
 	    "${SRCREPO:+$SRCREPO${arch:+-$arch}:}$variant" \
@@ -81,7 +93,7 @@ build_one() {
 
     if [ "$BUILD" = yes ]
     then
-	echo "# Build $2 -> $3"
+	echo "# Build $1 ... $2 -> $3"
 	(
 	    guest_script "$1" "$2" | docker build  - -t "$3"
 
@@ -149,28 +161,28 @@ install_os() {
 install_alpine() {
     echo >&2 "Installing build-base with apk for $PRETTY_NAME"
     apk add --no-cache -t build-packages \
-	build-base bash bison flex lua gmp-dev openssl-dev cmake \
+	sudo build-base bash bison flex lua gmp-dev openssl-dev cmake \
 	nasm gcc-gnat
 }
 
 install_centos() {
     echo >&2 "Installing 'Development Tools' with yum for $PRETTY_NAME"
     yum groupinstall -y "Development Tools"
-    yum install -y which gmp-devel openssl-devel cmake
+    yum install -y sudo which gmp-devel openssl-devel cmake
     yum clean all
 }
 
 install_amzn() {
     echo >&2 "Installing 'Development Tools' with yum for $PRETTY_NAME"
     yum groupinstall -y "Development Tools"
-    yum install -y which gmp-devel openssl-devel cmake
+    yum install -y sudo which gmp-devel openssl-devel cmake
     yum clean all
 }
 
 install_fedora() {
     echo >&2 "Installing 'Development Tools ...' with yum for $PRETTY_NAME"
     yum groupinstall -y "C Development Tools and Libraries"
-    yum install -y which gmp-devel openssl-devel cmake diffutils
+    yum install -y sudo which gmp-devel openssl-devel cmake diffutils
     yum clean all
 }
 
@@ -262,22 +274,20 @@ install_apt() {
 	apt-get update
     }
 
-    # Make sure we're up to date.
-    apt-get upgrade -y
-
     PKGLIST="
-    build-essential
+    sudo build-essential
 
     autoconf automake beef bison bzip2 ccache debhelper flex g++-multilib
     gawk gcc-multilib gdc gnu-lightning ksh libgmp-dev libgmp3-dev
     liblua5.2-dev libluajit-5.1-dev libnetpbm10-dev libpng++-dev
     libssl-dev libtcc-dev lua-bitop lua-bitop-dev lua5.2
-    luajit mawk nasm nickle pkgconf python python-dev python3 rsync ruby
-    rustc tcc tcl-dev valac yasm
+    luajit mawk nasm nickle pkgconf rsync ruby rustc tcc tcl-dev valac yasm
+
+    python2 python2-dev python3 python3-dev pypy python-setuptools
 
     csh dc default-jdk-headless gfortran gnat htop language-pack-en
     libinline-c-perl libinline-perl mono-mcs nodejs nodejs-legacy
-    open-cobol php-cli php5-cli pypy python-setuptools tcsh
+    open-cobol php-cli php5-cli tcsh
 
     "
 
@@ -297,7 +307,7 @@ install_apt() {
 	apt-get install -y $FOUND
 
     else
-	apt-get install -y equivs
+	apt-get install -y $FOUND equivs
 
 	mkdir /tmp/build
 	cd /tmp/build
@@ -316,13 +326,15 @@ Description: A list of build tools
  .
 @
 	equivs-build control
-	dpkg --unpack packagelist-local*.deb
-	apt-get install -f -y
+	dpkg --install packagelist-local*.deb
 	cd
 	rm -rf /tmp/build
-	apt-get remove --purge -y equivs
+	apt-mark auto $FOUND equivs
 	apt-get autoremove --purge -y
     fi
+
+    # Make sure everything is up to date.
+    apt-get upgrade -y
 
     [ -d /usr/lib/ccache ] &&
 	echo "NOTE: export PATH=/usr/lib/ccache:$PATH"
@@ -371,20 +383,31 @@ main() {
 }
 
 add_userid() {
+    U=user; I=1000
+    [ -d /etc/sudoers.d/ ] && {
+	{
+	    echo "Defaults:$U !lecture"
+	    echo "Defaults:$U !authenticate"
+	    echo "Defaults:$U shell_noargs"
+	    echo "Defaults:$U umask = 002"
+	    echo "$U  ALL=(ALL:ALL) ALL"
+	} > /etc/sudoers.d/$U
+    }
+
     [ -x /usr/sbin/useradd ] && {
-	useradd user -u 1000 -d /home/user
+	useradd $U -u $I -d /home/$U
 	return 0
     }
     [ -f /etc/alpine-release ] && {
-	adduser user --uid 1000 --home /home/user -D
+	adduser $U --uid $I --home /home/$U -D
 	return 0
     }
     [ -x /usr/sbin/adduser ] && {
-	adduser user --uid 1000 --home /home/user
+	adduser $U --uid $I --home /home/$U
 	return 0
     }
 
-    useradd user -u 1000 -d /home/user
+    useradd $U -u $I -d /home/$U
 }
 
 main "$@"

@@ -1,11 +1,6 @@
 #!/bin/sh
 # shellcheck disable=SC2086
 
-# TODO:
-#  From make_image
-#    Option -j
-#    Option for docker push to private repo.
-
 main() {
     init
     TAGS=""
