@@ -1,27 +1,43 @@
 #!/bin/sh
-# vim: set filetype=awk:
 true , /^; exec awk -f "$0" -- "$@" ; exit #/ {}
+BEGIN { # vim: set filetype=awk:
+    sh = "sh"; txtmode = 0;
+    for(i=1; i<ARGC; i++) {
+	if (ARGV[i] == "-b") {
+	    sh = "sh|docker build -t '" ARGV[i+1] "' -"
+	    ARGV[i] = ""; ARGV[i+1] = "";
+	}
+	if (ARGV[i] == "-x") {
+	    ARGV[i] = "";
+	    txtmode = 1;
+	}
+    }
 
-BEGIN {
-    sh = "sh"
     print "#!/bin/sh"|sh
     print "encode() {"|sh
-    print "  sn=\"${1:-/tmp/install}\""|sh
-    print "  echo 'RUN set -eu;_() { echo \"$@\";};'\"(\\\\\""|sh
-    print "  sed 's/^@//' | gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\\\/'"|sh
-    print "  echo \")|base64 -d|gzip -d>$sn;sh -e $sn${2:+ $2};rm -f $sn\""|sh
+    print "  N=\"${1:-/tmp/install}\""|sh
+    print "  D=\"${2:+ $2}\";D=\"${D:-;rm -f $N}\""|sh
+    print "  S=$(sed -e 's/^@//' -e '1,/./{/^$/d}')"|sh
+    if (!txtmode) {
+	print "  echo 'RUN set -eu;_() { echo \"$@\";};'\"(\\\\\""|sh
+	print "  echo \"$S\" | gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\\\/'"|sh
+	print "  echo \")|base64 -d|gzip -d>$N;sh -e $N$D\""|sh
+    } else {
+	print "  echo 'RUN (\\'"|sh
+	print "  echo \"$S\" |bash -c 'while IFS= read -r line"|sh
+	print "  do echo echo \"${line@Q};\\\\\""|sh
+	print "  done'"|sh
+	print "  echo \")>$N;sh -e $N$D\""|sh
+    }
     print "}"|sh
-    in_sect=0;
+
+    mode=0;
 }
-/^#!\/bin\/[a-z]*sh\>/ && in_sect==0 { print ":<<\\@"|sh; in_sect=3; next;}
-/^FROM / && in_sect==3 { print "@"|sh; in_sect=0; }
-/^BEGIN *$/ && in_sect!=2 {
-    if (in_sect) print "@"|sh
-    in_sect=2
-    print "encode <<\\@"|sh
-    next
-}
-/^COMMIT *$/ && in_sect==2 { print "@"|sh; in_sect=0; next; }
-in_sect==0 { print "sed 's/^@//' <<\\@"|sh; in_sect=1; }
-in_sect!=0 { if (substr($0, 1, 1) == "@") print "@" $0|sh; else print $0|sh; }
-END { if (in_sect) print "@"|sh; in_sect=0; }
+
+/^#!\/bin\/[a-z]*sh\>/ && mode==0 { print ":<<\\@"|sh; mode=3; next;}
+/^FROM / && mode==3 { print "@"|sh; mode=0; }
+/^BEGIN\>/ { if (mode) print "@"|sh; mode=2; $1="encode<<\\@"; print|sh; next }
+/^COMMIT *$/ && mode==2 { print "@"|sh; mode=0; next; }
+mode==0 { print "sed 's/^@//' <<\\@"|sh; mode=1; }
+mode!=0 { if (substr($0, 1, 1) == "@") print "@" $0|sh; else print $0|sh; }
+END { if (mode) print "@"|sh; mode=0; }
