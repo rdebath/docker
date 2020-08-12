@@ -31,17 +31,22 @@ BEGIN { # vim: set filetype=awk:
     }
     print "}"|sh
 
-    mode=0; ln="";
+    mode=0; ln=""; ty="";
 }
 
+# Embedded docker file in dockerfile() function.
 /^#!\/bin\/[a-z]*sh\>/ && mode==0 { mode=3; ln="encode<<\\@\n"; }
 mode==3 &&/^dockerfile\(\) *{ *$/ { print "sed 's/^@//' <<\\@"|sh; mode=4;next;}
-mode==4 &&/^} *$/ { print "@"|sh; mode=3; next;}
+mode==4 &&/^RUN *$/ { mode=5; next;}
+mode>=4 &&/^} *$/ { print "@"|sh; mode=3; next;}
 mode==3 { if (substr($0, 1, 1) == "@") ln=ln"@"; ln=ln $0 "\n"; next; }
-END { if (mode==4) ln="@\n"ln;}
+mode==5 { if (substr($0, 1, 1) == "@") ty=ty"@"; ty=ty $0 "\n"; next; }
+END { if (mode>=4) ln="@\n"ln;}
 
+# Standard with BEGIN and COMMIT translation
 /^BEGIN\>/ { if (mode) print "@"|sh; mode=2; $1="encode<<\\@"; print|sh; next }
 /^COMMIT *$/ && mode==2 { print "@"|sh; mode=0; next; }
 mode==0 { print "sed 's/^@//' <<\\@"|sh; mode=1; }
 mode!=0 { if (substr($0, 1, 1) == "@") print "@" $0|sh; else print $0|sh; }
 END { if (mode) print ln"@"|sh; mode=0; }
+END { if (ty!="") { print "sed 's/^@//' <<\\@"|sh; print ty"@"|sh;}}

@@ -1,7 +1,14 @@
+#!/bin/sh
+dockerfile() {
 FROM alpine
 RUN apk add --no-cache -t build-packages \
     build-base tini-static
-BEGIN
+RUN
+FROM scratch
+COPY --from=0 /opt/chroot /
+WORKDIR /root
+ENTRYPOINT ["/sbin/tini", "--", "/bin/deadbeef"]
+}
 
 cat > /tmp/deadbeef.c <<\@
 /* This is the deadbeef brainfuck interpreter.
@@ -106,10 +113,3 @@ mkdir -p /opt/chroot /opt/chroot/sbin /opt/chroot/bin
 cp -p /sbin/tini-static /opt/chroot/sbin/tini
 gcc -O3 -o /opt/chroot/bin/deadbeef -s --static /tmp/deadbeef.c
 
-
-COMMIT
-
-FROM scratch
-COPY --from=0 /opt/chroot /
-WORKDIR /root
-ENTRYPOINT ["/sbin/tini", "--", "/bin/deadbeef"]
