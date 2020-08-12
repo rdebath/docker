@@ -1,3 +1,6 @@
+#!/bin/sh
+
+dockerfile() {
 # This Dockerfile is able to use a plain debootstrap install to install
 # a debian based release directly supported by the current release of
 # debootstrap.
@@ -13,7 +16,12 @@ RUN debootstrap --foreign --arch="$ARCH" --components=main,contrib,non-free \
 FROM scratch AS stage2
 COPY --from=unpack /opt/chroot /
 RUN /debootstrap/debootstrap --second-stage
-BEGIN
+RUN
+FROM scratch AS squashed
+COPY --from=stage2 / /
+WORKDIR /root
+CMD [ "bash" ]
+}
 
 main() {
     echo > /usr/sbin/policy-rc.d-docker \
@@ -61,8 +69,3 @@ Dir::Cache::srcpkgcache "";
 
 main "$@"
 
-COMMIT
-FROM scratch AS squashed
-COPY --from=stage2 / /
-WORKDIR /root
-CMD [ "bash" ]
