@@ -15,6 +15,15 @@ guest_start() {
     rm -rf bfi
     apk del --repositories-file /dev/null build-packages
 
+    # Might as well upgrade everything
+    apk upgrade
+
+    # Remove apk
+    apk del --repositories-file /dev/null apk-tools alpine-keys libc-utils
+
+    # Delete apk installation data
+    rm -rf /var/cache/apk /lib/apk /etc/apk
+
     tritium -P'
 	+[>[<->+[>+++>++>[++++++++>][]-[<]>-]]++++++++++++++<]>>>>>>>>+.<<<<+++.
 	---.>.<+++.>>++.<<-----.<++.>>>+.<<++++++++.>++.+++.>++.<<<.>--.++.>>-..
@@ -38,6 +47,9 @@ make_dockerfile() {
     echo 'FROM alpine:3.8'
     echo 'WORKDIR /root'
     make_docker_runcmd "$1" '' start
+    echo 'FROM scratch'
+    echo 'COPY --from=0 / /'
+    echo 'WORKDIR /root'
     echo 'ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/tritium"]'
 }
 

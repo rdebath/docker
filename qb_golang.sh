@@ -1,14 +1,3 @@
-#!/bin/sh
-# shellcheck disable=SC2163
-{
-    set -e
-    FROM() { :;};BEGIN() { :;};COMMIT() { :;};LABEL() { :;}
-    ENV() { export "$@";}
-    ARG() { export "$@";}
-    WORKDIR() { mkdir -p "$@"; cd "$@";}
-}
-################################################################################
-
 FROM debian:buster
 BEGIN
 set -eu
