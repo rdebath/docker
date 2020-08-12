@@ -10,7 +10,15 @@ WORKDIR /root
 ENTRYPOINT ["/sbin/tini", "--", "/bin/deadbeef"]
 }
 
-cat > /tmp/deadbeef.c <<\@
+main() {
+    datafile > /tmp/deadbeef.c
+    mkdir -p /opt/chroot /opt/chroot/sbin /opt/chroot/bin
+    cp -p /sbin/tini-static /opt/chroot/sbin/tini
+    gcc -O3 -o /opt/chroot/bin/deadbeef -s --static /tmp/deadbeef.c
+}
+
+datafile() {
+cat <<\@
 /* This is the deadbeef brainfuck interpreter.
  * Robert de Bath (c) 2014-2019 GPL v2 or later.  */
 
@@ -108,8 +116,6 @@ void run(void)
    }
 }
 @
+}
 
-mkdir -p /opt/chroot /opt/chroot/sbin /opt/chroot/bin
-cp -p /sbin/tini-static /opt/chroot/sbin/tini
-gcc -O3 -o /opt/chroot/bin/deadbeef -s --static /tmp/deadbeef.c
-
+main "$@"

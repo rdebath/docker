@@ -20,11 +20,11 @@ BEGIN { # vim: set filetype=awk:
     print "  S=$(sed -e 's/^@//' -e '0,/./{/^$/d}')"|sh
     if (!txtmode) {
 	print "  echo 'RUN set -eu;_() { echo \"$@\";};(\\'"|sh
-	print "  echo \"$S\" | gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\\\/'"|sh
+	print "  printf \"%s\\n\" \"$S\" | gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\\\/'"|sh
 	print "  echo \")|base64 -d|gzip -d>$N;sh -e $N$D\""|sh
     } else {
 	print "  echo 'RUN set -eu;_() { echo \"$@\";};(\\'"|sh
-	print "  echo \"$S\" |bash -c 'while IFS= read -r line"|sh
+	print "  printf \"%s\\n\" \"$S\" |bash -c 'while IFS= read -r line"|sh
 	print "  do echo _ \"${line@Q};\\\\\""|sh
 	print "  done'"|sh
 	print "  echo \")>$N;sh -e $N$D\""|sh
