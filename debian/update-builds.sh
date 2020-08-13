@@ -333,7 +333,7 @@ init() {
 
     NULL=$(echo "tree $(git hash-object -t tree -w /dev/null)
 author nobody <> 1 +0000
-committer nobody <> 1 +0000
+committer nobody <604-307936808@example.com> 1 +0000
 
  
 " | git hash-object -t commit -w --stdin )
