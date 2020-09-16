@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC1004
 
 ################################################################################
 # Script run by docker.
@@ -11,7 +12,7 @@ guest_start() {
 	gmp tini
 
     git clone https://github.com/rdebath/Brainfuck.git bfi
-    make -C bfi/tritium install DO_LIBDL1= DO_LIBDL2=
+    make -j -C bfi/tritium install DO_LIBDL1= DO_LIBDL2=
     rm -rf bfi
     apk del --repositories-file /dev/null build-packages
 
@@ -23,12 +24,6 @@ guest_start() {
 
     # Delete apk installation data
     rm -rf /var/cache/apk /lib/apk /etc/apk
-
-    tritium -P'
-	+[>[<->+[>+++>++>[++++++++>][]-[<]>-]]++++++++++++++<]>>>>>>>>+.<<<<+++.
-	---.>.<+++.>>++.<<-----.<++.>>>+.<<++++++++.>++.+++.>++.<<<.>--.++.>>-..
-	++.<<--..>>+.<<++.>.<<<+.<----.
-    '
 }
 
 ################################################################################
@@ -50,6 +45,13 @@ make_dockerfile() {
     echo 'FROM scratch'
     echo 'COPY --from=0 / /'
     echo 'WORKDIR /root'
+
+    echo 'RUN tritium >&2 -P" \
+	+[>[<->+[>+++>++>[++++++++>][]+[<]>-]]+++ \
+	+++++++++++<]>>>>>>>>-.<<<<+.---.>--.<+++ \
+	.>>.<<-----.<++.>+++++++.>--.<-.+.<.>-.++ \
+	.>--..++.<--..>+.<++.>++++++.<<<+.<----. "'
+
     echo 'ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/tritium"]'
 }
 

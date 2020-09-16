@@ -13,7 +13,6 @@ main() {
 	[ "$1" = -p ] && { FORCEPUSH=1 ; shift ; }
 	[ "$1" = -n ] && { NOPUSH=1 ; shift ; }
 
-	# shellcheck disable=SC2086
 	case "$1" in
 	i386 ) shift ; DEFAULT_ARCH=i386 ;;
 
@@ -28,9 +27,9 @@ main() {
 
 	current )
 	    TAGS="${TAGS:+$TAGS }stretch buster bullseye"
+	    TAGS="$TAGS sid sid-x32"
 	    TAGS="$TAGS $UBUNTU5"
 	    TAGS="$TAGS beowulf chimaera ceres"
-	    TAGS="$TAGS sid-x32"
 	    shift
 	    ;;
 
@@ -156,8 +155,12 @@ do_build() {
 	cd "$T"
 	git checkout "$b" ||:
 
-	if [ "$dvar" = jessie ]&&[ "$distro" = devuan ]
-	then dvar="$dvar:$distro"
+	if [ "$variant" = jessie ]||[ "$variant" = sid ]
+	then
+	    if [ "$distro" != debian ]
+	    then dvar="$variant:$distro"
+	    else dvar="$variant"
+	    fi
 	else dvar="$variant"
 	fi
 
@@ -193,8 +196,13 @@ do_build() {
 	ID=$(docker image inspect --format '{{.Id}}' "$release" 2>/dev/null ||:)
 	if [ "$ID" = '' ]||[ "$FORCEBUILD" = 1 ]
 	then
-	    docker build -t "$release" -<Dockerfile
+	    cp -p  Dockerfile Dockerfile.tmp
+	    sed -i -e '/^ARG RELEASE\>/a ARG STAMP="'"$( \
+		date | md5sum | awk '{print $1;}')"'"' \
+		Dockerfile.tmp
+	    docker build -t "$release" -<Dockerfile.tmp
 	    ID=$(docker image inspect --format '{{.Id}}' "$release")
+	    rm Dockerfile.tmp
 	fi
 
 	if [ "$FORCEBUILD" != 1 ] || [ "$NOPUSH" != 1 ]

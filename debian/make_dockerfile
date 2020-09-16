@@ -249,6 +249,12 @@ cat <<\@
 		EXTRA="$EXTRA,telnet,ftp,gettext-base,elvis-tiny"
 		;;
 
+	    sarge )
+		# Exim records the build hostname, man-db has a random index.
+		EXTRA='--exclude=exim4,exim4-base,exim4-config,exim4-daemon-light'
+		EXTRA="$EXTRA,at,mailx,man-db"
+		;;
+
 	    jessie )
 		EXTRA='--exclude=systemd,systemd-sysv'
 		EXTRA="$EXTRA,acl,adduser,dmsetup,libcap2,libcap2-bin"
@@ -362,8 +368,8 @@ cat <<\@
 
 	export DEBIAN_FRONTEND=noninteractive
 
-	: Output patch files.
-	sh /tmp/stage2a
+	: Output patch files
+	sh /tmp/stage2a ||:
 
 	: 'init sometimes uses ischroot to disable updates. (eg wheezy)'
 	if [ -x /usr/bin/ischroot ]&&[ ! -L /usr/bin/ischroot ]
@@ -565,7 +571,7 @@ case "$1" in
 esac
 exit 101 # action forbidden by policy
 @
-chmod 0755 'usr/sbin/policy-rc.d'
+chmod 0755 '/usr/sbin/policy-rc.d'
 
 exit 0
 
@@ -575,6 +581,7 @@ exit 0
     docker_start || {
 	[ "$INSTALL" != - ] && {
 	    # Test that apt is working
+	    ulimit -n 128 ||: Docker gives us 1M fds, Jessie cries.
 	    apt-get update -y
 	    apt-get install -y dc
 	    apt-get remove --purge -y dc
@@ -589,6 +596,7 @@ exit 0
 	    rm -rf /var/lib/apt/lists/*
 	apt-get clean
 	dpkg --clear-avail
+	rm -f /var/cache/apt/pkgcache.bin
 	rm -f /etc/apt/apt.conf.d/01autoremove-kernels
 	rm -f /var/lib/dpkg/*-old
 	rm -f /etc/*-
@@ -604,6 +612,21 @@ exit 0
 	    echo Package: dpkg > /var/lib/dpkg/available
 	    echo Version: 0.1 >> /var/lib/dpkg/available
 	}
+
+	# File /etc/apt/trustdb.gpg only contains the date it was created
+	rm -f /etc/apt/trustdb.gpg ||:
+
+	# Looks like we have to copy the image so we can ignore the
+	# files that Docker randomises
+	mkdir -p /tmp/chroot
+	tar -cf - --one-file-system \
+	    --exclude=./tmp/chroot \
+	    --exclude=./etc/hostname \
+	    --exclude=./etc/hosts \
+	    --exclude=./etc/resolv.conf \
+	    . |
+	    (cd /tmp/chroot ; tar xf - )
+	sed "/$(cat /etc/hostname)/d" /etc/hosts > /tmp/chroot/etc/hosts
 
     } ; docker_save "Extras and Cleanup" /tmp/stage3
 
@@ -641,7 +664,7 @@ exit 0
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd '# Finally remove all the *.deb files.'
     docker_cmd FROM 'scratch'
-    docker_cmd COPY '--from=stage2 / /'
+    docker_cmd COPY '--from=stage2 /tmp/chroot /'
     docker_cmd
     docker_cmd WORKDIR '/root'
     docker_cmd CMD '["bash"]'

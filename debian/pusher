@@ -4,6 +4,7 @@ set -e
 cd "$(dirname "$0")"
 
 ./update-builds.sh i386 current
+./update-builds.sh current
 
 for i in $(docker images reg.xz/*:* --format='{{.Repository}}:{{.Tag}}' |
     grep -v '<')
@@ -20,11 +21,4 @@ do docker push rdebath/ubuntu-i386:$i reg.xz/ubuntu-i386:$i
 done
 for i in ceres chimaera
 do docker push rdebath/devuan:$i-i386 reg.xz/devuan-i386:$i
-done
-
-./update-builds.sh current
-
-for i in $(docker images reg.xz/*:* --format='{{.Repository}}:{{.Tag}}' |
-    grep -v '<')
-do docker push "$i"
 done

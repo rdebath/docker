@@ -15,6 +15,7 @@ host_main() {
     REPOPREFIX=reg.xz/devel:
     DOPUSH=
     SRCREPO=
+    FLATTEN=
     while [ "${1#-}" != "$1" ]
     do
 	case "$1" in
@@ -24,6 +25,8 @@ host_main() {
 	-b ) BUILD=yes ; shift ;;
 	# Disable encoding
 	-X ) ENC_OFF=yes ; shift ;;
+	# Flatten to a single layer
+	-f ) FLATTEN=yes ; shift ;;
 
 	-R ) REPOPREFIX="${2}" ; shift 2;;
 	-S ) SRCREPO="${2}" ; shift 2;;
@@ -149,6 +152,7 @@ install_os() {
     fedora ) install_fedora; return ;;
     debian ) install_debian; return ;;
     ubuntu ) install_apt; return ;;
+    pureos ) install_apt; return ;;
     opensuse*) install_opensuse; return ;;
     arch )   install_arch; return ;;
     amzn )   install_amzn; return ;;
@@ -414,6 +418,11 @@ main "$@"
 
 } ; docker_commit "Create user"
 
+    if [ "$FLATTEN" = yes ]
+    then
+	docker_cmd FROM scratch
+	docker_cmd COPY --from=0 / /
+    fi
     docker_cmd USER user
     docker_cmd WORKDIR /home/user
     docker_cmd CMD '["bash"]'
