@@ -186,7 +186,7 @@ do_build() {
 	    sed -i -e 's;^\(ARG DEBSCRIPT\>\).*;\1="'"$5"'";' \
 		Dockerfile
 
-	cp -p Dockerfile "$P"/Dockerfile.tmp
+	# cp -p Dockerfile "$P"/Dockerfile.tmp
 
 	if [ "$distro" = debian ]
 	then cp -p "$P"/README.md README.md
@@ -227,8 +227,10 @@ do_build() {
 		ulimit -n 1024
 		dpkg -l > /home/user/packages-before.txt
 		rm -f /home/user/packages.txt
-		apt-get -y -qq update
-		apt-get -y $UPCMD
+		export DEBIAN_FRONTEND=noninteractive
+		DPCONF='-o Dpkg::Options::="--force-confold"'
+		apt-get $DPCONF -y -qq update
+		apt-get $DPCONF -y $UPCMD
 		dpkg -l > /home/user/packages.txt
 		!
 
