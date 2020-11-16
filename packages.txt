@@ -1,0 +1,108 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Inst/Conf-files/Unpacked/halF-conf/Half-inst/trig-aWait/Trig-pend
+|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)
+||/ Name                        Version                    Description
++++-===========================-==========================-======================================================================
+ii  adduser                     3.113ubuntu2               add and remove users and groups
+ii  apt                         0.8.16~exp12ubuntu10       commandline package manager
+ii  base-files                  6.5ubuntu6                 Debian base system miscellaneous files
+ii  base-passwd                 3.5.24                     Debian base system master password and group files
+ii  bash                        4.2-2ubuntu2               GNU Bourne Again SHell
+ii  bsdutils                    1:2.20.1-1ubuntu3          Basic utilities from 4.4BSD-Lite
+ii  busybox-initramfs           1:1.18.5-1ubuntu4          Standalone shell setup for initramfs
+ii  coreutils                   8.13-3ubuntu3              GNU core utilities
+ii  cpio                        2.11-7ubuntu3              GNU cpio -- a program to manage archives of files
+ii  dash                        0.5.7-2ubuntu2             POSIX-compliant shell
+ii  debconf                     1.5.42ubuntu1              Debian configuration management system
+ii  debianutils                 4.2.1ubuntu2               Miscellaneous utilities specific to Debian
+ii  diffutils                   1:3.2-1ubuntu1             File comparison utilities
+ii  dpkg                        1.16.1.2ubuntu7            Debian package management system
+ii  e2fslibs                    1.42-1ubuntu2              ext2/ext3/ext4 file system libraries
+ii  e2fsprogs                   1.42-1ubuntu2              ext2/ext3/ext4 file system utilities
+ii  findutils                   4.4.2-4ubuntu1             utilities for finding files--find, xargs
+ii  gcc-4.6-base                4.6.3-1ubuntu5             GCC, the GNU Compiler Collection (base package)
+ii  gnupg                       1.4.11-3ubuntu2            GNU privacy guard - a free PGP replacement
+ii  gpgv                        1.4.11-3ubuntu2            GNU privacy guard - signature verification tool
+ii  grep                        2.10-1                     GNU grep, egrep and fgrep
+ii  gzip                        1.4-1ubuntu2               GNU compression utilities
+ii  hostname                    3.06ubuntu1                utility to set/show the host name or domain name
+ii  ifupdown                    0.7~beta2ubuntu8           high level tools to configure network interfaces
+ii  initramfs-tools             0.99ubuntu13               tools for generating an initramfs
+ii  initramfs-tools-bin         0.99ubuntu13               binaries used by initramfs-tools
+ii  initscripts                 2.88dsf-13.10ubuntu11      scripts for initializing and shutting down the system
+ii  insserv                     1.14.0-2.1ubuntu2          Tool to organize boot sequence using LSB init.d script dependencies
+ii  iproute                     20111117-1ubuntu2          networking and traffic control tools
+ii  klibc-utils                 1.5.25-1ubuntu2            small utilities built with klibc for early boot
+ii  libacl1                     2.2.51-5ubuntu1            Access control list shared library
+ii  libapt-pkg4.12              0.8.16~exp12ubuntu10       package managment runtime library
+ii  libattr1                    1:2.4.46-5ubuntu1          Extended attribute shared library
+ii  libblkid1                   2.20.1-1ubuntu3            block device id library
+ii  libbz2-1.0                  1.0.6-1                    high-quality block-sorting file compressor library - runtime
+ii  libc-bin                    2.15-0ubuntu10             Embedded GNU C Library: Binaries
+ii  libc6                       2.15-0ubuntu10             Embedded GNU C Library: Shared libraries
+ii  libcomerr2                  1.42-1ubuntu2              common error description library
+ii  libdb5.1                    5.1.25-11build1            Berkeley v5.1 Database Libraries [runtime]
+ii  libdbus-1-3                 1.4.18-1ubuntu1            simple interprocess messaging system (library)
+ii  libdrm-intel1               2.4.32-1ubuntu1            Userspace interface to intel-specific kernel DRM services -- runtime
+ii  libdrm-nouveau1a            2.4.32-1ubuntu1            Userspace interface to nouveau-specific kernel DRM services -- runtime
+ii  libdrm-radeon1              2.4.32-1ubuntu1            Userspace interface to radeon-specific kernel DRM services -- runtime
+ii  libdrm2                     2.4.32-1ubuntu1            Userspace interface to kernel DRM services -- runtime
+ii  libelf1                     0.152-1ubuntu3             library to read and write ELF files
+ii  libffi6                     3.0.11~rc1-5               Foreign Function Interface library runtime
+ii  libgcc1                     1:4.6.3-1ubuntu5           GCC support library
+ii  libglib2.0-0                2.32.1-0ubuntu2            GLib library of C routines
+ii  libklibc                    1.5.25-1ubuntu2            minimal libc subset for use with initramfs
+ii  liblzma5                    5.1.1alpha+20110809-3      XZ-format compression library
+ii  libmount1                   2.20.1-1ubuntu3            block device id library
+ii  libncurses5                 5.9-4                      shared libraries for terminal handling
+ii  libncursesw5                5.9-4                      shared libraries for terminal handling (wide character support)
+ii  libnih-dbus1                1.0.3-4ubuntu9             NIH D-Bus Bindings Library
+ii  libnih1                     1.0.3-4ubuntu9             NIH Utility Library
+ii  libpam-modules              1.1.3-7ubuntu2             Pluggable Authentication Modules for PAM
+ii  libpam-modules-bin          1.1.3-7ubuntu2             Pluggable Authentication Modules for PAM - helper binaries
+ii  libpam-runtime              1.1.3-7ubuntu2             Runtime support for the PAM library
+ii  libpam0g                    1.1.3-7ubuntu2             Pluggable Authentication Modules library
+ii  libpciaccess0               0.12.902-1                 Generic PCI access library for X
+ii  libpcre3                    8.12-4                     Perl 5 Compatible Regular Expression Library - runtime files
+ii  libplymouth2                0.8.2-2ubuntu30            graphical boot animation and logger - shared libraries
+ii  libpng12-0                  1.2.46-3ubuntu4            PNG library - runtime
+ii  libreadline6                6.2-8                      GNU readline and history libraries, run-time libraries
+ii  libselinux1                 2.1.0-4.1ubuntu1           SELinux runtime shared libraries
+ii  libslang2                   2.2.4-3ubuntu1             S-Lang programming library - runtime version
+ii  libss2                      1.42-1ubuntu2              command-line interface parsing library
+ii  libssl1.0.0                 1.0.1-4ubuntu3             SSL shared libraries
+ii  libstdc++6                  4.6.3-1ubuntu5             GNU Standard C++ Library v3
+ii  libtinfo5                   5.9-4                      shared low-level terminfo library for terminal handling
+ii  libudev0                    175-0ubuntu9               udev library
+ii  libusb-0.1-4                2:0.1.12-20                userspace USB programming library
+ii  libuuid1                    2.20.1-1ubuntu3            Universally Unique ID library
+ii  locales                     2.13+git20120306-3         common files for locale support
+ii  login                       1:4.1.4.2+svn3283-3ubuntu5 system login tools
+ii  lsb-base                    4.0-0ubuntu20              Linux Standard Base 4.0 init script functionality
+ii  makedev                     2.3.1-89ubuntu2            creates device files in /dev
+ii  mawk                        1.3.3-17                   a pattern scanning and text processing language
+ii  module-init-tools           3.16-1ubuntu2              tools for managing Linux kernel modules
+ii  mount                       2.20.1-1ubuntu3            Tools for mounting and manipulating filesystems
+ii  mountall                    2.36                       filesystem mounting tool
+ii  multiarch-support           2.15-0ubuntu10             Transitional package to ensure multiarch compatibility
+ii  ncurses-base                5.9-4                      basic terminal type definitions
+ii  ncurses-bin                 5.9-4                      terminal-related programs and man pages
+ii  passwd                      1:4.1.4.2+svn3283-3ubuntu5 change and administer password and group data
+ii  perl-base                   5.14.2-6ubuntu2            minimal Perl system
+ii  plymouth                    0.8.2-2ubuntu30            graphical boot animation and logger - main package
+ii  procps                      1:3.2.8-11ubuntu6          /proc file system utilities
+ii  python-minimal              2.7.3-0ubuntu2             minimal subset of the Python language (default version)
+ii  python2.7-minimal           2.7.3-0ubuntu3             Minimal subset of the Python language (version 2.7)
+ii  readline-common             6.2-8                      GNU readline and history libraries, common files
+ii  sed                         4.2.1-9                    The GNU sed stream editor
+ii  sensible-utils              0.0.6ubuntu2               Utilities for sensible alternative selection
+ii  sysv-rc                     2.88dsf-13.10ubuntu11      System-V-like runlevel change mechanism
+ii  sysvinit-utils              2.88dsf-13.10ubuntu11      System-V-like utilities
+ii  tar                         1.26-4ubuntu1              GNU version of the tar archiving utility
+ii  tzdata                      2012b-1                    time zone and daylight-saving time data
+ii  ubuntu-keyring              2011.11.21                 GnuPG keys of the Ubuntu archive
+ii  udev                        175-0ubuntu9               rule-based device node and kernel event manager
+ii  upstart                     1.5-0ubuntu5               event-based init daemon
+ii  util-linux                  2.20.1-1ubuntu3            Miscellaneous system utilities
+ii  xz-utils                    5.1.1alpha+20110809-3      XZ-format compression utilities
+ii  zlib1g                      1:1.2.3.4.dfsg-3ubuntu4    compression library - runtime
