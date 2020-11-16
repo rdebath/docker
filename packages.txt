@@ -1,0 +1,103 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Inst/Cfg-files/Unpacked/Failed-cfg/Half-inst/trig-aWait/Trig-pend
+|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)
+||/ Name                        Version                  Description
++++-===========================-========================-============================================
+ii  adduser                     3.112ubuntu1             add and remove users and groups
+ii  apt                         0.7.25.3ubuntu7          Advanced front-end for dpkg
+ii  base-files                  5.0.0ubuntu20            Debian base system miscellaneous files
+ii  base-passwd                 3.5.22                   Debian base system master password and group
+ii  bash                        4.1-2ubuntu3             The GNU Bourne Again SHell
+ii  bsdutils                    1:2.17.2-0ubuntu1        Basic utilities from 4.4BSD-Lite
+ii  busybox-initramfs           1:1.13.3-1ubuntu11       Standalone shell setup for initramfs
+ii  coreutils                   7.4-2ubuntu2             The GNU core utilities
+ii  cpio                        2.10-1ubuntu2            GNU cpio -- a program to manage archives of 
+ii  dash                        0.5.5.1-3ubuntu2         POSIX-compliant shell
+ii  debconf                     1.5.28ubuntu4            Debian configuration management system
+ii  debconf-i18n                1.5.28ubuntu4            full internationalization support for debcon
+ii  debianutils                 3.2.2                    Miscellaneous utilities specific to Debian
+ii  diffutils                   1:2.8.1-18               File comparison utilities
+ii  dpkg                        1.15.5.6ubuntu4          Debian package management system
+ii  e2fslibs                    1.41.11-1ubuntu2         ext2/ext3/ext4 file system libraries
+ii  e2fsprogs                   1.41.11-1ubuntu2         ext2/ext3/ext4 file system utilities
+ii  findutils                   4.4.2-1ubuntu1           utilities for finding files--find, xargs
+ii  gcc-4.4-base                4.4.3-4ubuntu5           The GNU Compiler Collection (base package)
+ii  gpgv                        1.4.10-2ubuntu1          GNU privacy guard - signature verification t
+ii  grep                        2.5.4-4build1            GNU grep, egrep and fgrep
+ii  gzip                        1.3.12-9ubuntu1          GNU compression utilities
+ii  hostname                    3.03ubuntu1              utility to set/show the host name or domain 
+ii  ifupdown                    0.6.8ubuntu29            high level tools to configure network interf
+ii  initramfs-tools             0.92bubuntu78            tools for generating an initramfs
+ii  initramfs-tools-bin         0.92bubuntu78            binaries used by initramfs-tools
+ii  initscripts                 2.87dsf-4ubuntu17        scripts for initializing and shutting down t
+ii  insserv                     1.12.0-14                Tool to organize boot sequence using LSB ini
+ii  klibc-utils                 1.5.17-4ubuntu1          small utilities built with klibc for early b
+ii  libacl1                     2.2.49-2                 Access control list shared library
+ii  libattr1                    1:2.4.44-1               Extended attribute shared library
+ii  libblkid1                   2.17.2-0ubuntu1          block device id library
+ii  libbz2-1.0                  1.0.5-4                  high-quality block-sorting file compressor l
+ii  libc-bin                    2.11.1-0ubuntu7          Embedded GNU C Library: Binaries
+ii  libc6                       2.11.1-0ubuntu7          Embedded GNU C Library: Shared libraries
+ii  libcomerr2                  1.41.11-1ubuntu2         common error description library
+ii  libdb4.8                    4.8.24-1ubuntu1          Berkeley v4.8 Database Libraries [runtime]
+ii  libdbus-1-3                 1.2.16-2ubuntu4          simple interprocess messaging system
+ii  libdrm-intel1               2.4.18-1ubuntu3          Userspace interface to intel-specific kernel
+ii  libdrm-nouveau1             2.4.18-1ubuntu3          Userspace interface to nouveau-specific kern
+ii  libdrm-radeon1              2.4.18-1ubuntu3          Userspace interface to radeon-specific kerne
+ii  libdrm2                     2.4.18-1ubuntu3          Userspace interface to kernel DRM services -
+ii  libgcc1                     1:4.4.3-4ubuntu5         GCC support library
+ii  libglib2.0-0                2.24.0-0ubuntu4          The GLib library of C routines
+ii  libklibc                    1.5.17-4ubuntu1          minimal libc subset for use with initramfs
+ii  liblocale-gettext-perl      1.05-6                   Using libc functions for internationalizatio
+ii  libncurses5                 5.7+20090803-2ubuntu3    shared libraries for terminal handling
+ii  libnih-dbus1                1.0.1-1                  NIH D-Bus Bindings Library
+ii  libnih1                     1.0.1-1                  NIH Utility Library
+ii  libpam-modules              1.1.1-2ubuntu2           Pluggable Authentication Modules for PAM
+ii  libpam-runtime              1.1.1-2ubuntu2           Runtime support for the PAM library
+ii  libpam0g                    1.1.1-2ubuntu2           Pluggable Authentication Modules library
+ii  libpcre3                    7.8-3build1              Perl 5 Compatible Regular Expression Library
+ii  libplymouth2                0.8.2-2ubuntu2           graphical boot animation and logger - shared
+ii  libpng12-0                  1.2.42-1ubuntu2          PNG library - runtime
+ii  libreadline6                6.1-1                    GNU readline and history libraries, run-time
+ii  libselinux1                 2.0.89-4                 SELinux runtime shared libraries
+ii  libsepol1                   2.0.40-2                 SELinux library for manipulating binary secu
+ii  libslang2                   2.2.2-2ubuntu1           The S-Lang programming library - runtime ver
+ii  libss2                      1.41.11-1ubuntu2         command-line interface parsing library
+ii  libssl0.9.8                 0.9.8k-7ubuntu8          SSL shared libraries
+ii  libstdc++6                  4.4.3-4ubuntu5           The GNU Standard C++ Library v3
+ii  libtext-charwidth-perl      0.04-6                   get display widths of characters on the term
+ii  libtext-iconv-perl          1.7-2                    converts between character sets in Perl
+ii  libtext-wrapi18n-perl       0.06-7                   internationalized substitute of Text::Wrap
+ii  libudev0                    151-12                   udev library
+ii  libusb-0.1-4                2:0.1.12-14              userspace USB programming library
+ii  libuuid1                    2.17.2-0ubuntu1          Universally Unique ID library
+ii  locales                     2.11+git20100304-3       common files for locale support
+ii  login                       1:4.1.4.2-1ubuntu2       system login tools
+ii  lsb-base                    4.0-0ubuntu8             Linux Standard Base 4.0 init script function
+ii  lzma                        4.43-14ubuntu2           Compression method of 7z format in 7-Zip pro
+ii  makedev                     2.3.1-89ubuntu1          creates device files in /dev
+ii  mawk                        1.3.3-15ubuntu2          a pattern scanning and text processing langu
+ii  module-init-tools           3.11.1-2ubuntu1          tools for managing Linux kernel modules
+ii  mount                       2.17.2-0ubuntu1          Tools for mounting and manipulating filesyst
+ii  mountall                    2.14                     filesystem mounting tool
+ii  ncurses-base                5.7+20090803-2ubuntu3    basic terminal type definitions
+ii  ncurses-bin                 5.7+20090803-2ubuntu3    terminal-related programs and man pages
+ii  net-tools                   1.60-23ubuntu2           The NET-3 networking toolkit
+ii  netbase                     4.35ubuntu3              Basic TCP/IP networking system
+ii  passwd                      1:4.1.4.2-1ubuntu2       change and administer password and group dat
+ii  perl-base                   5.10.1-8ubuntu2          minimal Perl system
+ii  plymouth                    0.8.2-2ubuntu2           graphical boot animation and logger - main p
+ii  procps                      1:3.2.8-1ubuntu4         /proc file system utilities
+ii  python-minimal              2.6.5-0ubuntu1           A minimal subset of the Python language (def
+ii  python2.6-minimal           2.6.5-1ubuntu6           A minimal subset of the Python language (ver
+ii  readline-common             6.1-1                    GNU readline and history libraries, common f
+ii  sed                         4.2.1-6                  The GNU sed stream editor
+ii  sensible-utils              0.0.1ubuntu3             Utilities for sensible alternative selection
+ii  sysv-rc                     2.87dsf-4ubuntu17        System-V-like runlevel change mechanism
+ii  sysvinit-utils              2.87dsf-4ubuntu17        System-V-like utilities
+ii  tar                         1.22-2                   GNU version of the tar archiving utility
+ii  tzdata                      2010i-1                  time zone and daylight-saving time data
+ii  udev                        151-12                   rule-based device node and kernel event mana
+ii  upstart                     0.6.5-6                  event-based init daemon
+ii  util-linux                  2.17.2-0ubuntu1          Miscellaneous system utilities
+ii  zlib1g                      1:1.2.3.3.dfsg-15ubuntu1 compression library - runtime
