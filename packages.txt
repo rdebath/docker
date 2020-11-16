@@ -1,0 +1,74 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Inst/Cfg-files/Unpacked/Failed-cfg/Half-inst/trig-aWait/Trig-pend
+|/ Err?=(none)/Hold/Reinst-required/X=both-problems (Status,Err: uppercase=bad)
+||/ Name                         Version           Description
++++-============================-=================-============================================
+ii  apt                          0.7.20.2+lenny2   Advanced front-end for dpkg
+ii  base-files                   5lenny11          Debian base system miscellaneous files
+ii  base-passwd                  3.5.20            Debian base system master password and group
+ii  bash                         3.2-4             The GNU Bourne Again SHell
+ii  bsdutils                     1:2.13.1.1-1      Basic utilities from 4.4BSD-Lite
+ii  coreutils                    6.10-6            The GNU core utilities
+ii  debconf                      1.5.24            Debian configuration management system
+ii  debconf-i18n                 1.5.24            full internationalization support for debcon
+ii  debian-archive-keyring       2010.08.28~lenny1 GnuPG archive keys of the Debian archive
+ii  debianutils                  2.30              Miscellaneous utilities specific to Debian
+ii  diff                         2.8.1-12          File comparison utilities
+ii  dpkg                         1.14.31           Debian package management system
+ii  e2fslibs                     1.41.3-1          ext2 filesystem libraries
+ii  e2fsprogs                    1.41.3-1          ext2/ext3/ext4 file system utilities
+ii  findutils                    4.4.0-2           utilities for finding files--find, xargs
+ii  gcc-4.2-base                 4.2.4-6           The GNU Compiler Collection (base package)
+ii  gcc-4.3-base                 4.3.2-1.1         The GNU Compiler Collection (base package)
+ii  gnupg                        1.4.9-3+lenny1    GNU privacy guard - a free PGP replacement
+ii  gpgv                         1.4.9-3+lenny1    GNU privacy guard - signature verification t
+ii  grep                         2.5.3~dfsg-6      GNU grep, egrep and fgrep
+ii  gzip                         1.3.12-6+lenny1   The GNU compression utility
+ii  hostname                     2.95              utility to set/show the host name or domain 
+ii  initscripts                  2.86.ds1-61       Scripts for initializing and shutting down t
+ii  libacl1                      2.2.47-2          Access control list shared library
+ii  libattr1                     1:2.4.43-2        Extended attribute shared library
+ii  libblkid1                    1.41.3-1          block device id library
+ii  libbz2-1.0                   1.0.5-1+lenny1    high-quality block-sorting file compressor l
+ii  libc6                        2.7-18lenny7      GNU C Library: Shared libraries
+ii  libcomerr2                   1.41.3-1          common error description library
+ii  libdb4.6                     4.6.21-11         Berkeley v4.6 Database Libraries [runtime]
+ii  libdevmapper1.02.1           2:1.02.27-4       The Linux Kernel Device Mapper userspace lib
+ii  libgcc1                      1:4.3.2-1.1       GCC support library
+ii  liblocale-gettext-perl       1.05-4            Using libc functions for internationalizatio
+ii  libncurses5                  5.7+20081213-1    shared libraries for terminal handling
+ii  libpam-modules               1.0.1-5+lenny1    Pluggable Authentication Modules for PAM
+ii  libpam-runtime               1.0.1-5+lenny1    Runtime support for the PAM library
+ii  libpam0g                     1.0.1-5+lenny1    Pluggable Authentication Modules library
+ii  libreadline5                 5.2-3.1           GNU readline and history libraries, run-time
+ii  libselinux1                  2.0.65-5          SELinux shared libraries
+ii  libsepol1                    2.0.30-2          Security Enhanced Linux policy library for c
+ii  libslang2                    2.1.3-3           The S-Lang programming library - runtime ver
+ii  libss2                       1.41.3-1          command-line interface parsing library
+ii  libstdc++6                   4.3.2-1.1         The GNU Standard C++ Library v3
+ii  libtext-charwidth-perl       0.04-5+b1         get display widths of characters on the term
+ii  libtext-iconv-perl           1.7-1+b1          converts between character sets in Perl
+ii  libtext-wrapi18n-perl        0.06-6            internationalized substitute of Text::Wrap
+ii  libusb-0.1-4                 2:0.1.12-13       userspace USB programming library
+ii  libuuid1                     1.41.3-1          universally unique id library
+ii  login                        1:4.1.1-6+lenny1  system login tools
+ii  lsb-base                     3.2-20            Linux Standard Base 3.2 init script function
+ii  lzma                         4.43-14           Compression method of 7z format in 7-Zip pro
+ii  makedev                      2.3.1-88          creates device files in /dev
+ii  mawk                         1.3.3-11.1        a pattern scanning and text processing langu
+ii  mktemp                       1.5-9             tool for creating temporary files
+ii  mount                        2.13.1.1-1        Tools for mounting and manipulating filesyst
+ii  ncurses-base                 5.7+20081213-1    basic terminal type definitions
+ii  ncurses-bin                  5.7+20081213-1    terminal-related programs and man pages
+ii  passwd                       1:4.1.1-6+lenny1  change and administer password and group dat
+ii  perl-base                    5.10.0-19lenny5   minimal Perl system
+ii  procps                       1:3.2.7-11        /proc file system utilities
+ii  readline-common              5.2-3.1           GNU readline and history libraries, common f
+ii  sed                          4.1.5-6           The GNU sed stream editor
+ii  sysv-rc                      2.86.ds1-61       System-V-like runlevel change mechanism
+ii  sysvinit                     2.86.ds1-61       System-V-like init utilities
+ii  sysvinit-utils               2.86.ds1-61       System-V-like utilities
+ii  tar                          1.20-1+lenny1     GNU version of the tar archiving utility
+ii  tzdata                       2011k-0lenny1     time zone and daylight-saving time data
+ii  util-linux                   2.13.1.1-1        Miscellaneous system utilities
+ii  zlib1g                       1:1.2.3.3.dfsg-12 compression library - runtime
