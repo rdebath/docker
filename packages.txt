@@ -1,0 +1,103 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Inst/Conf-files/Unpacked/halF-conf/Half-inst/trig-aWait/Trig-pend
+|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)
+||/ Name                    Version                      Architecture Description
++++-=======================-============================-============-======================================================================
+ii  adduser                 3.113+nmu3ubuntu4            all          add and remove users and groups
+ii  apt                     1.0.10.2ubuntu1              i386         commandline package manager
+ii  base-files              7.2ubuntu11                  i386         Debian base system miscellaneous files
+ii  base-passwd             3.5.38                       i386         Debian base system master password and group files
+ii  bash                    4.3-14ubuntu1                i386         GNU Bourne Again SHell
+ii  bsdutils                1:2.26.2-6ubuntu3            i386         basic utilities from 4.4BSD-Lite
+ii  coreutils               8.23-4ubuntu2                i386         GNU core utilities
+ii  dash                    0.5.7-4ubuntu2               i386         POSIX-compliant shell
+ii  debconf                 1.5.57ubuntu1                all          Debian configuration management system
+ii  debianutils             4.5.1                        i386         Miscellaneous utilities specific to Debian
+ii  diffutils               1:3.3-1                      i386         File comparison utilities
+ii  dmsetup                 2:1.02.99-1ubuntu1           i386         Linux Kernel Device Mapper userspace library
+ii  dpkg                    1.18.2ubuntu5                i386         Debian package management system
+ii  e2fslibs:i386           1.42.12-1ubuntu2             i386         ext2/ext3/ext4 file system libraries
+ii  e2fsprogs               1.42.12-1ubuntu2             i386         ext2/ext3/ext4 file system utilities
+ii  findutils               4.4.2-9build1                i386         utilities for finding files--find, xargs
+ii  gcc-5-base:i386         5.2.1-22ubuntu2              i386         GCC, the GNU Compiler Collection (base package)
+ii  gnupg                   1.4.18-7ubuntu1              i386         GNU privacy guard - a free PGP replacement
+ii  gpgv                    1.4.18-7ubuntu1              i386         GNU privacy guard - signature verification tool
+ii  grep                    2.21-2                       i386         GNU grep, egrep and fgrep
+ii  gzip                    1.6-4ubuntu1                 i386         GNU compression utilities
+ii  hostname                3.15ubuntu2                  i386         utility to set/show the host name or domain name
+ii  init                    1.23ubuntu3                  i386         System-V-like init utilities - metapackage
+ii  initscripts             2.88dsf-59.2ubuntu2          i386         scripts for initializing and shutting down the system
+ii  insserv                 1.14.0-5ubuntu3              i386         boot sequence organizer using LSB init.d script dependency information
+ii  libacl1:i386            2.2.52-2                     i386         Access control list shared library
+ii  libapparmor1:i386       2.10-0ubuntu6                i386         changehat AppArmor library
+ii  libapt-pkg4.16:i386     1.0.10.2ubuntu1              i386         package management runtime library
+ii  libattr1:i386           1:2.4.47-2                   i386         Extended attribute shared library
+ii  libaudit-common         1:2.4.2-1ubuntu1             all          Dynamic library for security auditing - common files
+ii  libaudit1:i386          1:2.4.2-1ubuntu1             i386         Dynamic library for security auditing
+ii  libblkid1:i386          2.26.2-6ubuntu3              i386         block device id library
+ii  libbz2-1.0:i386         1.0.6-8                      i386         high-quality block-sorting file compressor library - runtime
+ii  libc-bin                2.21-0ubuntu4                i386         GNU C Library: Binaries
+ii  libc6:i386              2.21-0ubuntu4                i386         GNU C Library: Shared libraries
+ii  libcap2:i386            1:2.24-9                     i386         POSIX 1003.1e capabilities (library)
+ii  libcap2-bin             1:2.24-9                     i386         POSIX 1003.1e capabilities (utilities)
+ii  libcomerr2:i386         1.42.12-1ubuntu2             i386         common error description library
+ii  libcryptsetup4:i386     2:1.6.6-5ubuntu2             i386         disk encryption support - shared library
+ii  libdb5.3:i386           5.3.28-11                    i386         Berkeley v5.3 Database Libraries [runtime]
+ii  libdebconfclient0:i386  0.192ubuntu1                 i386         Debian Configuration Management System (C-implementation library)
+ii  libdevmapper1.02.1:i386 2:1.02.99-1ubuntu1           i386         Linux Kernel Device Mapper userspace library
+ii  libfdisk1:i386          2.26.2-6ubuntu3              i386         fdisk partitioning library
+ii  libgcc1:i386            1:5.2.1-22ubuntu2            i386         GCC support library
+ii  libgcrypt20:i386        1.6.3-2ubuntu1               i386         LGPL Crypto library - runtime library
+ii  libgpg-error0:i386      1.19-2                       i386         library for common error values and messages in GnuPG components
+ii  libkmod2:i386           21-1ubuntu1                  i386         libkmod shared library
+ii  liblzma5:i386           5.1.1alpha+20120614-2ubuntu2 i386         XZ-format compression library
+ii  libmount1:i386          2.26.2-6ubuntu3              i386         device mounting library
+ii  libncurses5:i386        5.9+20150516-2ubuntu1        i386         shared libraries for terminal handling
+ii  libncursesw5:i386       5.9+20150516-2ubuntu1        i386         shared libraries for terminal handling (wide character support)
+ii  libpam-modules:i386     1.1.8-3.1ubuntu3             i386         Pluggable Authentication Modules for PAM
+ii  libpam-modules-bin      1.1.8-3.1ubuntu3             i386         Pluggable Authentication Modules for PAM - helper binaries
+ii  libpam-runtime          1.1.8-3.1ubuntu3             all          Runtime support for the PAM library
+ii  libpam0g:i386           1.1.8-3.1ubuntu3             i386         Pluggable Authentication Modules library
+ii  libpcre3:i386           2:8.35-7.1ubuntu1            i386         Perl 5 Compatible Regular Expression Library - runtime files
+ii  libprocps3:i386         1:3.3.9-1ubuntu8             i386         library for accessing process information from /proc
+ii  libreadline6:i386       6.3-8ubuntu1                 i386         GNU readline and history libraries, run-time libraries
+ii  libseccomp2:i386        2.2.3-2ubuntu1               i386         high level interface to Linux seccomp filter
+ii  libselinux1:i386        2.3-2build1                  i386         SELinux runtime shared libraries
+ii  libsemanage-common      2.3-1build2                  all          Common files for SELinux policy management libraries
+ii  libsemanage1:i386       2.3-1build2                  i386         SELinux policy management library
+ii  libsepol1:i386          2.3-2                        i386         SELinux library for manipulating binary security policies
+ii  libslang2:i386          2.3.0-2ubuntu1               i386         S-Lang programming library - runtime version
+ii  libsmartcols1:i386      2.26.2-6ubuntu3              i386         smart column output alignment library
+ii  libss2:i386             1.42.12-1ubuntu2             i386         command-line interface parsing library
+ii  libstdc++6:i386         5.2.1-22ubuntu2              i386         GNU Standard C++ Library v3
+ii  libsystemd0:i386        225-1ubuntu9                 i386         systemd utility library
+ii  libtinfo5:i386          5.9+20150516-2ubuntu1        i386         shared low-level terminfo library for terminal handling
+ii  libudev1:i386           225-1ubuntu9                 i386         libudev shared library
+ii  libusb-0.1-4:i386       2:0.1.12-27                  i386         userspace USB programming library
+ii  libustr-1.0-1:i386      1.0.4-5                      i386         Micro string library: shared library
+ii  libuuid1:i386           2.26.2-6ubuntu3              i386         Universally Unique ID library
+ii  locales                 2.13+git20120306-21          all          common files for locale support
+ii  login                   1:4.1.5.1-1.1ubuntu7         i386         system login tools
+ii  lsb-base                4.1+Debian11ubuntu8          all          Linux Standard Base 4.1 init script functionality
+ii  makedev                 2.3.1-93ubuntu1              all          creates device files in /dev
+ii  mawk                    1.3.3-17ubuntu2              i386         a pattern scanning and text processing language
+ii  mount                   2.26.2-6ubuntu3              i386         Tools for mounting and manipulating filesystems
+ii  multiarch-support       2.21-0ubuntu4                i386         Transitional package to ensure multiarch compatibility
+ii  ncurses-base            5.9+20150516-2ubuntu1        all          basic terminal type definitions
+ii  ncurses-bin             5.9+20150516-2ubuntu1        i386         terminal-related programs and man pages
+ii  passwd                  1:4.1.5.1-1.1ubuntu7         i386         change and administer password and group data
+ii  perl-base               5.20.2-6                     i386         minimal Perl system
+ii  procps                  1:3.3.9-1ubuntu8             i386         /proc file system utilities
+ii  readline-common         6.3-8ubuntu1                 all          GNU readline and history libraries, common files
+ii  sed                     4.2.2-6.1                    i386         The GNU sed stream editor
+ii  sensible-utils          0.0.9                        all          Utilities for sensible alternative selection
+ii  systemd                 225-1ubuntu9                 i386         system and service manager
+ii  systemd-sysv            225-1ubuntu9                 i386         system and service manager - SysV links
+ii  sysv-rc                 2.88dsf-59.2ubuntu2          all          System-V-like runlevel change mechanism
+ii  sysvinit-utils          2.88dsf-59.2ubuntu2          i386         System-V-like utilities
+ii  tar                     1.27.1-2                     i386         GNU version of the tar archiving utility
+ii  tzdata                  2015g-1                      all          time zone and daylight-saving time data
+ii  ubuntu-keyring          2012.05.19                   all          GnuPG keys of the Ubuntu archive
+ii  udev                    225-1ubuntu9                 i386         /dev/ and hotplug management daemon
+ii  util-linux              2.26.2-6ubuntu3              i386         Miscellaneous system utilities
+ii  zlib1g:i386             1:1.2.8.dfsg-2ubuntu4        i386         compression library - runtime
