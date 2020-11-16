@@ -1,0 +1,124 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Installed/Config-files/Unpacked/Failed-config/Half-installed
+|/ Err?=(none)/Hold/Reinst-required/X=both-problems (Status,Err: uppercase=bad)
+||/ Name                   Version                 Description
++++-======================-=======================-============================================
+ii  adduser                3.92                    Add and remove users and groups
+ii  apt                    0.6.45ubuntu14          Advanced front-end for dpkg
+ii  apt-utils              0.6.45ubuntu14          APT utility programs
+ii  aptitude               0.4.1-1.1ubuntu7        terminal-based apt frontend
+ii  base-files             3.1.13ubuntu2           Debian base system miscellaneous files
+ii  base-passwd            3.5.11                  Debian base system master password and group
+ii  bash                   3.1-5ubuntu3            The GNU Bourne Again SHell
+ii  belocs-locales-bin     2.4-1ubuntu6            tools for compiling locale data files
+ii  bsdutils               2.12r-11ubuntu2         Basic utilities from 4.4BSD-Lite
+ii  busybox-initramfs      1.1.3-2ubuntu3          Standalone shell setup for initramfs
+ii  bzip2                  1.0.3-3                 high-quality block-sorting file compressor -
+ii  coreutils              5.96-5ubuntu4           The GNU core utilities
+ii  cpio                   2.6-17                  GNU cpio -- a program to manage archives of 
+ii  dash                   0.5.3-3ubuntu4          The Debian Almquist Shell
+ii  debconf                1.5.2ubuntu2            Debian configuration management system
+ii  debconf-i18n           1.5.2ubuntu2            full internationalization support for debcon
+ii  debianutils            2.16.2                  Miscellaneous utilities specific to Debian
+ii  diff                   2.8.1-11ubuntu3         File comparison utilities
+ii  dpkg                   1.13.22ubuntu7          package maintenance system for Debian
+ii  e2fslibs               1.39-1                  ext2 filesystem libraries
+ii  e2fsprogs              1.39-1                  ext2 file system utilities and libraries
+ii  findutils              4.2.27-3                utilities for finding files--find, xargs, an
+ii  gcc-4.1-base           4.1.1-13ubuntu5         The GNU Compiler Collection (base package)
+ii  gettext-base           0.15-2ubuntu1           GNU Internationalization utilities for the b
+ii  gnupg                  1.4.3-2ubuntu3          GNU privacy guard - a free PGP replacement
+ii  grep                   2.5.1.ds2-5             GNU grep, egrep and fgrep
+ii  gzip                   1.3.5-14ubuntu1         The GNU compression utility
+ii  hostname               2.92                    utility to set/show the host name or domain 
+ii  ifupdown               0.6.7ubuntu7            high level tools to configure network interf
+ii  iproute                20051007-4ubuntu2       Professional tools to control the networking
+ii  iputils-ping           20020927-3ubuntu2       Tools to test the reachability of network ho
+ii  less                   394-2                   Pager program similar to more
+ii  libacl1                2.2.39-1ubuntu2         Access control list shared library
+ii  libatm1                2.4.1-17                shared library for ATM (Asynchronous Transfe
+ii  libattr1               2.4.32-1ubuntu1         Extended attribute shared library
+ii  libblkid1              1.39-1                  block device id library
+ii  libbz2-1.0             1.0.3-3                 high-quality block-sorting file compressor l
+ii  libc6                  2.4-1ubuntu12           GNU C Library: Shared libraries
+ii  libc6-i686             2.4-1ubuntu12           GNU C Library: Shared libraries [i686 optimi
+ii  libcap1                1.10-14                 support for getting/setting POSIX.1e capabil
+ii  libcomerr2             1.39-1                  common error description library
+ii  libdb4.3               4.3.29-5build1          Berkeley v4.3 Database Libraries [runtime]
+ii  libdb4.4               4.4.20-6ubuntu1         Berkeley v4.4 Database Libraries [runtime]
+ii  libdevmapper1.02       1.02.07-1ubuntu2        The Linux Kernel Device Mapper userspace lib
+ii  libgcc1                4.1.1-13ubuntu5         GCC support library
+ii  libgcrypt11            1.2.2-2                 LGPL Crypto library - runtime library
+ii  libgdbm3               1.8.3-3                 GNU dbm database routines (runtime version)
+ii  libgnutls13            1.4.0-3ubuntu1          the GNU TLS library - runtime library
+ii  libgpg-error0          1.2-1                   library for common error values and messages
+ii  libldap2               2.1.30-13build1         OpenLDAP libraries
+ii  liblocale-gettext-perl 1.05-1                  Using libc functions for internationalizatio
+ii  liblzo1                1.08-3                  data compression library (old version)
+ii  libncurses5            5.5-2ubuntu1            Shared libraries for terminal handling
+ii  libncursesw5           5.5-2ubuntu1            Shared libraries for terminal handling (wide
+ii  libnewt0.52            0.52.2-5.1ubuntu1       Not Erik's Windowing Toolkit - text mode win
+ii  libopencdk8            0.5.8-1                 Open Crypto Development Kit (OpenCDK) (runti
+ii  libpam-foreground      0.3                     create lockfiles describing which users own 
+ii  libpam-modules         0.79-3.1ubuntu1         Pluggable Authentication Modules for PAM
+ii  libpam-runtime         0.79-3.1ubuntu1         Runtime support for the PAM library
+ii  libpam0g               0.79-3.1ubuntu1         Pluggable Authentication Modules library
+ii  libpopt0               1.10-2                  lib for parsing cmdline parameters
+ii  libreadline5           5.1-7build1             GNU readline and history libraries, run-time
+ii  libsasl2               2.1.19.dfsg1-0.2ubuntu3 Authentication abstraction library
+ii  libsasl2-modules       2.1.19.dfsg1-0.2ubuntu3 Pluggable Authentication Modules for SASL
+ii  libselinux1            1.30-1ubuntu1           SELinux shared libraries
+ii  libsepol1              1.12-1                  Security Enhanced Linux policy library for c
+ii  libsigc++-2.0-0c2a     2.0.16-3                type-safe Signal Framework for C++ - runtime
+ii  libslang2              2.0.6-2                 The S-Lang programming library - runtime ver
+ii  libss2                 1.39-1                  command-line interface parsing library
+ii  libssl0.9.8            0.9.8b-2ubuntu2         SSL shared libraries
+ii  libstdc++6             4.1.1-13ubuntu5         The GNU Standard C++ Library v3
+ii  libtasn1-3             0.3.5-1                 Manage ASN.1 structures (runtime)
+ii  libtext-charwidth-perl 0.04-4                  get display widths of characters on the term
+ii  libtext-iconv-perl     1.4-3                   converts between character sets in Perl
+ii  libtext-wrapi18n-perl  0.06-5                  internationalized substitute of Text::Wrap
+ii  libusb-0.1-4           0.1.12-2                userspace USB programming library
+ii  libuuid1               1.39-1                  universally unique id library
+ii  libwrap0               7.6.dbs-9               Wietse Venema's TCP wrappers library
+ii  locales                2.3.22                  common files for locale support
+ii  login                  4.0.16-2ubuntu4         system login tools
+ii  lsb-base               3.1-10ubuntu4           Linux Standard Base 3.1 init script function
+ii  lsb-release            3.1-10ubuntu4           Linux Standard Base version reporting utilit
+ii  lsof                   4.77.dfsg.1-3           List open files
+ii  makedev                2.3.1-82ubuntu3         creates device files in /dev
+ii  mawk                   1.3.3-11ubuntu2         a pattern scanning and text processing langu
+ii  mime-support           3.36-1                  MIME files 'mime.types' & 'mailcap', and sup
+ii  mktemp                 1.5-2                   Makes unique filenames for temporary files
+ii  mount                  2.12r-11ubuntu2         Tools for mounting and manipulating filesyst
+ii  ncurses-base           5.5-2ubuntu1            Descriptions of common terminal types
+ii  ncurses-bin            5.5-2ubuntu1            Terminal-related programs and man pages
+ii  net-tools              1.60-17ubuntu1          The NET-3 networking toolkit
+ii  netbase                4.25ubuntu2             Basic TCP/IP networking system
+ii  netcat                 1.10-32                 TCP/IP swiss army knife
+ii  ntpdate                4.2.0a+stable-9ubuntu2  The ntpdate client for setting system time f
+ii  passwd                 4.0.16-2ubuntu4         change and administer password and group dat
+ii  perl                   5.8.8-6                 Larry Wall's Practical Extraction and Report
+ii  perl-base              5.8.8-6                 The Pathologically Eclectic Rubbish Lister
+ii  perl-modules           5.8.8-6                 Core Perl modules
+ii  procps                 3.2.7-2ubuntu3          /proc file system utilities
+ii  python                 2.4.3-11ubuntu3         An interactive high-level object-oriented la
+ii  python-minimal         2.4.3-11ubuntu3         A minimal subset of the Python language (def
+ii  python2.4              2.4.4~c1-0ubuntu1       An interactive high-level object-oriented la
+ii  python2.4-minimal      2.4.4~c1-0ubuntu1       A minimal subset of the Python language (ver
+ii  readline-common        5.1-7build1             GNU readline and history libraries, common f
+ii  sed                    4.1.5-1                 The GNU sed stream editor
+ii  sudo                   1.6.8p12-4ubuntu5       Provide limited super user privileges to spe
+ii  sysv-rc                2.86.ds1-14.1ubuntu16   System-V-like runlevel change mechanism
+ii  sysvutils              2.86.ds1-14.1ubuntu16   System-V-like utilities
+ii  tar                    1.15.91-2               GNU tar
+ii  tcpd                   7.6.dbs-9               Wietse Venema's TCP wrapper utilities
+ii  tzdata                 2006m-1ubuntu1          Time Zone and Daylight Saving Time Data
+ii  ubuntu-keyring         2005.01.12.1            GnuPG keys of the Ubuntu archive
+ii  upstart                0.2.7-7                 event-based init daemon
+ii  util-linux             2.12r-11ubuntu2         Miscellaneous system utilities
+ii  util-linux-locales     2.12r-11ubuntu2         Locales files for util-linux
+ii  vim-common             7.0-035+1ubuntu5        Vi IMproved - Common files
+ii  vim-tiny               7.0-035+1ubuntu5        Vi IMproved - enhanced vi editor - compact v
+ii  whiptail               0.52.2-5.1ubuntu1       Displays user-friendly dialog boxes from she
+ii  zlib1g                 1.2.3-13ubuntu2         compression library - runtime
