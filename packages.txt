@@ -1,0 +1,78 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Inst/Cfg-files/Unpacked/Failed-cfg/Half-inst/trig-aWait/Trig-pend
+|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)
+||/ Name                      Version                  Description
++++-=========================-========================-============================================
+ii  apt                       0.7.23.1ubuntu2          Advanced front-end for dpkg
+ii  base-files                5.0.0ubuntu7             Debian base system miscellaneous files
+ii  base-passwd               3.5.21                   Debian base system master password and group
+ii  bash                      4.0-5ubuntu2             The GNU Bourne Again SHell
+ii  bsdutils                  1:2.16-1ubuntu5          Basic utilities from 4.4BSD-Lite
+ii  coreutils                 7.4-2ubuntu1             The GNU core utilities
+ii  dash                      0.5.5.1-2ubuntu3         POSIX-compliant shell
+ii  debconf                   1.5.27ubuntu2            Debian configuration management system
+ii  debconf-i18n              1.5.27ubuntu2            full internationalization support for debcon
+ii  debianutils               2.30ubuntu3              Miscellaneous utilities specific to Debian
+ii  diff                      2.8.1-13                 File comparison utilities
+ii  dpkg                      1.15.4ubuntu2            Debian package management system
+ii  e2fslibs                  1.41.9-1ubuntu3          ext2/ext3/ext4 file system libraries
+ii  e2fsprogs                 1.41.9-1ubuntu3          ext2/ext3/ext4 file system utilities
+ii  findutils                 4.4.2-1                  utilities for finding files--find, xargs
+ii  gcc-4.4-base              4.4.1-4ubuntu8           The GNU Compiler Collection (base package)
+ii  gpgv                      1.4.9-4ubuntu7           GNU privacy guard - signature verification t
+ii  grep                      2.5.4-4                  GNU grep, egrep and fgrep
+ii  gzip                      1.3.12-8ubuntu1          GNU compression utilities
+ii  hostname                  2.95ubuntu1              utility to set/show the host name or domain 
+ii  initscripts               2.87dsf-4ubuntu11        scripts for initializing and shutting down t
+ii  insserv                   1.12.0-11                Tool to organize boot sequence using LSB ini
+ii  libacl1                   2.2.47-2                 Access control list shared library
+ii  libattr1                  1:2.4.43-3               Extended attribute shared library
+ii  libblkid1                 2.16-1ubuntu5            block device id library
+ii  libbz2-1.0                1.0.5-3                  high-quality block-sorting file compressor l
+ii  libc-bin                  2.10.1-0ubuntu15         GNU C Library: Binaries
+ii  libc6                     2.10.1-0ubuntu15         GNU C Library: Shared libraries
+ii  libcomerr2                1.41.9-1ubuntu3          common error description library
+ii  libdb4.7                  4.7.25-7ubuntu2          Berkeley v4.7 Database Libraries [runtime]
+ii  libdbus-1-3               1.2.16-0ubuntu9          simple interprocess messaging system
+ii  libgcc1                   1:4.4.1-4ubuntu8         GCC support library
+ii  liblocale-gettext-perl    1.05-4build1             Using libc functions for internationalizatio
+ii  libncurses5               5.7+20090803-2ubuntu2    shared libraries for terminal handling
+ii  libpam-modules            1.1.0-2ubuntu1           Pluggable Authentication Modules for PAM
+ii  libpam-runtime            1.1.0-2ubuntu1           Runtime support for the PAM library
+ii  libpam0g                  1.1.0-2ubuntu1           Pluggable Authentication Modules library
+ii  libreadline6              6.0-5                    GNU readline and history libraries, run-time
+ii  libselinux1               2.0.85-2ubuntu2          SELinux shared libraries
+ii  libsepol1                 2.0.37-1                 Security Enhanced Linux policy library for c
+ii  libslang2                 2.1.4-3                  The S-Lang programming library - runtime ver
+ii  libss2                    1.41.9-1ubuntu3          command-line interface parsing library
+ii  libssl0.9.8               0.9.8g-16ubuntu3         SSL shared libraries
+ii  libstdc++6                4.4.1-4ubuntu8           The GNU Standard C++ Library v3
+ii  libtext-charwidth-perl    0.04-5build1             get display widths of characters on the term
+ii  libtext-iconv-perl        1.7-1build1              converts between character sets in Perl
+ii  libtext-wrapi18n-perl     0.06-7                   internationalized substitute of Text::Wrap
+ii  libudev0                  147~-6                   udev library
+ii  libuuid1                  2.16-1ubuntu5            Universally Unique ID library
+ii  locales                   2.9+git20090617-3        common files for locale support
+ii  login                     1:4.1.4.1-1ubuntu2       system login tools
+ii  lsb-base                  4.0-0ubuntu5             Linux Standard Base 4.0 init script function
+ii  lzma                      4.43-14ubuntu1           Compression method of 7z format in 7-Zip pro
+ii  makedev                   2.3.1-88                 creates device files in /dev
+ii  mawk                      1.3.3-15ubuntu1          a pattern scanning and text processing langu
+ii  mount                     2.16-1ubuntu5            Tools for mounting and manipulating filesyst
+ii  mountall                  1.0                      filesystem mounting tool
+ii  ncurses-base              5.7+20090803-2ubuntu2    basic terminal type definitions
+ii  ncurses-bin               5.7+20090803-2ubuntu2    terminal-related programs and man pages
+ii  passwd                    1:4.1.4.1-1ubuntu2       change and administer password and group dat
+ii  perl-base                 5.10.0-24ubuntu4         minimal Perl system
+ii  procps                    1:3.2.8-1ubuntu3         /proc file system utilities
+ii  python-minimal            2.6.4~rc1-0ubuntu1       A minimal subset of the Python language (def
+ii  python2.6-minimal         2.6.4~rc2-0ubuntu1       A minimal subset of the Python language (ver
+ii  readline-common           6.0-5                    GNU readline and history libraries, common f
+ii  sed                       4.2.1-1                  The GNU sed stream editor
+ii  sysv-rc                   2.87dsf-4ubuntu11        System-V-like runlevel change mechanism
+ii  sysvinit-utils            2.87dsf-4ubuntu11        System-V-like utilities
+ii  tar                       1.22-1                   GNU version of the tar archiving utility
+ii  tzdata                    2009o-1ubuntu2           time zone and daylight-saving time data
+ii  upstart                   0.6.3-10                 event-based init daemon
+ii  util-linux                2.16-1ubuntu5            Miscellaneous system utilities
+ii  zlib1g                    1:1.2.3.3.dfsg-13ubuntu3 compression library - runtime
