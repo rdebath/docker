@@ -1,0 +1,86 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Installed/Config-files/Unpacked/Failed-config/Half-installed
+|/ Err?=(none)/Hold/Reinst-required/X=both-problems (Status,Err: uppercase=bad)
+||/ Name           Version        Description
++++-==============-==============-============================================
+ii  apt            0.5.27.1       Advanced front-end for dpkg
+ii  apt-utils      0.5.27.1       APT utility programs
+ii  aptitude       0.2.14.1-2ubun curses-based apt frontend
+ii  base-files     3.0.16ubuntu6  Debian base system miscellaneous files
+ii  base-passwd    3.5.7          Debian base system master password and group
+ii  bash           2.05b-15ubuntu The GNU Bourne Again SHell
+ii  bsdutils       2.12-7ubuntu6  Basic utilities from 4.4BSD-Lite
+ii  bzip2          1.0.2-1        A high-quality block-sorting file compressor
+ii  coreutils      5.0.91-2       The GNU core utilities
+ii  dash           0.4.26-3       The Debian Almquist Shell
+ii  debconf        1.4.29ubuntu4  Debian configuration management system
+ii  debconf-i18n   1.4.29ubuntu4  full internationalization support for debcon
+ii  debianutils    2.8.3          Miscellaneous utilities specific to Debian
+ii  diff           2.8.1-6        File comparison utilities
+ii  dmidecode      2.4-1ubuntu1   Dump Desktop Management Interface data
+ii  dpkg           1.10.22ubuntu2 Package maintenance system for Debian
+ii  dselect        1.10.22ubuntu2 a user tool to manage Debian packages
+ii  e2fslibs       1.35-6ubuntu1  The EXT2 filesystem libraries
+ii  e2fsprogs      1.35-6ubuntu1  The EXT2 file system utilities and libraries
+ii  findutils      4.1.20-3       utilities for finding files--find, xargs, an
+ii  gcc-3.3-base   3.3.4-9ubuntu5 The GNU Compiler Collection (base package)
+ii  grep           2.5.1.ds1-3    GNU grep, egrep and fgrep
+ii  gzip           1.3.5-9ubuntu3 The GNU compression utility
+ii  hostname       2.13           A utility to set/show the host name or domai
+ii  ifupdown       0.6.4-4.8ubunt High level tools to configure network interf
+ii  initscripts    2.85-22ubuntu1 Standard scripts needed for booting and shut
+ii  iputils-arping 20020927-2     Tool to send ICMP echo requests to an ARP ad
+ii  iputils-ping   20020927-2     Tools to test the reachability of network ho
+ii  less           381-3          Pager program similar to more
+ii  libacl1        2.2.23-1       Access control list shared library
+ii  libattr1       2.4.16-1       Extended attribute shared library
+ii  libblkid1      1.35-6ubuntu1  Block device id library
+ii  libbz2-1.0     1.0.2-1        A high-quality block-sorting file compressor
+ii  libc6          2.3.2.ds1-13ub GNU C Library: Shared libraries and Timezone
+ii  libcap1        1.10-14        support for getting/setting POSIX.1e capabil
+ii  libcomerr2     1.35-6ubuntu1  The Common Error Description library
+ii  libdb1-compat  2.1.3-7        The Berkeley database routines [glibc 2.0/2.
+ii  libdb3         3.2.9-20       Berkeley v3 Database Libraries [runtime]
+ii  libdb4.2       4.2.52-16ubunt Berkeley v4.2 Database Libraries [runtime]
+ii  libgcc1        3.4.2-2ubuntu1 GCC support library
+ii  liblocale-gett 1.01-17        Using libc functions for internationalizatio
+ii  libncurses5    5.4-4          Shared libraries for terminal handling
+ii  libnewt0.51    0.51.6-11ubunt Not Erik's Windowing Toolkit - text mode win
+ii  libpam-modules 0.76-21        Pluggable Authentication Modules for PAM
+ii  libpam-runtime 0.76-21        Runtime support for the PAM library
+ii  libpam0g       0.76-21        Pluggable Authentication Modules library
+ii  libpopt0       1.7-4          lib for parsing cmdline parameters
+ii  libreadline4   4.3-11         GNU readline and history libraries, run-time
+ii  libsigc++-1.2- 1.2.5-1ubuntu2 Type-safe Signal Framework for C++ - runtime
+ii  libss2         1.35-6ubuntu1  Command-line interface parsing library
+ii  libstdc++5     3.3.4-9ubuntu5 The GNU Standard C++ Library v3
+ii  libtext-charwi 0.04-1         get display widths of characters on the term
+ii  libtext-iconv- 1.2-3          Convert between character sets in Perl
+ii  libtext-wrapi1 0.06-1         internationalized substitute of Text::Wrap
+ii  libuuid1       1.35-6ubuntu1  Universally unique id library
+ii  libwrap0       7.6.dbs-4      Wietse Venema's TCP wrappers library
+ii  locales        2.3.2.ds1-13ub GNU C Library: National Language (locale) da
+ii  login          4.0.3-28.5ubun System login tools
+ii  lsb-base       1.3-9ubuntu7   Linux Standard Base 1.3 initscript functions
+ii  makedev        2.3.1-70       Creates device files in /dev
+ii  mawk           1.3.3-11       a pattern scanning and text processing langu
+ii  modutils       2.4.26-1ubuntu Linux module utilities
+ii  mount          2.12-7ubuntu6  Tools for mounting and manipulating filesyst
+ii  ncurses-base   5.4-4          Descriptions of common terminal types
+ii  ncurses-bin    5.4-4          Terminal-related programs and man pages
+ii  net-tools      1.60-10ubuntu2 The NET-3 networking toolkit
+ii  netbase        4.17ubuntu3    Basic TCP/IP networking system
+ii  netkit-inetd   0.10-9ubuntu3  The Internet Superserver
+ii  passwd         4.0.3-28.5ubun Change and administer password and group dat
+ii  perl-base      5.8.4-2        The Pathologically Eclectic Rubbish Lister.
+ii  procps         3.2.1-2ubuntu3 The /proc file system utilities
+ii  sed            4.1.2-1        The GNU sed stream editor
+ii  slang1a-utf8   1.4.9dbs-6     The S-Lang programming library with utf8 sup
+ii  sysv-rc        2.85-22ubuntu1 Standard boot mechanism using symlinks in /e
+ii  sysvinit       2.85-22ubuntu1 System-V like init
+ii  tar            1.13.93-4      GNU tar
+ii  tcpd           7.6.dbs-4      Wietse Venema's TCP wrapper utilities
+ii  util-linux     2.12-7ubuntu6  Miscellaneous system utilities
+ii  whiptail       0.51.6-11ubunt Displays user-friendly dialog boxes from she
+ii  xfsprogs       2.6.18-1ubuntu Utilities for managing the XFS filesystem
+ii  zlib1g         1.2.1.1-3ubunt compression library - runtime
