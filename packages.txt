@@ -1,0 +1,120 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Installed/Config-files/Unpacked/Failed-config/Half-installed
+|/ Err?=(none)/Hold/Reinst-required/X=both-problems (Status,Err: uppercase=bad)
+||/ Name           Version        Description
++++-==============-==============-============================================
+ii  adduser        3.63           Add and remove users and groups
+ii  apt            0.5.28.6       Advanced front-end for dpkg
+ii  apt-utils      0.5.28.6       APT utility programs
+ii  aptitude       0.2.15.9-2     terminal-based apt frontend
+ii  base-config    2.53.10.3      Debian base system configurator
+ii  base-files     3.1.2          Debian base system miscellaneous files
+ii  base-passwd    3.5.9          Debian base system master password and group
+ii  bash           2.05b-26       The GNU Bourne Again SHell
+ii  bsdmainutils   6.0.17         collection of more utilities from FreeBSD
+ii  bsdutils       2.12p-4sarge2  Basic utilities from 4.4BSD-Lite
+ii  console-common 0.7.49         Basic infrastructure for text console config
+ii  console-data   2002.12.04dbs- Keymaps, fonts, charset maps, fallback table
+ii  console-tools  0.2.3dbs-56    Linux console and font utilities
+ii  coreutils      5.2.1-2        The GNU core utilities
+ii  cpio           2.5-1.3        GNU cpio -- a program to manage archives of 
+ii  cron           3.0pl1-86      management of regular background processing
+ii  debconf        1.4.30.13      Debian configuration management system
+ii  debconf-i18n   1.4.30.13      full internationalization support for debcon
+ii  debianutils    2.8.4          Miscellaneous utilities specific to Debian
+ii  dhcp-client    2.0pl5-19.1sar DHCP Client
+ii  diff           2.8.1-11       File comparison utilities
+ii  dpkg           1.10.28        Package maintenance system for Debian
+ii  dselect        1.10.28        a user tool to manage Debian packages
+ii  e2fslibs       1.37-2sarge1   ext2 filesystem libraries
+ii  e2fsprogs      1.37-2sarge1   ext2 file system utilities and libraries
+ii  ed             0.2-20         The classic unix line editor
+ii  fdutils        5.4-20040228-1 Linux floppy utilities
+ii  findutils      4.1.20-6       utilities for finding files--find, xargs, an
+ii  gcc-3.3-base   3.3.5-13       The GNU Compiler Collection (base package)
+ii  gettext-base   0.14.4-2       GNU Internationalization utilities for the b
+ii  grep           2.5.1.ds1-4    GNU grep, egrep and fgrep
+ii  groff-base     1.18.1.1-7     GNU troff text-formatting system (base syste
+ii  gzip           1.3.5-10sarge2 The GNU compression utility
+ii  hostname       2.13           A utility to set/show the host name or domai
+ii  ifupdown       0.6.7          high level tools to configure network interf
+ii  info           4.7-2.2sarge2  Standalone GNU Info documentation browser
+ii  initscripts    2.86.ds1-1     Standard scripts needed for booting and shut
+ii  ipchains       1.3.10-15      Network firewalling for Linux 2.2.x
+ii  iptables       1.2.11-10      Linux kernel 2.4+ iptables administration to
+ii  iputils-ping   20020927-2     Tools to test the reachability of network ho
+ii  klogd          1.4.1-17       Kernel Logging Daemon
+ii  libacl1        2.2.23-1       Access control list shared library
+ii  libattr1       2.4.16-1       Extended attribute shared library
+ii  libblkid1      1.37-2sarge1   block device id library
+ii  libc6          2.3.2.ds1-22sa GNU C Library: Shared libraries and Timezone
+ii  libcap1        1.10-14        support for getting/setting POSIX.1e capabil
+ii  libcomerr2     1.37-2sarge1   common error description library
+ii  libconsole     0.2.3dbs-56    Shared libraries for Linux console and font 
+ii  libdb1-compat  2.1.3-7        The Berkeley database routines [glibc 2.0/2.
+ii  libdb3         3.2.9-22       Berkeley v3 Database Libraries [runtime]
+ii  libdb4.2       4.2.52-18      Berkeley v4.2 Database Libraries [runtime]
+ii  libgcc1        3.4.3-13sarge1 GCC support library
+ii  libgcrypt11    1.2.0-11.1     LGPL Crypto library - runtime library
+ii  libgdbm3       1.8.3-2        GNU dbm database routines (runtime version)
+ii  libgnutls11    1.0.16-13.2sar GNU TLS library - runtime library
+ii  libgpg-error0  1.0-1          library for common error values and messages
+ii  liblocale-gett 1.01-17        Using libc functions for internationalizatio
+ii  liblockfile1   1.06           NFS-safe locking library, includes dotlockfi
+ii  liblzo1        1.08-1.2       A real-time data compression library
+ii  libncurses5    5.4-4          Shared libraries for terminal handling
+ii  libnewt0.51    0.51.6-20      Not Erik's Windowing Toolkit - text mode win
+ii  libopencdk8    0.5.5-10       Open Crypto Development Kit (OpenCDK) (runti
+ii  libpam-modules 0.76-22        Pluggable Authentication Modules for PAM
+ii  libpam-runtime 0.76-22        Runtime support for the PAM library
+ii  libpam0g       0.76-22        Pluggable Authentication Modules library
+ii  libpcap0.7     0.7.2-7        System interface for user-level packet captu
+ii  libpcre3       4.5+7.4-2      Perl 5 Compatible Regular Expression Library
+ii  libpopt0       1.7-5          lib for parsing cmdline parameters
+ii  libsigc++-1.2- 1.2.5-4        type-safe Signal Framework for C++ - runtime
+ii  libss2         1.37-2sarge1   command-line interface parsing library
+ii  libssl0.9.7    0.9.7e-3sarge5 SSL shared libraries
+ii  libstdc++5     3.3.5-13       The GNU Standard C++ Library v3
+ii  libtasn1-2     0.2.10-3sarge1 Manage ASN.1 structures (runtime)
+ii  libtext-charwi 0.04-1         get display widths of characters on the term
+ii  libtext-iconv- 1.2-3          Convert between character sets in Perl
+ii  libtext-wrapi1 0.06-1         internationalized substitute of Text::Wrap
+ii  libtextwrap1   0.1-1          text-wrapping library with i18n - runtime
+ii  libuuid1       1.37-2sarge1   universally unique id library
+ii  libwrap0       7.6.dbs-8      Wietse Venema's TCP wrappers library
+ii  login          4.0.3-31sarge9 system login tools
+ii  logrotate      3.7-5          Log rotation utility
+ii  makedev        2.3.1-77       creates device files in /dev
+ii  manpages       1.70-1         Manual pages about using a GNU/Linux system
+ii  mawk           1.3.3-11       a pattern scanning and text processing langu
+ii  modutils       2.4.26-1.2     Linux module utilities
+ii  mount          2.12p-4sarge2  Tools for mounting and manipulating filesyst
+ii  nano           1.2.4-5        free Pico clone with some new features
+ii  ncurses-base   5.4-4          Descriptions of common terminal types
+ii  ncurses-bin    5.4-4          Terminal-related programs and man pages
+ii  net-tools      1.60-10        The NET-3 networking toolkit
+ii  netbase        4.21           Basic TCP/IP networking system
+ii  netkit-inetd   0.10-10        The Internet Superserver
+ii  nvi            1.79-22        4.4BSD re-implementation of vi
+ii  passwd         4.0.3-31sarge9 change and administer password and group dat
+ii  pciutils       2.1.11-15      Linux PCI Utilities
+ii  perl-base      5.8.4-8sarge6  The Pathologically Eclectic Rubbish Lister
+ii  ppp            2.4.3-20050321 Point-to-Point Protocol (PPP) daemon
+ii  pppconfig      2.3.11         A text menu based utility for configuring pp
+ii  pppoe          3.5-4          PPP over Ethernet driver
+ii  pppoeconf      1.7            configures PPPoE/ADSL connections
+ii  procps         3.2.1-2        The /proc file system utilities
+ii  psmisc         21.5-1         Utilities that use the proc filesystem
+ii  sed            4.1.2-8        The GNU sed stream editor
+ii  slang1a-utf8   1.4.9dbs-8     The S-Lang programming library with utf8 sup
+ii  sysklogd       1.4.1-17       System Logging Daemon
+ii  sysv-rc        2.86.ds1-1     Standard boot mechanism using symlinks in /e
+ii  sysvinit       2.86.ds1-1     System-V like init
+ii  tar            1.14-2.4       GNU tar
+ii  tasksel        2.24           Tool for selecting tasks for installation on
+ii  tcpd           7.6.dbs-8      Wietse Venema's TCP wrapper utilities
+ii  telnet         0.17-29        The telnet client
+ii  util-linux     2.12p-4sarge2  Miscellaneous system utilities
+ii  wget           1.9.1-12       retrieves files from the web
+ii  whiptail       0.51.6-20      Displays user-friendly dialog boxes from she
+ii  zlib1g         1.2.2-4.sarge. compression library - runtime
