@@ -1,0 +1,54 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Installed/Config-files/Unpacked/Failed-config/Half-installed
+|/ Err?=(none)/Hold/Reinst-required/X=both-problems (Status,Err: uppercase=bad)
+||/ Name           Version        Description
++++-==============-==============-============================================
+ii  apt            0.3.19         Advanced front-end for dpkg
+ii  base-files     2.2.0          Debian base system miscellaneous files
+ii  base-passwd    3.1.10         Debian Base System Password/Group Files
+ii  bash           2.03-6         The GNU Bourne Again SHell
+ii  bsdutils       2.10f-5.1      Basic utilities from 4.4BSD-Lite.
+ii  debconf-tiny   0.2.80.17      Tiny subset of debconf for the base system
+ii  debianutils    1.13.3         Miscellaneous utilities specific to Debian.
+ii  diff           2.7-21         File comparison utilities
+ii  dpkg           1.6.15         Package maintenance system for Debian
+ii  e2fsprogs      1.18-3.0potato The EXT2 file system utilities and libraries
+ii  fileutils      4.0l-8         GNU file management utilities.
+ii  findutils      4.1-40         utilities for finding files--find, xargs, an
+ii  grep           2.4.2-1        GNU grep, egrep and fgrep.
+ii  gzip           1.2.4-33.1     The GNU compression utility.
+ii  hostname       2.07           A utility to set/show the host name or domai
+ii  ldso           1.9.11-9       The Linux dynamic linker, library and utilit
+ii  libc6          2.1.3-20       GNU C Library: Shared libraries and Timezone
+ii  libdb2         2.4.14-2.7.7.1 The Berkeley database routines (run-time fil
+ii  libgdbmg1      1.7.3-26.2     GNU dbm database routines (runtime version).
+ii  libncurses5    5.0-6.0potato2 Shared libraries for terminal handling
+ii  libnewt0       0.50-7         Not Erik's Windowing Toolkit - text mode win
+ii  libpam-modules 0.72-9         Pluggable Authentication Modules for PAM
+ii  libpam-runtime 0.72-9         Runtime support for the PAM library
+ii  libpam0g       0.72-9         Pluggable Authentication Modules library
+ii  libpopt0       1.4-1.1        lib for parsing cmdline parameters
+ii  libstdc++2.10  2.95.2-13.1    The GNU stdc++ library
+ii  libwrap0       7.6-4          Wietse Venema's TCP wrappers library
+ii  locales        2.1.3-20       GNU C Library: National Language (locale) da
+ii  login          19990827-20    System login tools
+ii  mawk           1.3.3-5        a pattern scanning and text processing langu
+ii  mount          2.10f-5.1      Tools for mounting and manipulating filesyst
+ii  ncurses-base   5.0-6.0potato2 Descriptions of common terminal types
+ii  ncurses-bin    5.0-6.0potato2 Terminal-related programs and man pages
+ii  netbase        3.18-4         Basic TCP/IP networking binaries
+ii  passwd         19990827-20    Change and administer password and group dat
+ii  perl-5.005-bas 5.005.03-7.1   The Pathologically Eclectic Rubbish Lister
+ii  perl-base      5.004.05-1.1   Fake package assuring that one of the -base 
+ii  procps         2.0.6-5        The /proc file system utilities.
+ii  psmisc         19-2           Utilities that use the proc filesystem
+ii  sed            3.02-5         The GNU sed stream editor.
+ii  shellutils     2.0-7          The GNU shell programming utilities.
+ii  slang1         1.3.9-1        The S-Lang programming library - runtime ver
+ii  sysvinit       2.78-4         System-V like init.
+ii  tar            1.13.17-2      GNU tar
+ii  tcpd           7.6-4          Wietse Venema's TCP wrapper utilities
+ii  textutils      2.0-2          The GNU text file processing utilities.
+ii  update         2.11-1         daemon to periodically flush filesystem buff
+ii  util-linux     2.10f-5.1      Miscellaneous system utilities.
+ii  whiptail       0.50-7         Displays user-friendly dialog boxes from she
