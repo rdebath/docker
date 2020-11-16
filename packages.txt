@@ -1,0 +1,127 @@
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Installed/Config-files/Unpacked/Failed-config/Half-installed
+|/ Err?=(none)/Hold/Reinst-required/X=both-problems (Status,Err: uppercase=bad)
+||/ Name                   Version                                Description
++++-======================-======================================-============================================
+ii  adduser                3.100                                  Add and remove users and groups
+ii  apt                    0.6.46.4ubuntu10                       Advanced front-end for dpkg
+ii  apt-utils              0.6.46.4ubuntu10                       APT utility programs
+ii  aptitude               0.4.4-1ubuntu3                         terminal-based apt frontend
+ii  base-files             4ubuntu2                               Debian base system miscellaneous files
+ii  base-passwd            3.5.11                                 Debian base system master password and group
+ii  bash                   3.2-0ubuntu7                           The GNU Bourne Again SHell
+ii  belocs-locales-bin     2.4-2ubuntu2                           tools for compiling locale data files
+ii  bsdutils               2.12r-17ubuntu2                        Basic utilities from 4.4BSD-Lite
+ii  busybox-initramfs      1.1.3-3ubuntu3                         Standalone shell setup for initramfs
+ii  bzip2                  1.0.3-6build1                          high-quality block-sorting file compressor -
+ii  coreutils              5.97-5.2ubuntu3                        The GNU core utilities
+ii  cpio                   2.6-17                                 GNU cpio -- a program to manage archives of 
+ii  dash                   0.5.3-5ubuntu2                         The Debian Almquist Shell
+ii  debconf                1.5.13ubuntu1                          Debian configuration management system
+ii  debconf-i18n           1.5.13ubuntu1                          full internationalization support for debcon
+ii  debianutils            2.17.4build1                           Miscellaneous utilities specific to Debian
+ii  diff                   2.8.1-11ubuntu4                        File comparison utilities
+ii  dmsetup                1.02.08-1ubuntu10                      The Linux Kernel Device Mapper userspace lib
+ii  dpkg                   1.13.24ubuntu6                         package maintenance system for Debian
+ii  e2fslibs               1.39+1.40-WIP-2006.11.14+dfsg-2ubuntu1 ext2 filesystem libraries
+ii  e2fsprogs              1.39+1.40-WIP-2006.11.14+dfsg-2ubuntu1 ext2 file system utilities and libraries
+ii  findutils              4.2.28-2                               utilities for finding files--find, xargs, an
+ii  gcc-4.1-base           4.1.2-0ubuntu4                         The GNU Compiler Collection (base package)
+ii  gettext-base           0.16.1-1ubuntu2                        GNU Internationalization utilities for the b
+ii  gnupg                  1.4.6-1ubuntu2                         GNU privacy guard - a free PGP replacement
+ii  gpgv                   1.4.6-1ubuntu2                         GNU privacy guard - signature verification t
+ii  grep                   2.5.1.ds2-6build1                      GNU grep, egrep and fgrep
+ii  gzip                   1.3.9-2                                The GNU compression utility
+ii  hostname               2.93build1                             utility to set/show the host name or domain 
+ii  ifupdown               0.6.8ubuntu6                           high level tools to configure network interf
+ii  iproute                20061002-3ubuntu1                      Professional tools to control the networking
+ii  iputils-ping           20020927-3.1ubuntu2                    Tools to test the reachability of network ho
+ii  less                   394-4build1                            Pager program similar to more
+ii  libacl1                2.2.42-1ubuntu1                        Access control list shared library
+ii  libattr1               2.4.32-1.1ubuntu1                      Extended attribute shared library
+ii  libblkid1              1.39+1.40-WIP-2006.11.14+dfsg-2ubuntu1 block device id library
+ii  libbz2-1.0             1.0.3-6build1                          high-quality block-sorting file compressor l
+ii  libc6                  2.5-0ubuntu14                          GNU C Library: Shared libraries
+ii  libcap1                1.10-14                                support for getting/setting POSIX.1e capabil
+ii  libcomerr2             1.39+1.40-WIP-2006.11.14+dfsg-2ubuntu1 common error description library
+ii  libdb4.2               4.2.52+dfsg-1build1                    Berkeley v4.2 Database Libraries [runtime]
+ii  libdb4.3               4.3.29-6build1                         Berkeley v4.3 Database Libraries [runtime]
+ii  libdb4.4               4.4.20-8ubuntu2                        Berkeley v4.4 Database Libraries [runtime]
+ii  libdbus-1-3            1.0.2-1ubuntu3                         simple interprocess messaging system
+ii  libdevmapper1.02       1.02.08-1ubuntu10                      The Linux Kernel Device Mapper userspace lib
+ii  libgcc1                4.1.2-0ubuntu4                         GCC support library
+ii  libgcrypt11            1.2.3-2build1                          LGPL Crypto library - runtime library
+ii  libgdbm3               1.8.3-3                                GNU dbm database routines (runtime version)
+ii  libgnutls13            1.4.4-3build1                          the GNU TLS library - runtime library
+ii  libgpg-error0          1.4-2build1                            library for common error values and messages
+ii  libldap2               2.1.30-13.3                            OpenLDAP libraries
+ii  liblocale-gettext-perl 1.05-1                                 Using libc functions for internationalizatio
+ii  liblzo1                1.08-3                                 data compression library (old version)
+ii  libncurses5            5.5-5ubuntu2                           Shared libraries for terminal handling
+ii  libncursesw5           5.5-5ubuntu2                           Shared libraries for terminal handling (wide
+ii  libnewt0.52            0.52.2-8ubuntu2                        Not Erik's Windowing Toolkit - text mode win
+ii  libopencdk8            0.5.9-2build1                          Open Crypto Development Kit (OpenCDK) (runti
+ii  libpam-foreground      0.3                                    create lockfiles describing which users own 
+ii  libpam-modules         0.79-4ubuntu2                          Pluggable Authentication Modules for PAM
+ii  libpam-runtime         0.79-4ubuntu2                          Runtime support for the PAM library
+ii  libpam0g               0.79-4ubuntu2                          Pluggable Authentication Modules library
+ii  libpopt0               1.10-3build1                           lib for parsing cmdline parameters
+ii  libreadline5           5.2-2ubuntu1                           GNU readline and history libraries, run-time
+ii  libsasl2-2             2.1.22.dfsg1-8ubuntu2                  Authentication abstraction library
+ii  libsasl2-modules       2.1.22.dfsg1-8ubuntu2                  Pluggable Authentication Modules for SASL
+ii  libselinux1            1.32-3ubuntu1                          SELinux shared libraries
+ii  libsepol1              1.14-2build1                           Security Enhanced Linux policy library for c
+ii  libsigc++-2.0-0c2a     2.0.17-2build1                         type-safe Signal Framework for C++ - runtime
+ii  libslang2              2.0.6-4build1                          The S-Lang programming library - runtime ver
+ii  libsqlite3-0           3.3.13-0ubuntu1                        SQLite 3 shared library
+ii  libss2                 1.39+1.40-WIP-2006.11.14+dfsg-2ubuntu1 command-line interface parsing library
+ii  libssl0.9.8            0.9.8c-4build1                         SSL shared libraries
+ii  libstdc++6             4.1.2-0ubuntu4                         The GNU Standard C++ Library v3
+ii  libtasn1-3             0.3.6-2build1                          Manage ASN.1 structures (runtime)
+ii  libtext-charwidth-perl 0.04-4build1                           get display widths of characters on the term
+ii  libtext-iconv-perl     1.4-3                                  converts between character sets in Perl
+ii  libtext-wrapi18n-perl  0.06-5                                 internationalized substitute of Text::Wrap
+ii  libusb-0.1-4           0.1.12-2                               userspace USB programming library
+ii  libuuid1               1.39+1.40-WIP-2006.11.14+dfsg-2ubuntu1 universally unique id library
+ii  libvolume-id0          108-0ubuntu4                           volume identification library
+ii  locales                2.3.23                                 common files for locale support
+ii  login                  4.0.18.1-6ubuntu1                      system login tools
+ii  lsb-base               3.1-22ubuntu3                          Linux Standard Base 3.1 init script function
+ii  lsb-release            3.1-22ubuntu3                          Linux Standard Base version reporting utilit
+ii  lsof                   4.77.dfsg.1-3                          List open files
+ii  makedev                2.3.1-83ubuntu2                        creates device files in /dev
+ii  mawk                   1.3.3-11ubuntu2                        a pattern scanning and text processing langu
+ii  mime-support           3.39-1                                 MIME files 'mime.types' & 'mailcap', and sup
+ii  mktemp                 1.5-2                                  Makes unique filenames for temporary files
+ii  mount                  2.12r-17ubuntu2                        Tools for mounting and manipulating filesyst
+ii  ncurses-base           5.5-5ubuntu2                           Descriptions of common terminal types
+ii  ncurses-bin            5.5-5ubuntu2                           Terminal-related programs and man pages
+ii  net-tools              1.60-17ubuntu1                         The NET-3 networking toolkit
+ii  netbase                4.27ubuntu2                            Basic TCP/IP networking system
+ii  netcat                 1.10-32                                TCP/IP swiss army knife
+ii  ntpdate                4.2.2.p4+dfsg-1ubuntu3                 client for setting system time from NTP serv
+ii  passwd                 4.0.18.1-6ubuntu1                      change and administer password and group dat
+ii  perl                   5.8.8-7build1                          Larry Wall's Practical Extraction and Report
+ii  perl-base              5.8.8-7build1                          The Pathologically Eclectic Rubbish Lister
+ii  perl-modules           5.8.8-7build1                          Core Perl modules
+ii  procps                 3.2.7-3ubuntu2                         /proc file system utilities
+ii  python                 2.5.1~rc1-0ubuntu3                     An interactive high-level object-oriented la
+ii  python-minimal         2.5.1~rc1-0ubuntu3                     A minimal subset of the Python language (def
+ii  python2.5              2.5.1~rc1-0ubuntu3                     An interactive high-level object-oriented la
+ii  python2.5-minimal      2.5.1~rc1-0ubuntu3                     A minimal subset of the Python language (ver
+ii  readline-common        5.2-2ubuntu1                           GNU readline and history libraries, common f
+ii  sed                    4.1.5-1                                The GNU sed stream editor
+ii  sudo                   1.6.8p12-4ubuntu5                      Provide limited super user privileges to spe
+ii  sysv-rc                2.86.ds1-14.1ubuntu18                  System-V-like runlevel change mechanism
+ii  sysvutils              2.86.ds1-14.1ubuntu18                  System-V-like utilities
+ii  tar                    1.16-2                                 GNU tar
+ii  tzdata                 2007b-0ubuntu1                         Time Zone and Daylight Saving Time Data
+ii  ubuntu-keyring         2005.01.12.1                           GnuPG keys of the Ubuntu archive
+ii  update-inetd           4.27-0.2                               inetd.conf updater
+ii  upstart                0.3.8-1                                event-based init daemon
+ii  util-linux             2.12r-17ubuntu2                        Miscellaneous system utilities
+ii  util-linux-locales     2.12r-17ubuntu2                        Locales files for util-linux
+ii  vim-common             7.0-164+1ubuntu7                       Vi IMproved - Common files
+ii  vim-tiny               7.0-164+1ubuntu7                       Vi IMproved - enhanced vi editor - compact v
+ii  whiptail               0.52.2-8ubuntu2                        Displays user-friendly dialog boxes from she
+ii  zlib1g                 1.2.3-13ubuntu4                        compression library - runtime
