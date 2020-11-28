@@ -26,6 +26,8 @@ host_main() {
 	-R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
 	-P ) DOPUSH=yes; shift;;
 
+	-g ) GITPUSH=yes; shift;;
+
 	* ) echo >&2 "Unknown Option $1" ; exit 1;;
 	esac
     done
@@ -51,6 +53,12 @@ build_one() {
 	    docker push "$I" ||:
 	    echo "# Push done -> $I"
 	}
+    elif [ "$GITPUSH" = yes ]
+    then
+	mktag <(
+		echo "# Dockerfile to build $I"
+		guest_script "$1"
+	    ) build/qe+$1 'Quantum Espresso with Miniconda'
     else
 	echo "# Dockerfile to build $I"
 	guest_script "$1"
@@ -69,28 +77,25 @@ guest_script() {
     # Setup
     docker_start || {
 	apt-get update
-	apt-get install -y build-essential bzip2 ca-certificates curl gfortran git
+	apt-get install -y build-essential \
+	    bzip2 ca-certificates curl gfortran git file
     } ; docker_commit "Install Debian"
     docker_cmd
 
     docker_cmd FROM build-base AS qedownload
 
-    # docker_cmd ARG 'QE_VER=6.4.1'
-    # docker_cmd ARG 'MPI_VER=4.0'
-    # docker_cmd ARG 'MPI_BLD=1'
-
-    docker_cmd ARG 'QE_VER=6.5'
+    docker_cmd ARG 'QE_VER=6.7MaX'
     docker_cmd ARG 'MPI_VER=4.0'
-    docker_cmd ARG 'MPI_BLD=4'
+    docker_cmd ARG 'MPI_BLD=5'
     docker_cmd
 
     docker_start || {
 	echo "Downloading qe..."
-	curl https://gitlab.com/QEF/q-e/-/archive/qe-${QE_VER}/q-e-qe-${QE_VER}.tar.bz2 |
+	curl -sS https://gitlab.com/QEF/q-e/-/archive/qe-${QE_VER}/q-e-qe-${QE_VER}.tar.bz2 |
 	    tar -xj
 
 	echo "Downloading openmpi ..."
-	curl https://download.open-mpi.org/release/open-mpi/v${MPI_VER}/openmpi-${MPI_VER}.${MPI_BLD}.tar.bz2 |
+	curl -sS https://download.open-mpi.org/release/open-mpi/v${MPI_VER}/openmpi-${MPI_VER}.${MPI_BLD}.tar.bz2 |
 	    tar -xj
 
     } ; docker_commit "Download qe and mpi"
@@ -99,7 +104,7 @@ guest_script() {
     docker_cmd FROM build-base AS condabuild
 
     docker_start || {
-	curl -L https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
+	curl -sS -L https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
 	    > miniconda.sh
 	bash miniconda.sh -b -p /opt/conda
 
@@ -110,14 +115,13 @@ guest_script() {
 	echo "conda activate base" >> ~/.bashrc
 
 	conda update -n base -c defaults -y conda
+
 	conda install -y \
-	    numpy=1.16.* \
-	    scipy=1.2.* \
+	    numpy \
+	    scipy \
+	    pandas \
 	    joblib
 
-	    # pandas=0.24.* \
-
-	pip install -U ase ruamel.yaml
 	conda clean -iy --all
 
     } ; docker_commit "Download and install miniconda"
@@ -130,13 +134,14 @@ guest_script() {
 
     if [ "$1" != openmp ]
     then
+	# shellcheck disable=SC2046
 	docker_start || {
 	    if [ "$VARIANT" != openmp ]
 	    then
 		echo "Install openmpi ..." && \
 		cd openmpi-*
 		./configure --with-cma=no
-		make -j 4
+		make -j $(nproc)
 		echo "installing..."
 		make install
 		ldconfig
@@ -145,6 +150,7 @@ guest_script() {
 	} ; docker_commit "Install openmpi"
     fi
 
+    # shellcheck disable=SC2046
     docker_start || {
 	case "$VARIANT" in
 	openmp )  CONFIGURE_ARGS="--enable-openmp --enable-parallel=no" ;;
@@ -155,7 +161,10 @@ guest_script() {
 	echo "Building qe..."
 	cd q-e-qe-*
 	./configure $CONFIGURE_ARGS
-	make -j 4 pwall
+
+	echo '.NOTPARALLEL: # Top level dependencies are broken.' >> Makefile
+	make -j $(nproc) pwall
+
 	echo "installing..."
 	make install
     } ; docker_commit "Install qe"
@@ -275,6 +284,36 @@ make_docker_runcmd() {
     echo "RUN ${1:+: $1 ;}"'set -e;_() { echo "$@";};(\'
     gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\/'
     echo ')|base64 -d|gzip -d>'"$sn;sh -e $sn;rm -f $sn"
+}
+
+################################################################################
+
+mktag() {
+
+SCRIPT="$1"
+TAG="$2"
+shift 2
+COMMENT="$*"
+TAB=$(echo .|tr . '\011')
+git update-ref refs/tags/"$TAG" "$(
+{
+    [ "$COMMENT" != '' ] && {
+	echo "$COMMENT" |
+	echo "100644 blob $(git hash-object -w --stdin)${TAB}README.md"
+    }
+
+    bash build.sh "$SCRIPT" |
+    echo "100644 blob $(git hash-object -w --stdin)${TAB}Dockerfile"
+
+} | {
+echo "tree $(git mktree)
+author Autopost <> $(date +%s) +0000
+committer Autopost <> $(date +%s) +0000
+
+👻
+" ; } | git hash-object -t commit -w --stdin )"
+
+git push -f origin "$TAG"
 }
 
 ################################################################################
