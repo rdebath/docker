@@ -302,8 +302,7 @@ git update-ref refs/tags/"$TAG" "$(
 	echo "100644 blob $(git hash-object -w --stdin)${TAB}README.md"
     }
 
-    bash build.sh "$SCRIPT" |
-    echo "100644 blob $(git hash-object -w --stdin)${TAB}Dockerfile"
+    echo "100644 blob $(git hash-object -w "$SCRIPT")${TAB}Dockerfile"
 
 } | {
 echo "tree $(git mktree)
