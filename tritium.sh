@@ -12,7 +12,7 @@ guest_start() {
 	gmp tini
 
     git clone https://github.com/rdebath/Brainfuck.git bfi
-    make -j -C bfi/tritium install MARCH= DO_LIBDL1= DO_LIBDL2=
+    make -j -C bfi/tritium install MARCH= DEFS=-DDISABLE_RUNC=1
     rm -rf bfi
     apk del --repositories-file /dev/null build-packages
 

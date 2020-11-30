@@ -23,6 +23,8 @@ host_main() {
 	-r ) RUNNOW=yes ; shift ;;
 	# Build, feed the dockerfile into docker build
 	-b ) BUILD=yes ; shift ;;
+	# Build, feed the dockerfile into docker build
+	-B ) BUILD=yes ; DOPULL=yes ; shift ;;
 	# Disable encoding
 	-X ) ENC_OFF=yes ; shift ;;
 	# Flatten to a single layer
@@ -97,6 +99,8 @@ build_one() {
     if [ "$BUILD" = yes ]
     then
 	echo "# Build $1 ... $2 -> $3"
+	[ "$DOPULL" = yes ] &&
+	    docker pull "$2"
 	(
 	    guest_script "$1" "$2" | docker build  - -t "$3"
 
@@ -148,14 +152,15 @@ install_os() {
 
     case "$ID" in
     alpine ) install_alpine; return ;;
+    arch )   install_arch; return ;;
     centos ) install_centos; return ;;
-    fedora ) install_fedora; return ;;
     debian ) install_debian; return ;;
+    fedora ) install_fedora; return ;;
     ubuntu ) install_apt; return ;;
+
     pureos ) install_apt; return ;;
     opensuse*) install_opensuse; return ;;
-    arch )   install_arch; return ;;
-    amzn )   install_amzn; return ;;
+    amzn )   install_centos; return ;;
     clear-linux-os ) install_clear_linux_os; return ;;
     esac
 
@@ -170,13 +175,6 @@ install_alpine() {
 }
 
 install_centos() {
-    echo >&2 "Installing 'Development Tools' with yum for $PRETTY_NAME"
-    yum groupinstall -y "Development Tools"
-    yum install -y sudo which gmp-devel openssl-devel cmake
-    yum clean all
-}
-
-install_amzn() {
     echo >&2 "Installing 'Development Tools' with yum for $PRETTY_NAME"
     yum groupinstall -y "Development Tools"
     yum install -y sudo which gmp-devel openssl-devel cmake

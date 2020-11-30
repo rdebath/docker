@@ -1,0 +1,34 @@
+FROM alpine:3.8
+WORKDIR /root
+BEGIN
+apk add --no-cache -t build-packages \
+    build-base bash gmp-dev git tini
+apk add --no-cache -t run-packages --repositories-file /dev/null \
+    gmp tini
+COMMIT
+BEGIN
+git clone https://github.com/rdebath/Brainfuck.git bfi
+make -j -C bfi/tritium install MARCH= DEFS=-DDISABLE_RUNC=1
+rm -rf bfi
+apk del --repositories-file /dev/null build-packages
+
+# Might as well upgrade everything
+apk upgrade
+
+# Remove apk
+apk del --repositories-file /dev/null apk-tools alpine-keys libc-utils
+
+# Delete apk installation data
+rm -rf /var/cache/apk /lib/apk /etc/apk
+COMMIT
+FROM scratch
+COPY --from=0 / /
+WORKDIR /root
+RUN echo " \
+	+[>[<->+[>+++>++>[++++++++>][]+[<]>-]]+++ \
+	+++++++++++<]>>>>>>>>-.<<<<+.---.>--.<+++ \
+	.>>.<<-----.<++.>+++++++.>--.<-.+.<.>-.++ \
+	.>--..++.<--..>+.<++.>++++++.<<<+.<----. "\
+	| tritium >&2
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["tritium"]

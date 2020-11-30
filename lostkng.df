@@ -1,0 +1,14 @@
+FROM alpine AS build
+RUN apk add --no-cache -t build-packages build-base git nasm tini-static
+BEGIN
+git clone --depth 1 https://github.com/rdebath/Brainfuck.git bfi
+make -C bfi/tritium
+bfi/tritium/bfi.out -s bfi/testing/LostKng.b > bfi/pgm.s
+nasm -o /bin/lostkng bfi/pgm.s
+chmod +x /bin/lostkng
+COMMIT
+FROM scratch
+COPY --from=0 /sbin/tini-static /sbin/tini-static
+COPY --from=0 /bin/lostkng /bin/lostkng
+ENTRYPOINT ["/sbin/tini-static","--"]
+CMD ["lostkng"]
