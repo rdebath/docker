@@ -1,0 +1,81 @@
+FROM alpine AS build
+BEGIN
+main() {
+    apk add busybox-static
+
+    mkdir -p /opt/chroot
+    cd /opt/chroot
+    mkdir bin sbin etc usr usr/bin usr/sbin
+    cp -p /bin/busybox.static bin/busybox
+    for i in $(bin/busybox --list-full)
+    do ln -s /bin/busybox "$i"
+    done
+
+    cat >etc/passwd <<\@
+root:x:0:0:root:/root:/bin/sh
+daemon:x:1:1:daemon:/usr/sbin:/bin/false
+bin:x:2:2:bin:/bin:/bin/false
+sys:x:3:3:sys:/dev:/bin/false
+sync:x:4:100:sync:/bin:/bin/sync
+mail:x:8:8:mail:/var/spool/mail:/bin/false
+www-data:x:33:33:www-data:/var/www:/bin/false
+operator:x:37:37:Operator:/var:/bin/false
+nobody:x:65534:65534:nobody:/home:/bin/false
+@
+
+    base64 -d >etc/localtime <<\@
+VFppZjIAAAAAAAAAAAAAAAAAAAAAAAABAAAAAQAAAAAAAAAAAAAAAQAAAAQAAAAAAABVVEMAAABU
+WmlmMgAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAAAAAAEAAAABAAAABPgAAAAAAAAAAAAAAAAA
+AFVUQwAAAApVVEMwCg==
+@
+
+    cat > etc/shadow <<\@
+root:*:::::::
+daemon:*:::::::
+bin:*:::::::
+sys:*:::::::
+sync:*:::::::
+mail:*:::::::
+www-data:*:::::::
+operator:*:::::::
+nobody:*:::::::
+@
+
+    cat > etc/group <<\@
+root:x:0:
+daemon:x:1:
+bin:x:2:
+sys:x:3:
+adm:x:4:
+tty:x:5:
+disk:x:6:
+lp:x:7:
+mail:x:8:
+kmem:x:9:
+wheel:x:10:root
+cdrom:x:11:
+dialout:x:18:
+floppy:x:19:
+video:x:28:
+audio:x:29:
+tape:x:32:
+www-data:x:33:
+operator:x:37:
+utmp:x:43:
+plugdev:x:46:
+staff:x:50:
+lock:x:54:
+netdev:x:82:
+users:x:100:
+nogroup:x:65534:
+@
+
+    exit 0
+}
+
+main "$@"
+COMMIT
+FROM scratch
+COPY --from=build /opt/chroot /
+WORKDIR /root
+CMD [ "/bin/sh" ]

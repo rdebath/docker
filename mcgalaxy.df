@@ -1,0 +1,233 @@
+# FROM debian:buster
+FROM reg.xz/debian:buster
+# FROM reg.xz/debian-i386:buster
+
+# Choose a Mono version from mono-project.com, "-" means current.
+# If you blank this out you'll get "mono-devel" from Debian.
+ARG MONO_VERSION=6.8
+
+# Useful commands.
+# docker run --name=mcgalaxy --rm -it -p 25565:25565 -v "$(pwd)/mcgalaxy":/home/user mcgalaxy
+# docker run --name=mcgalaxy --rm -d -p 25565:25565 -v mcgalaxy:/home/user mcgalaxy
+#
+# Ctrl-P Ctrl-Q
+# docker attach mcgalaxy
+#
+# docker exec -it mcgalaxy bash
+# docker exec -it mcgalaxy screen -D -r
+# docker exec -it -u 0 mcgalaxy bash
+
+# Fetch the build requirements (runtime is the same)
+BEGIN
+set -x
+PKGS="binutils git unzip zip curl wget sqlite3 rlwrap screen mono-devel"
+
+if [ "$MONO_VERSION" != '' ]
+then
+    MONO_KEY=3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+    # Add some more packages
+    PKGS="$PKGS fsharp mono-vbnc nuget referenceassemblies-pcl"
+
+    apt-get update
+    apt-get install -y --no-install-recommends gnupg dirmngr
+
+    set +x
+    # See dockerhub -> mono for this (apt-key add anyone?)
+    export GNUPGHOME="/opt/gnupg"
+    mkdir -m 700 "$GNUPGHOME"
+    gpg --batch --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys $MONO_KEY
+    gpg --batch --export --armor $MONO_KEY > /etc/apt/trusted.gpg.d/mono.gpg.asc
+    gpgconf --kill all
+    apt-key list 2>/dev/null | grep Xamarin 
+    apt-get purge -y --auto-remove gnupg dirmngr
+    rm -rf "$GNUPGHOME"
+    set -x
+
+    case "$MONO_VERSION" in
+    [34].* ) DEBBASE=stable ;;
+    5.* ) DEBBASE=stretch ;;
+    * ) DEBBASE=buster ;;
+    esac
+
+    if [ "$MONO_VERSION" = '' -o ".$MONO_VERSION" = '.-' ]
+    then
+	echo "deb http://download.mono-project.com/repo/debian" \
+	     "$DEBBASE main" \
+	    >> /etc/apt/sources.list
+    else
+	echo "deb http://download.mono-project.com/repo/debian" \
+	     "$DEBBASE/snapshots/$MONO_VERSION main" \
+	    >> /etc/apt/sources.list
+    fi
+fi
+
+apt-get update
+apt-get install -y $PKGS
+apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
+apt-get clean
+dpkg --clear-avail
+rm -f /etc/apt/apt.conf.d/01autoremove-kernels
+rm -f /var/lib/dpkg/*-old
+rm -rf /var/tmp/* /tmp/*
+:|find /var/log -type f ! -exec tee {} \;
+COMMIT
+
+# Do compile and run of application as "user"
+ARG UID=1000
+RUN U=user ; useradd $U -u $UID -d /home/$U -m
+WORKDIR /opt/mcgalaxy
+RUN chown user:user .
+USER user
+
+ARG GITREPO=https://github.com/UnknownShadow200/MCGalaxy.git
+ARG COMPILE_FLAGS
+# ARG COMPILE_FLAGS=TEN_BIT_BLOCKS
+COPY --chown=user:user . /opt/mcgalaxy/MCGalaxy
+
+# Create the build.sh script
+BEGIN
+cat > build.sh <<\!
+#!/bin/sh
+set -e
+cd /opt/mcgalaxy
+[ -d MCGalaxy -a ! -e MCGalaxy/MCGalaxy.sln ] && {
+    # Remove directory if (mostly) empty
+    [ -f MCGalaxy/Dockerfile ] && mv MCGalaxy/Dockerfile /tmp/.
+    rm -rf MCGalaxy 2>/dev/null ||:
+    mkdir MCGalaxy
+}
+
+REMOVEBUILD=
+[ ! -e MCGalaxy/MCGalaxy.sln -a ".$GITREPO" != '.' ] && {
+    git clone --depth 1 "$GITREPO" MCGalaxy
+    REMOVEBUILD=yes
+}
+
+cd MCGalaxy
+
+BLD=msbuild
+[ ! -x "/usr/bin/$BLD" -a -x "/usr/bin/xbuild" ] && BLD=xbuild
+
+$BLD /p:Configuration=Release ${COMPILE_FLAGS:+"/p:DefineConstants=$COMPILE_FLAGS"}
+
+for f in \
+    LICENSE.txt Changelog.txt \
+    MCGalaxy.exe MCGalaxy.exe.config \
+    MCGalaxyCLI.exe MCGalaxyCLI.exe.config \
+    MCGalaxy_.dll MCGalaxy_.dll.config \
+    MySql.Data.dll sqlite3_x32.dll sqlite3_x64.dll \
+    Updater.exe Updater.exe.config
+
+do [ -e "bin/Release/$f" ] && { FILES="$FILES bin/Release/$f" ; continue ; }
+   [ -e "$f" ] && { FILES="$FILES $f" ; continue ; }
+   case "$f" in
+   *.config )
+	# These are missing from git repo.
+	cat > "bin/$f" <<-\@
+	<?xml version="1.0" encoding="utf-8"?>
+	<configuration>
+	  <startup>
+	    <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0"/>
+	  </startup>
+	  <runtime>
+	    <gcAllowVeryLargeObjects enabled="true"/>
+	  </runtime>
+	</configuration>
+@
+	FILES="$FILES bin/$f"
+    ;;
+    * ) echo "WARNING: Can't find file $f for zip" ;;
+    esac
+done
+
+zip -j /opt/mcgalaxy/mcgalaxy_bin.zip $FILES
+
+cd /opt/mcgalaxy
+
+rm -rf ~/.mono ~/.cache
+[ "$REMOVEBUILD" = yes ] && rm -rf MCGalaxy
+:
+!
+chmod +x build.sh
+COMMIT
+
+# Build the mcgalaxy_bin.zip from the git repo.
+RUN ./build.sh
+
+# Create the start_mcgalaxy script.
+BEGIN
+cat > start_mcgalaxy <<\@
+#!/bin/sh
+set -e
+# No term; use screen to fake one.
+[ "$TERM" = '' ] && {
+    echo Starting inside screen.
+    [ -x /bin/bash ] && export SHELL=/bin/bash
+    exec screen -D -m /opt/mcgalaxy/start_mcgalaxy
+}
+
+if [ ! -f /opt/mcgalaxy/mcgalaxy_bin.zip ]
+then
+    REPO=UnknownShadow200/MCGalaxy
+    GH2=https://raw.githubusercontent.com
+    GH1=https://github.com
+    [ "$MC_VER" = '' ] &&
+	MC_VER=$(curl -Ss $GH2/$REPO/master/Uploads/current_version.txt)
+
+    [ ! -f mcgalaxy_${MC_VER}.zip ] && {
+
+	wget --progress=dot:mega -O mcgalaxy_${MC_VER}.zip \
+	    $GH1/$REPO/releases/download/$MC_VER/mcgalaxy_${MC_VER}.zip
+    }
+    cp -p mcgalaxy_${MC_VER}.zip /opt/mcgalaxy/mcgalaxy_bin.zip
+fi
+
+# Expected executables, clear out old ones.
+rm -f \
+    LibNoise.dll LibNoise.dll.so MCGalaxy.exe MCGalaxy.exe.config \
+    MCGalaxy.exe.so MCGalaxyCLI.exe MCGalaxyCLI.exe.config \
+    MCGalaxyCLI.exe.so MCGalaxy_.dll MCGalaxy_.dll.config MCGalaxy_.dll.so \
+    MySql.Data.dll MySql.Data.dll.so Updater.exe Updater.exe.config \
+    Updater.exe.so sqlite3.dll sqlite3_x32.dll sqlite3_x64.dll
+
+unzip -q -o /opt/mcgalaxy/mcgalaxy_bin.zip
+
+# AOT compile should run faster.
+# But we need to do it at run time so it matches the CPU.
+# This is a trade off, but it should be good as this process is long running.
+#
+# LLVM seems to be often be broken. (Not included on Debian)
+# Error messages are consistent with LLVM moving the goalposts.
+# LLVM works on Mono 6.4, 6.8
+# 6.0 -- Mono Warning: llvm support could not be loaded.
+# 6.10, 6.12 -- llc: Unknown command line argument '-disable-fault-maps'.
+#
+# Not used: MCGalaxy.exe MySql.Data.dll
+# Fails to compile: LibNoise.dll
+#
+for DLL in MCGalaxyCLI.exe MCGalaxy_.dll
+do mono --aot --llvm -O=all,-shared $DLL ||:
+done
+
+# Work around docker bug. (tty size is updated late)
+[ "$(stty size 2>/dev/null)" = "0 0" ] && {
+    for i in 1 2 3 4 5 ; do [ "$(stty size)" = "0 0" ] && sleep 1 ; done
+    [ "$(stty size)" = "0 0" ] && {
+	echo 'WARNING: Not using rlwrap because stty failed.'
+	export TERM=dumb
+	exec mono MCGalaxyCLI.exe
+    }
+}
+
+# Mono tries to be evil to the tty, rlwrap is easily confused.
+# Also we need the 'cat' so that "/restart" works.
+exec rlwrap -a -t dumb bash -c 'mono MCGalaxyCLI.exe | cat'
+@
+chmod +x start_mcgalaxy
+COMMIT
+
+# This directory is where the data is stored
+# Note that the executables are copied here too by "start_mcgalaxy"
+WORKDIR /home/user
+CMD [ "bash","-c","/opt/mcgalaxy/start_mcgalaxy"]
+EXPOSE 25565
