@@ -1,20 +1,25 @@
-# FROM debian:buster
-FROM reg.xz/debian:buster
-# FROM reg.xz/debian-i386:buster
+ARG FROM=debian:buster
+FROM $FROM
 
 # Choose a Mono version from mono-project.com, "-" means current.
-# If you blank this out you'll get "mono-devel" from Debian.
-ARG MONO_VERSION=6.8
+# If you blank this out you'll get "mono-devel" from Debian (5.18 in Buster).
+ARG MONO_VERSION=
 
 # Useful commands.
 # docker run --name=mcgalaxy --rm -it -p 25565:25565 -v "$(pwd)/mcgalaxy":/home/user mcgalaxy
 # docker run --name=mcgalaxy --rm -d -p 25565:25565 -v mcgalaxy:/home/user mcgalaxy
 #
+# If you use "-it" mcgalaxy will run on the virtual console, for "-d" a copy
+# of "screen" will be started to show recent messages.
+# The /home/user directory will be mcgalaxy's current directory.
+# MCGalaxy will run as user id 1000. (ARG UID)
+# The startup script ensures that /restart works and uses "rlwrap" for history.
+#
 # Ctrl-P Ctrl-Q
 # docker attach mcgalaxy
 #
 # docker exec -it mcgalaxy bash
-# docker exec -it mcgalaxy screen -D -r
+# docker exec -it mcgalaxy screen -D -r  # Ctrl-a d to detach
 # docker exec -it -u 0 mcgalaxy bash
 
 # Fetch the build requirements (runtime is the same)
@@ -76,13 +81,9 @@ COMMIT
 ARG UID=1000
 RUN U=user ; useradd $U -u $UID -d /home/$U -m
 WORKDIR /opt/mcgalaxy
+COPY --chown=user:user . /opt/mcgalaxy/MCGalaxy
 RUN chown user:user .
 USER user
-
-ARG GITREPO=https://github.com/UnknownShadow200/MCGalaxy.git
-ARG COMPILE_FLAGS
-# ARG COMPILE_FLAGS=TEN_BIT_BLOCKS
-COPY --chown=user:user . /opt/mcgalaxy/MCGalaxy
 
 # Create the build.sh script
 BEGIN
@@ -101,6 +102,11 @@ REMOVEBUILD=
 [ ! -e MCGalaxy/MCGalaxy.sln -a ".$GITREPO" != '.' ] && {
     git clone --depth 1 "$GITREPO" MCGalaxy
     REMOVEBUILD=yes
+}
+
+[ -e MCGalaxy/MCGalaxy.sln ] || {
+    echo 'Nothing found to build, will download binaries at runtime' >&2
+    exit 0
 }
 
 cd MCGalaxy
@@ -151,7 +157,13 @@ rm -rf ~/.mono ~/.cache
 chmod +x build.sh
 COMMIT
 
-# Build the mcgalaxy_bin.zip from the git repo.
+# GITREPO will be pulled if the context doesn't contain "MCGalaxy.sln"
+# If GITREPO is empty too binaries will be downloaded at runtime.
+# For >256 block types use: ARG COMPILE_FLAGS=TEN_BIT_BLOCKS
+ARG GITREPO=https://github.com/UnknownShadow200/MCGalaxy.git
+ARG COMPILE_FLAGS
+
+# Build the mcgalaxy_bin.zip from the git repo (or context).
 RUN ./build.sh
 
 # Create the start_mcgalaxy script.
@@ -159,14 +171,15 @@ BEGIN
 cat > start_mcgalaxy <<\@
 #!/bin/sh
 set -e
+O=/opt/mcgalaxy
 # No term; use screen to fake one.
 [ "$TERM" = '' ] && {
     echo Starting inside screen.
     [ -x /bin/bash ] && export SHELL=/bin/bash
-    exec screen -D -m /opt/mcgalaxy/start_mcgalaxy
+    exec screen -D -m "$O"/start_mcgalaxy
 }
 
-if [ ! -f /opt/mcgalaxy/mcgalaxy_bin.zip ]
+if [ ! -f "$O"/mcgalaxy_bin.zip ]
 then
     REPO=UnknownShadow200/MCGalaxy
     GH2=https://raw.githubusercontent.com
@@ -179,7 +192,7 @@ then
 	wget --progress=dot:mega -O mcgalaxy_${MC_VER}.zip \
 	    $GH1/$REPO/releases/download/$MC_VER/mcgalaxy_${MC_VER}.zip
     }
-    cp -p mcgalaxy_${MC_VER}.zip /opt/mcgalaxy/mcgalaxy_bin.zip
+    cp -p mcgalaxy_${MC_VER}.zip "$O"/mcgalaxy_bin.zip
 fi
 
 # Expected executables, clear out old ones.
@@ -190,7 +203,7 @@ rm -f \
     MySql.Data.dll MySql.Data.dll.so Updater.exe Updater.exe.config \
     Updater.exe.so sqlite3.dll sqlite3_x32.dll sqlite3_x64.dll
 
-unzip -q -o /opt/mcgalaxy/mcgalaxy_bin.zip
+unzip -q -o "$O"/mcgalaxy_bin.zip
 
 # AOT compile should run faster.
 # But we need to do it at run time so it matches the CPU.
