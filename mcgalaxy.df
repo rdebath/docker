@@ -121,7 +121,9 @@ for f in \
     MCGalaxy.exe MCGalaxy.exe.config \
     MCGalaxyCLI.exe MCGalaxyCLI.exe.config \
     MCGalaxy_.dll MCGalaxy_.dll.config \
-    MySql.Data.dll sqlite3_x32.dll sqlite3_x64.dll \
+    MySql.Data.dll Newtonsoft.Json.dll \
+    sqlite3_x32.dll sqlite3_x64.dll \
+    System.Data.SQLite.dll \
     Updater.exe Updater.exe.config
 
 do [ -e "bin/Release/$f" ] && { FILES="$FILES bin/Release/$f" ; continue ; }
@@ -199,9 +201,11 @@ fi
 rm -f \
     LibNoise.dll LibNoise.dll.so MCGalaxy.exe MCGalaxy.exe.config \
     MCGalaxy.exe.so MCGalaxyCLI.exe MCGalaxyCLI.exe.config \
-    MCGalaxyCLI.exe.so MCGalaxy_.dll MCGalaxy_.dll.config MCGalaxy_.dll.so \
-    MySql.Data.dll MySql.Data.dll.so Updater.exe Updater.exe.config \
-    Updater.exe.so sqlite3.dll sqlite3_x32.dll sqlite3_x64.dll
+    MCGalaxyCLI.exe.so MCGalaxy_.dll MCGalaxy_.dll.config \
+    MCGalaxy_.dll.so MySql.Data.dll MySql.Data.dll.so Newtonsoft.Json.dll \
+    Newtonsoft.Json.dll.so System.Data.SQLite.dll Updater.exe \
+    Updater.exe.config Updater.exe.so sqlite3.dll sqlite3_x32.dll \
+    sqlite3_x64.dll \
 
 unzip -q -o "$O"/mcgalaxy_bin.zip
 
