@@ -22,16 +22,42 @@ ARG MONO_VERSION=
 # docker exec -it mcgalaxy screen -D -r  # Ctrl-a d to detach
 # docker exec -it -u 0 mcgalaxy bash
 
+#TXT# SHELL ["/bin/bash", "-c"]
+
 # Fetch the build requirements (runtime is the same)
 BEGIN
 set -x
-PKGS="binutils git unzip zip curl wget sqlite3 rlwrap screen mono-devel"
+set_packages() {
+    PKGS="binutils git unzip zip curl wget sqlite3 rlwrap screen mono-devel"
 
-if [ "$MONO_VERSION" != '' ]
-then
+    if [ "$MONO_VERSION" != '' ]
+    then
+	fetch_mono_key
+
+	# Add some more packages
+	PKGS="$PKGS fsharp mono-vbnc nuget referenceassemblies-pcl"
+
+	case "$MONO_VERSION" in
+	[34].* ) DEBBASE=stable ;;
+	5.* ) DEBBASE=stretch ;;
+	* ) DEBBASE=buster ;;
+	esac
+
+	if [ "$MONO_VERSION" = '' -o ".$MONO_VERSION" = '.-' ]
+	then
+	    echo "deb http://download.mono-project.com/repo/debian" \
+		 "$DEBBASE main" \
+		>> /etc/apt/sources.list
+	else
+	    echo "deb http://download.mono-project.com/repo/debian" \
+		 "$DEBBASE/snapshots/$MONO_VERSION main" \
+		>> /etc/apt/sources.list
+	fi
+    fi
+}
+
+fetch_mono_key() {
     MONO_KEY=3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-    # Add some more packages
-    PKGS="$PKGS fsharp mono-vbnc nuget referenceassemblies-pcl"
 
     apt-get update
     apt-get install -y --no-install-recommends gnupg dirmngr
@@ -47,34 +73,23 @@ then
     apt-get purge -y --auto-remove gnupg dirmngr
     rm -rf "$GNUPGHOME"
     set -x
+}
 
-    case "$MONO_VERSION" in
-    [34].* ) DEBBASE=stable ;;
-    5.* ) DEBBASE=stretch ;;
-    * ) DEBBASE=buster ;;
-    esac
+deb_cleanup(){
+    apt-get clean
+    dpkg --clear-avail
+    rm -f /etc/apt/apt.conf.d/01autoremove-kernels
+    rm -f /var/lib/dpkg/*-old
+    rm -rf /var/tmp/* /tmp/*
+    :|find /var/log -type f ! -exec tee {} \;
+    exit 0
+}
 
-    if [ "$MONO_VERSION" = '' -o ".$MONO_VERSION" = '.-' ]
-    then
-	echo "deb http://download.mono-project.com/repo/debian" \
-	     "$DEBBASE main" \
-	    >> /etc/apt/sources.list
-    else
-	echo "deb http://download.mono-project.com/repo/debian" \
-	     "$DEBBASE/snapshots/$MONO_VERSION main" \
-	    >> /etc/apt/sources.list
-    fi
-fi
-
+set_packages
 apt-get update
 apt-get install -y $PKGS
 apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
-apt-get clean
-dpkg --clear-avail
-rm -f /etc/apt/apt.conf.d/01autoremove-kernels
-rm -f /var/lib/dpkg/*-old
-rm -rf /var/tmp/* /tmp/*
-:|find /var/log -type f ! -exec tee {} \;
+deb_cleanup
 COMMIT
 
 # Do compile and run of application as "user"
@@ -86,8 +101,7 @@ RUN chown user:user .
 USER user
 
 # Create the build.sh script
-BEGIN
-cat > build.sh <<\!
+BEGIN build.sh 'chmod +x build.sh'
 #!/bin/sh
 set -e
 cd /opt/mcgalaxy
@@ -155,8 +169,6 @@ cd /opt/mcgalaxy
 rm -rf ~/.mono ~/.cache
 [ "$REMOVEBUILD" = yes ] && rm -rf MCGalaxy
 :
-!
-chmod +x build.sh
 COMMIT
 
 # GITREPO will be pulled if the context doesn't contain "MCGalaxy.sln"
@@ -169,8 +181,7 @@ ARG COMPILE_FLAGS
 RUN ./build.sh
 
 # Create the start_mcgalaxy script.
-BEGIN
-cat > start_mcgalaxy <<\@
+BEGIN start_mcgalaxy 'chmod +x start_mcgalaxy'
 #!/bin/sh
 set -e
 O=/opt/mcgalaxy
@@ -239,8 +250,6 @@ done
 # Mono tries to be evil to the tty, rlwrap is easily confused.
 # Also we need the 'cat' so that "/restart" works.
 exec rlwrap -a -t dumb bash -c 'mono MCGalaxyCLI.exe | cat'
-@
-chmod +x start_mcgalaxy
 COMMIT
 
 # This directory is where the data is stored
