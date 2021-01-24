@@ -26,13 +26,15 @@ ARG MONO_VERSION=
 
 # Fetch the build requirements (runtime is the same)
 BEGIN
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=Shut_the_fuck_up
 set -x
 set_packages() {
     PKGS="binutils git unzip zip curl wget sqlite3 rlwrap screen mono-devel"
 
     if [ "$MONO_VERSION" != '' ]
     then
-	fetch_mono_key
+	# Beware: Mono repo key.
+	fetch_apt_key 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 
 	# Add some more packages
 	PKGS="$PKGS fsharp mono-vbnc nuget referenceassemblies-pcl"
@@ -56,26 +58,15 @@ set_packages() {
     fi
 }
 
-fetch_mono_key() {
-    MONO_KEY=3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-
+fetch_apt_key() {
     apt-get update
-    apt-get install -y --no-install-recommends gnupg dirmngr
-
-    set +x
-    # See dockerhub -> mono for this (apt-key add anyone?)
-    export GNUPGHOME="/opt/gnupg"
-    mkdir -m 700 "$GNUPGHOME"
-    gpg --batch --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys $MONO_KEY
-    gpg --batch --export --armor $MONO_KEY > /etc/apt/trusted.gpg.d/mono.gpg.asc
-    gpgconf --kill all
-    apt-key list 2>/dev/null | grep Xamarin 
-    apt-get purge -y --auto-remove gnupg dirmngr
-    rm -rf "$GNUPGHOME"
-    set -x
+    apt-get install -y --no-install-recommends gnupg
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys "$1"
+    apt-get purge -y --auto-remove gnupg
 }
 
 deb_cleanup(){
+    apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
     apt-get clean
     dpkg --clear-avail
     rm -f /etc/apt/apt.conf.d/01autoremove-kernels
@@ -88,7 +79,6 @@ deb_cleanup(){
 set_packages
 apt-get update
 apt-get install -y $PKGS
-apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
 deb_cleanup
 COMMIT
 
@@ -249,11 +239,11 @@ done
 
 # Mono tries to be evil to the tty, rlwrap is easily confused.
 # Also we need the 'cat' so that "/restart" works.
-exec rlwrap -a -t dumb bash -c 'mono MCGalaxyCLI.exe | cat'
+exec rlwrap -a -t dumb sh -c 'mono MCGalaxyCLI.exe | cat'
 COMMIT
 
 # This directory is where the data is stored
 # Note that the executables are copied here too by "start_mcgalaxy"
 WORKDIR /home/user
-CMD [ "bash","-c","/opt/mcgalaxy/start_mcgalaxy"]
+CMD [ "sh","-c","/opt/mcgalaxy/start_mcgalaxy"]
 EXPOSE 25565
