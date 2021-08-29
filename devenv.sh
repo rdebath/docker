@@ -291,7 +291,7 @@ install_apt() {
     libinline-c-perl libinline-perl mono-mcs nodejs nodejs-legacy
     open-cobol php-cli php5-cli tcsh
 
-    libxi-dev libgl-dev
+    libx11-dev libxi-dev libgl1-mesa-dev
     "
 
     for PKG in \
