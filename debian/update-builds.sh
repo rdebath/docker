@@ -128,11 +128,11 @@ do_build() {
     if [ "$distro" = debian ]
     then
 	case $variant in
-	buster ) altname=stable ;;
-	bullseye ) altname=testing ;;
+	bullseye ) altname=stable ;;
+	bookworm ) altname=testing ;;
 	sid ) altname=unstable ;;
-	stable ) altname="$variant" ; variant=buster ;;
-	testing ) altname="$variant" ; variant=bullseye ;;
+	stable ) altname="$variant" ; variant=bullseye ;;
+	testing ) altname="$variant" ; variant=bookworm ;;
 	unstable ) altname="$variant" ; variant=sid ;;
 	esac
     fi

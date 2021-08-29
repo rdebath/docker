@@ -27,8 +27,7 @@ build_images() {
     [ "$#" -ge 1 -a "$1" = alldebian ] &&
 	set -- \
 	    potato woody sarge etch lenny squeeze wheezy \
-	    jessie stretch buster bullseye unstable
-	    # Future: bookworm
+	    jessie stretch buster bullseye bookworm unstable
 
     [ "$#" -ge 1 -a "$1" = debian ] &&
 	set -- unstable bullseye buster stretch
