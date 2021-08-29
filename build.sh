@@ -50,7 +50,7 @@ mode==5 { if (substr($0, 1, 1) == "@") ty=ty"@"; ty=ty $0 "\n"; next; }
 END { if (mode>=4) ln="@\n"ln;}
 
 # Standard with BEGIN and COMMIT translation
-/^BEGIN\>/ { if (mode) print "@"|sh; mode=2; $1="encode<<\\@"; print|sh; next }
+/^BEGIN$/||/^BEGIN /{ if (mode) print "@"|sh; mode=2; $1="encode<<\\@"; print|sh; next }
 /^COMMIT *$/ && mode==2 { print "@"|sh; mode=0; next; }
 mode==0 { print dsed|sh; mode=1; }
 mode!=0 { if (substr($0, 1, 1) == "@") print "@" $0|sh; else print $0|sh; }

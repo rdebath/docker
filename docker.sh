@@ -155,8 +155,14 @@ docker_pull() {
 }
 
 docker_untag() {
+    IMAGE="$( docker inspect "$1" | jq -r '.[0]'."RepoDigests"'[0]' )"
+
     { echo 'from scratch' ; echo 'user 0' ; } |
 	docker build -q -t "$1" - &&
+
+    [ "$IMAGE" != null ] &&
+	docker rmi "$IMAGE"
+
     docker rmi "$1"
 }
 

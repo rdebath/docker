@@ -15,6 +15,8 @@ git update-ref refs/tags/"$TAG" "$(
     bash build.sh "$SCRIPT" |
     echo "100644 blob $(git hash-object -w --stdin)${TAB}Dockerfile"
 
+    echo "100644 blob $(git hash-object -w "$SCRIPT")${TAB}dockerfile.txt"
+
 } | {
 echo "tree $(git mktree)
 author Autopost <> $(date +%s) +0000
