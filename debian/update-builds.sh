@@ -26,10 +26,8 @@ main() {
 	ubuntults ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTULTS" ;;
 
 	current )
-	    TAGS="${TAGS:+$TAGS }stretch buster bullseye"
+	    TAGS="${TAGS:+$TAGS }stretch buster bullseye bookworm"
 	    TAGS="$TAGS sid sid-x32"
-	    TAGS="$TAGS $UBUNTU5"
-	    TAGS="$TAGS beowulf chimaera ceres"
 	    shift
 	    ;;
 
