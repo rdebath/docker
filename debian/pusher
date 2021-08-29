@@ -13,12 +13,15 @@ done
 
 # buster stable latest \
 for i in \
-    bullseye testing sid unstable
-do docker push rdebath/debian-i386:$i reg.xz/debian-i386:$i
+    buster bullseye bookworm testing sid unstable
+do
+    docker push rdebath/debian:$i reg.xz/debian:$i
+    docker push rdebath/debian-i386:$i reg.xz/debian-i386:$i
 done
-for i in focal groovy
-do docker push rdebath/ubuntu-i386:$i reg.xz/ubuntu-i386:$i
-done
-for i in ceres chimaera
-do docker push rdebath/devuan:$i-i386 reg.xz/devuan-i386:$i
-done
+
+# for i in focal groovy
+# do docker push rdebath/ubuntu-i386:$i reg.xz/ubuntu-i386:$i
+# done
+# for i in ceres chimaera
+# do docker push rdebath/devuan:$i-i386 reg.xz/devuan-i386:$i
+# done
