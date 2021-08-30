@@ -11,13 +11,14 @@ for i in $(docker images reg.xz/*:* --format='{{.Repository}}:{{.Tag}}' |
 do docker push "$i"
 done
 
-# buster stable latest \
 for i in \
-    buster bullseye bookworm testing sid unstable
+    buster bullseye bookworm testing sid unstable stable latest
 do
     docker push rdebath/debian:$i reg.xz/debian:$i
     docker push rdebath/debian-i386:$i reg.xz/debian-i386:$i
 done
+
+docker push rdebath/debian:sid-x32 reg.xz/debian-x32:sid
 
 # for i in focal groovy
 # do docker push rdebath/ubuntu-i386:$i reg.xz/ubuntu-i386:$i
