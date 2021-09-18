@@ -280,7 +280,7 @@ install_apt() {
     sudo build-essential
 
     autoconf automake beef bison bzip2 ccache debhelper flex g++-multilib
-    gawk gcc-multilib gdc gnu-lightning ksh libgmp-dev libgmp3-dev
+    gawk gcc-multilib gdb gdc gnu-lightning ksh libgmp-dev libgmp3-dev
     liblua5.2-dev libluajit-5.1-dev libnetpbm10-dev libpng++-dev
     libssl-dev libtcc-dev lua-bitop lua-bitop-dev lua5.2
     luajit mawk nasm nickle pkgconf rsync ruby rustc tcc tcl-dev valac yasm
