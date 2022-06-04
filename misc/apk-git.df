@@ -1,0 +1,16 @@
+FROM alpine
+ARG GITREPO
+WORKDIR /root/repo
+BEGIN
+
+git clone "$GITREPO" .
+git update-ref refs/empty-commit \
+$(echo "tree $(git hash-object -t tree -w /dev/null)
+author nobody <> 1 +0000
+committer nobody <> 1 +0000
+
+ 
+" | git hash-object -t commit -w --stdin )
+
+git checkout "$@" refs/empty-commit
+

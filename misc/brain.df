@@ -1,0 +1,37 @@
+FROM ubuntu:xenial AS base
+BEGIN
+
+apt-get update
+apt-get install -y --no-install-recommends libffi6 libedit2
+apt-get -y autoremove
+apt-get -y clean
+apt-get update -qq --list-cleanup -oDir::Etc::SourceList=/dev/null
+
+COMMIT
+
+FROM base AS build
+BEGIN
+apt-get update
+apt-get install -y --no-install-recommends \
+    bzip2 ca-certificates clang curl file \
+    git glibc-doc libedit-dev lldb llvm \
+    make man openssh-client patch procps \
+    vim wget zlib1g-dev
+COMMIT
+
+BEGIN
+git clone https://github.com/luizperes/brain.git /root/brain
+cd /root/brain
+git checkout dev
+make build-travis SUDO?=
+make install
+cp -p bin/brain /usr/local/bin/brain
+COMMIT
+
+RUN make -C /root/brain tests
+
+FROM base
+WORKDIR /root
+COPY --from=build /root/brain/bin/brain /usr/local/bin/brain
+COPY --from=build /root/.brain /root/.brain
+COPY --from=build /root/brain/tests /root/tests

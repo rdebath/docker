@@ -1,0 +1,21 @@
+
+https://github.com/debuerreotype/docker-debian-artifacts/issues/15
+
+My tuppance.
+
+I would say "NO" do not include ca-certificates; it's not required by everything, for example a self contained web server doesn't need them. Not even for "Lets Encrypt".
+
+If you have a problem with downloading https then the suggestion of @tianon is simple if a public base is okay.
+
+If not you can use the certificates of the Docker host to download with the Docker `ADD` command ...
+```
+ADD https://deb.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1d-0+deb10u3_amd64.deb /root
+ADD https://deb.debian.org/debian/pool/main/o/openssl/openssl_1.1.1d-0+deb10u3_amd64.deb /root
+ADD https://deb.debian.org/debian/pool/main/c/ca-certificates/ca-certificates_20200601~deb10u1_all.deb /root
+RUN dpkg --unpack /root/*.deb && dpkg --configure --pending && rm -f /root/*.deb
+```
+
+This uses the certificates of the Docker host machine.
+
+It might be reasonable to provide an `ONBUILD ARG` with the exact URLs for this image.
+
