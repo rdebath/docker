@@ -23,8 +23,8 @@ host_main() {
 	-r ) RUNNOW=yes ; shift ;;
 	# Build, feed the dockerfile into docker build
 	-b ) BUILD=yes ; shift ;;
-	# Build, feed the dockerfile into docker build
-	-B ) BUILD=yes ; DOPULL=yes ; shift ;;
+	# Build, feed the dockerfile into docker build with push/pull
+	-B ) BUILD=yes ; DOPULL=yes ; DOPUSH=yes ; shift ;;
 	# Disable encoding
 	-X ) ENC_OFF=yes ; shift ;;
 	# Flatten to a single layer
@@ -106,9 +106,9 @@ build_one() {
 
 	    echo "# Push -> $3"
 	    [ "$DOPUSH" = yes ] && {
-		lockfile /tmp/pushlock.lock
+		lockfile /tmp/pushlock.lock ||:
 		docker push "$3" ||:
-		rm -f /tmp/pushlock.lock
+		rm -f /tmp/pushlock.lock ||:
 	    }
 	    echo "# Done $2 -> $3"
 	)
