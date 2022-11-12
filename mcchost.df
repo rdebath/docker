@@ -1,0 +1,33 @@
+# Note I'm not including gdb in the image because Alpine strips everything.
+
+FROM alpine:3.13
+# Manually create the mount path because Docker can't do it right.
+# It will copy these perms to a new volume, but not to a new host
+# directory.
+
+ARG UID=1000
+ARG GID=1000
+ARG MPATH=/home/user
+
+# Add gdb here, if you want to make the image seven times larger.
+ARG EPACKS=
+
+BEGIN
+apk add --no-cache -t build-packages build-base gdb git \
+    curl tini zlib-dev lmdb-dev $EPACKS
+apk add --no-cache -t run-packages --repositories-file /dev/null \
+    curl tini zlib lmdb $EPACKS
+
+git clone https://github.com/rdebath/mcchost.git mcchost
+make -j -C mcchost INSTALLER=install INSTDIR=/usr/local/bin install
+rm -rf mcchost
+apk del --repositories-file /dev/null build-packages
+
+mkdir -p -m 744 "$MPATH"
+chown $UID:$GID "$MPATH"
+COMMIT
+
+USER $UID:$GID
+WORKDIR $MPATH
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["mcchost-server"]

@@ -12,6 +12,7 @@ main() {
 	[ "$1" = -P ] && { FORCEBUILD=1 ; FORCEPUSH=1 ; shift ; }
 	[ "$1" = -p ] && { FORCEPUSH=1 ; shift ; }
 	[ "$1" = -n ] && { NOPUSH=1 ; shift ; }
+	[ "$1" = -R ] && { REGISTRY="$2"; shift ; shift ; }
 
 	case "$1" in
 	i386 ) shift ; DEFAULT_ARCH=i386 ;;
@@ -25,17 +26,16 @@ main() {
 	ubuntu5 ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTU5" ;;
 	ubuntults ) shift ; TAGS="${TAGS:+$TAGS }$UBUNTULTS" ;;
 
-	current )
-	    TAGS="${TAGS:+$TAGS }stretch buster bullseye bookworm"
-	    TAGS="$TAGS sid sid-x32"
-	    shift
-	    ;;
-
 	* ) TAGS="${TAGS:+$TAGS }$1"; shift ;;
 	esac
     done
 
-    [ "$TAGS" = all ] && { all_dists; exit; }
+    case "$TAGS" in
+    all ) all_dists; exit;;
+    all_debian|all_devuan|all_kali|all_ubuntu|debian_x32 )
+	"$TAGS"
+	exit
+    esac
 
     set -f ; set -- $TAGS ; set +f
 
@@ -50,15 +50,6 @@ main() {
 		;;
 	    esac
 	done
-
-    elif [ "$DIST" = debian ]
-    then all_debian
-    elif [ "$DIST" = devuan ]
-    then all_devuan
-    elif [ "$DIST" = kali ]
-    then all_kali
-    elif [ "$DIST" = ubuntu ]
-    then all_ubuntu
     else echo >&2 "Nothing to do" ; exit 1
     fi
 }
@@ -79,7 +70,6 @@ all_dists() {
 }
 
 all_debian() {
-    # Note: potato doesn't build on "Docker hub".
     for fullvar in \
 	potato woody sarge \
 	etch lenny squeeze wheezy jessie stretch buster bullseye
@@ -191,6 +181,7 @@ do_build() {
 	else cp -p "$P"/README-Generic.md README.md
 	fi
 
+	docker pull "$release" ||:
 	ID=$(docker image inspect --format '{{.Id}}' "$release" 2>/dev/null ||:)
 	if [ "$ID" = '' ]||[ "$FORCEBUILD" = 1 ]
 	then
@@ -330,8 +321,6 @@ mktag() {
 	echo
 	echo '👻'
     } | git hash-object -t commit -w --stdin )"
-
-    git push -f origin "$TAG"
 }
 
 init() {

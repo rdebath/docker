@@ -1,10 +1,11 @@
-#!/bin/sh
+#!/bin/bash -
 set -e
 
 cd "$(dirname "$0")"
 
-./update-builds.sh i386 current
-./update-builds.sh current
+TAGS="stretch buster bullseye bookworm sid sid-x32"
+./update-builds.sh i386 $TAGS
+./update-builds.sh $TAGS
 
 for i in $(docker images reg.xz/*:* --format='{{.Repository}}:{{.Tag}}' |
     grep -v '<')

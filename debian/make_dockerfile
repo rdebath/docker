@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 if [ -z "$BASH_VERSION" ];then exec bash "$0" "$@";else set +o posix;fi
 
-# This script generated a docker file to install any of a large number of
+# This script generates a docker file to install any of a large number of
 # dpkg/debootstrap based distributions. Note that most of the bulk is
 # dealing with old releases that are no longer properly supported by the
 # current release of debootstrap.
