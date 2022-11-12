@@ -127,8 +127,8 @@ cat <<\@
 	: Ubuntu keys
 	git clone \
 	    -b ubuntu/devel \
-	    https://git.launchpad.net/ubuntu/+source/ubuntu-keyring
-	cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/.
+	    https://git.launchpad.net/ubuntu/+source/ubuntu-keyring ||:
+	cp -a ubuntu-keyring/keyrings/*.gpg /usr/share/keyrings/. ||:
 
 	: Repair or create the Devuan scripts.
 	sed < $DIR/sid > $DIR/devuan \
@@ -141,8 +141,11 @@ cat <<\@
 	ln -fs devuan $DIR/ceres
 
 	: Devuan keys
-	git clone https://git.devuan.org/devuan/devuan-keyring.git
-	cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/.
+	{
+	    git clone https://git.devuan.org/devuan/devuan-keyring.git ||:
+	    cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/. ||:
+	    cp -a devuan-keyring/public_keys/*/*.gpg /usr/share/keyrings/. ||:
+	}
 
 	: PureOS script default is HTTPS
 	[ -e "$DIR/amber" ] &&
