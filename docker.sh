@@ -1,4 +1,4 @@
-#!/bin/sh -
+#!/bin/bash -
 DOCKER=/usr/bin/docker
 SUDO=''
 [ -w /var/run/docker.sock ] || {
@@ -19,20 +19,31 @@ main() {
     untag ) shift ; docker_untag "$@" ;;
 
     build )
+	docker_colours
 	PE='--preserve-env=DOCKER_BUILDKIT,BUILDKIT_PROGRESS'
 	SUDO="${SUDO:+sudo -g docker $PE --}"
-	exec $SUDO "$DOCKER" "$@"
+	$SUDO "$DOCKER" "$@"
+	docker_defcols
 	;;
 
     kbuild )
+	docker_colours
 	PE='--preserve-env=DOCKER_BUILDKIT,BUILDKIT_PROGRESS'
 	SUDO="${SUDO:+sudo -g docker $PE --}"
 	shift
 	export DOCKER_BUILDKIT=1
-	exec $SUDO "$DOCKER" build "$@"
+	$SUDO "$DOCKER" build "$@"
+	docker_defcols
 	;;
 
-    * ) exec $SUDO "$DOCKER" "$@"
+    prune )
+	shift
+	$SUDO "$DOCKER" buildx prune "$@"
+	[ "$1" = '-a' ] && shift
+	$SUDO "$DOCKER" image prune "$@"
+	;;
+
+    * ) $SUDO "$DOCKER" "$@"
 	;;
     esac
 }
@@ -85,7 +96,7 @@ docker_search() {
 
 docker_ls(){
     case "$*" in
-    *format* ) shift ; exec $SUDO "$DOCKER" images "$@" ;;
+    *format* ) shift ; $SUDO "$DOCKER" images "$@" ;;
 
     "" )
 	$SUDO "$DOCKER" images \
@@ -126,7 +137,7 @@ docker_push() {
 	    ;;
 	esac
     fi
-    exec $SUDO "$DOCKER" push "$@"
+    $SUDO "$DOCKER" push "$@"
 }
 
 docker_pull() {
@@ -151,7 +162,7 @@ docker_pull() {
 	    ;;
 	esac
     fi
-    exec $SUDO "$DOCKER" pull "$@"
+    $SUDO "$DOCKER" pull "$@"
 }
 
 docker_untag() {
@@ -166,4 +177,24 @@ docker_untag() {
     docker rmi "$1"
 }
 
+# docker "buildkit" uses stupid colour combinations.
+docker_colours() {
+    # I000000 K000000 L00ff00
+    for C in \
+	0000000 1ff0000 200ff00 3ffff00 40000ff 5ff00ff 600ffff 7ffffff \
+	8808080 9ff8080 a80ff80 bffff80 c8080ff dff80ff e80ffff fffffff \
+	Gffffff Hffffff         J808080
+    do echo -ne "\033]P$C\033\\"
+    done
+}
+
+docker_defcols() {
+    # PuTTY colours
+    for C in \
+	0000000 1bb0000 200bb00 3bbbb00 40000bb 5bb00bb 600bbbb 7bbbbbb \
+	8555555 9ff5555 a55ff55 bffff55 c5555ff dff55ff e55ffff fffffff \
+	Gbbbbbb Hffffff         J555555
+    do echo -ne "\033]P$C\033\\"
+    done
+}
 main "$@"
