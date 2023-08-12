@@ -72,7 +72,7 @@ all_dists() {
 all_debian() {
     for fullvar in \
 	potato woody sarge \
-	etch lenny squeeze wheezy jessie stretch buster bullseye
+	etch lenny squeeze wheezy jessie stretch buster bullseye bookworm
 
     do do_build "$fullvar" debian ||:
     done
@@ -116,11 +116,11 @@ do_build() {
     if [ "$distro" = debian ]
     then
 	case $variant in
-	bullseye ) altname=stable ;;
-	bookworm ) altname=testing ;;
+	bookworm ) altname=stable ;;
+	trixie ) altname=testing ;;
 	sid ) altname=unstable ;;
-	stable ) altname="$variant" ; variant=bullseye ;;
-	testing ) altname="$variant" ; variant=bookworm ;;
+	stable ) altname="$variant" ; variant=bookworm ;;
+	testing ) altname="$variant" ; variant=trixie ;;
 	unstable ) altname="$variant" ; variant=sid ;;
 	esac
     fi
@@ -277,7 +277,7 @@ choose_distro() {
 
     potato|woody|sarge|etch|lenny|squeeze|wheezy )
 	DIST=debian ;;
-    stretch|buster|bullseye|bookworm)
+    stretch|buster|bullseye|bookworm|trixie)
 	DIST=debian ;;
 
     kali_rolling|kali_last_snapshot|kali_dev )

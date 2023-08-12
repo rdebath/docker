@@ -357,6 +357,10 @@ cat <<\@
 
 	mv /tmp/stage* tmp
 
+	# /proc must exist and be empty
+	rm -rf proc ||:
+	mkdir proc
+
 	: "Stage 1 complete for $RELEASE"
 
     } ; docker_save "Stage 1" /tmp/stage1

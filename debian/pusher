@@ -3,7 +3,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-TAGS="stretch buster bullseye bookworm sid sid-x32"
+TAGS="buster bullseye bookworm trixie sid sid-x32"
 ./update-builds.sh i386 $TAGS
 ./update-builds.sh $TAGS
 
@@ -13,7 +13,7 @@ do docker push "$i"
 done
 
 for i in \
-    buster bullseye bookworm testing sid unstable stable latest
+    buster bullseye bookworm trixie testing sid unstable stable latest
 do
     docker push rdebath/debian:$i reg.xz/debian:$i
     docker push rdebath/debian-i386:$i reg.xz/debian-i386:$i
