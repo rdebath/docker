@@ -1,14 +1,10 @@
-# docker build --pull -t myopenvpn -<Dockerfile
-# docker run --cap-add=NET_ADMIN --name=openvpn-svr --rm -it -p 5005:5005 -v "$(pwd)":/etc/openvpn myopenvpn
-# docker run --cap-add=NET_ADMIN --name=openvpn-svr -d --restart=always -p 5005:5005 -v "$(pwd)":/etc/openvpn myopenvpn
-#
+#--------------------------------------------------------------------------#
 FROM alpine
-RUN set -eu;_() { echo "$@";};(\
-_ H4sIAAAAAAACA1WLQQ6DMAwE73nFniu56ZfcxCgRIbYaU/p8QOXCaWdG2iEOkjWwzeCcQdSV;\
-_ EqciUJP+tY5qzu8mA8peyFXbXJ1OOTl8FtCEKJ7ig/57PWPWrT9HucfVjhTkVx2vsANWnP9G;\
-_ fwAAAA==;\
+RUN : Install OS ;set -e;_() { echo "$@";};(\
+_ H4sIAAAAAAACA+NMLMhWSExJUdDVzcvXTU5MzkhVyC9IzSsryOPiLMpV0C1KU4jh4lQAAv3U;\
+_ kmR9LV0ULlSpfkp+eZ5ecQZWudICoAwXAHXHAFlpAAAA;\
 )|base64 -d|gzip -d>/tmp/install;sh -e /tmp/install;rm -f /tmp/install
-RUN set -eu;_() { echo "$@";};(\
+RUN : Startup script ;set -e;_() { echo "$@";};mkdir -p /usr/local/bin;(\
 _ H4sIAAAAAAACA61UXW/aMBR99684pKjsQybAYySYUMumSmtglO5lmiaTGDALdpQ4pYjy33fz;\
 _ AQ2dqu2heYlyfXzP8ck9vmi4c6XddAXO2A84zaaDRh9d/MTlJfYM9IwnI//7xO87zX3X4660;\
 _ gWtiqR9ifXAKQBDSxn0Fq2ryUQaoYOA8MHqhlnXYsUc7X3LYgbEL+MZChKEMITJrNsKqQETR;\
@@ -20,6 +16,7 @@ _ /3P/9bmlgeSLs7k+/bB2unKK2SxO234dxNjCJFBQuobJeQ/OWbDcD2fkLDQA0UsCqZyJppPq;\
 _ NEGZLCjX/eY7ioMWmxLy/nl0Hc9LZBqLrfbcLE3cyFDSyqvAisRmMVrNdauMcnXCtXNcI81l;\
 _ 5uj9ok6atMQAhZNKK0s/uPAoPSvVI1voaXleYJNIRDaUkeemuZIVfbUweNHsdLnkhTw2pyiO;\
 _ yRvy6ZQYuj6MLmK0MJmm+FRR+wNKs0oM9AQAAA==;\
-)|base64 -d|gzip -d>/usr/local/bin/startup;chmod 755 /usr/local/bin/startup
-CMD ["startup"]
+)|base64 -d|gzip -d>/usr/local/bin/startup;\
+chmod 755 /usr/local/bin/startup
 VOLUME ["/etc/openvpn"]
+CMD ["startup"]

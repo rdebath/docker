@@ -21,19 +21,19 @@ BEGIN { # vim: set filetype=awk:
 
     print "#!/bin/sh"|sh
     print "encode() {"|sh
-    print "  N=\"${1:-/tmp/install}\""|sh
-    print "  D=\"${2:+;$2}\";D=\"${D:-;sh -e $N;rm -f $N}\""|sh
+    print "  N=\"${1:-/tmp/install}\";[ '' != \"$1\" ]&&shift"|sh
+    print "  D=\"$*\";D=\"${D:-sh -e $N;rm -f $N}\""|sh
     print "  S=$(sed -e 's/^@//' -e '0,/./{/^$/d}')"|sh
     if (!txtmode) {
 	print "  echo 'RUN set -eu;_() { echo \"$@\";};(\\'"|sh
 	print "  printf \"%s\\n\" \"$S\" | gzip -cn9 | base64 -w 72 | sed 's/.*/_ &;\\\\/'"|sh
-	print "  echo \")|base64 -d|gzip -d>$N$D\""|sh
+	print "  echo \")|base64 -d|gzip -d>$N;$D\""|sh
     } else {
 	print "  echo 'RUN set -eu;_() { echo \"$@\";};(\\'"|sh
 	print "  printf \"%s\\n\" \"$S\" |bash -c 'while IFS= read -r line"|sh
 	print "  do echo _ \"${line@Q};\\\\\""|sh
 	print "  done'"|sh
-	print "  echo \")>$N$D\""|sh
+	print "  echo \")>$N;$D\""|sh
     }
     print "}"|sh
 

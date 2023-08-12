@@ -23,7 +23,9 @@ main() {
 	PE='--preserve-env=DOCKER_BUILDKIT,BUILDKIT_PROGRESS'
 	SUDO="${SUDO:+sudo -g docker $PE --}"
 	$SUDO "$DOCKER" "$@"
+	RV=$?
 	docker_defcols
+	exit $RV
 	;;
 
     kbuild )
@@ -33,7 +35,9 @@ main() {
 	shift
 	export DOCKER_BUILDKIT=1
 	$SUDO "$DOCKER" build "$@"
+	RV=$?
 	docker_defcols
+	exit $RV
 	;;
 
     prune )
@@ -166,35 +170,42 @@ docker_pull() {
 }
 
 docker_untag() {
-    IMAGE="$( docker inspect "$1" | jq -r '.[0]'."RepoDigests"'[0]' )"
+    for iname
+    do
+	IMAGE="$( docker inspect "$iname" | jq -r '.[0]'."RepoDigests"'[0]' )"
 
-    { echo 'from scratch' ; echo 'user 0' ; } |
-	docker build -q -t "$1" - &&
+	{ echo 'from scratch' ; echo 'user 0' ; } |
+	    docker build -q -t "$iname" - &&
 
-    [ "$IMAGE" != null ] &&
-	docker rmi "$IMAGE"
+	[ "$IMAGE" != null ] &&
+	    docker rmi "$IMAGE"
 
-    docker rmi "$1"
+	docker rmi "$iname"
+    done
 }
 
 # docker "buildkit" uses stupid colour combinations.
 docker_colours() {
+    [ ! -t 2 ] && return
+    [ "$BUILDKIT_PROGRESS" = plain ] && return
     # I000000 K000000 L00ff00
     for C in \
 	0000000 1ff0000 200ff00 3ffff00 40000ff 5ff00ff 600ffff 7ffffff \
 	8808080 9ff8080 a80ff80 bffff80 c8080ff dff80ff e80ffff fffffff \
 	Gffffff Hffffff         J808080
-    do echo -ne "\033]P$C\033\\"
+    do echo>&2 -ne "\033]P$C\033\\"
     done
 }
 
 docker_defcols() {
+    [ ! -t 2 ] && return
+    [ "$BUILDKIT_PROGRESS" = plain ] && return
     # PuTTY colours
     for C in \
 	0000000 1bb0000 200bb00 3bbbb00 40000bb 5bb00bb 600bbbb 7bbbbbb \
 	8555555 9ff5555 a55ff55 bffff55 c5555ff dff55ff e55ffff fffffff \
 	Gbbbbbb Hffffff         J555555
-    do echo -ne "\033]P$C\033\\"
+    do echo>&2 -ne "\033]P$C\033\\"
     done
 }
 main "$@"

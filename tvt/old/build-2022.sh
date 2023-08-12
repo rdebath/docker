@@ -13,7 +13,7 @@ VOLUME ["/etc/openvpn"]
 }
 set -eu
 
-apk add --no-cache openvpn
+apk add --no-cache openvpn iptables oath-toolkit-oathtool
 
 # Cleanup unwanted openvpn data
 rm -rf \
