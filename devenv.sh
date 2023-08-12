@@ -65,18 +65,12 @@ host_main() {
 	*/*:* )
 	    SRCREPO="${base%:*}"
 	    base="${base##*:}"
-	    case "$SRCREPO" in
-	    *-i386 )
-		SRCREPO="${SRCREPO%-i386}"
-		base="$base-i386"
-		;;
-	    esac
 	    ;;
 	esac
-	variant=${base%-*}; arch=${base#$variant}; arch="${arch#-}"
-	build_one "$base" \
-	    "${SRCREPO:+$SRCREPO${arch:+-$arch}:}$variant" \
-	    "${REPOPREFIX}${base//\//-}"
+
+	build_one \
+	    "${SRCREPO:+$SRCREPO:}$base" \
+	    "${REPOPREFIX}${base//[\/:]/-}"
     done
 
     wait
@@ -98,29 +92,22 @@ build_one() {
 
     if [ "$BUILD" = yes ]
     then
-	echo "# Build $1 ... $2 -> $3"
+	echo "# Build $1 -> $2"
 	[ "$DOPULL" = yes ] &&
-	    docker pull "$2"
+	    docker pull "$1"
 	(
-	    guest_script "$1" "$2" | docker build  - -t "$3"
+	    guest_script "$1" | docker build  - -t "$2"
 
-	    echo "# Push -> $3"
 	    [ "$DOPUSH" = yes ] && {
-		lockfile /tmp/pushlock.lock ||:
-		docker push "$3" ||:
-		rm -f /tmp/pushlock.lock ||:
+		echo "# Push -> $2"
+		docker push "$2"
 	    }
-	    echo "# Done $2 -> $3"
+	    echo "# Done $1 -> $2"
 	)
-return
 
-	cnt=$((cnt + 1))
-	if [ "$cnt" -gt 3 ]
-	then wait -n && cnt=$((cnt - 1)) ;:
-	fi
     else
-	echo "# Script to build $3 from $2"
-	guest_script "$1" "$2"
+	echo "# Script to build $2 from $1"
+	guest_script "$1"
     fi
 }
 
@@ -128,7 +115,7 @@ return
 # shellcheck disable=SC1091,SC2086
 guest_script() {
 
-    [ -n "$2" ] && docker_cmd FROM "$2"
+    [ -n "$1" ] && docker_cmd FROM "$1"
 
 docker_start || {
 

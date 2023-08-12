@@ -1,24 +1,22 @@
 #!/bin/bash -
 
 build_images() {
-    local forkcount=1
-
     LISTCMD=
     REPOPREFIX=reg.xz/
     DOPUSH=
+    ARCHLIST='default i386'
     while [ "${1#-}" != "$1" ]
     do
 	case "$1" in
-	-j ) forkcount=$(nproc); shift;;
 	-l ) LISTCMD=1; shift;;
 	-R ) REPOPREFIX="${2:+$2/}" ; shift 2;;
 	-P ) DOPUSH=yes; shift;;
+	-3|-i386 ) ARCHLIST=i386 ; shift ;;
+	-amd64 ) ARCHLIST=amd64 ; shift ;;
+	-d ) ARCHLIST=default ; shift ;;
 	* ) echo >&2 "Unknown Option $1" ; exit 1;;
 	esac
     done
-
-    (:&wait -n) >/dev/null 2>&1 || forkcount=0
-    [ "$LISTCMD" != '' ] && forkcount=0
 
     [ "$#" -eq 0 ] &&
 	set -- \
@@ -46,7 +44,7 @@ build_images() {
 	    yakkety zesty artful bionic cosmic disco eoan focal groovy
 
     [ "$#" -ge 1 -a "$1" = alldevuan ] &&
-	set -- ascii beowulf chimaera ceres
+	set -- ascii beowulf chimaera daedalus excalibur ceres
 
     [ "$#" -ge 1 -a "$1" = kali ] &&
 	set -- kali-dev kali-rolling kali-last-snapshot
@@ -64,19 +62,17 @@ build_images() {
 	    quantal raring saucy trusty utopic vivid wily xenial \
 	    yakkety zesty artful bionic cosmic disco eoan focal groovy \
 	    kali-dev kali-rolling kali-last-snapshot \
-	    ascii beowulf chimaera ceres amber
+	    ascii beowulf chimaera daedalus excalibur ceres amber
 
-    local Q=-q
     local RELEASE ARCH
     local runcount
 
-    [ "$#" -eq 1 ] && forkcount=1
-    [ "$forkcount" -le 1 ] && Q=
-
     for RELEASE
     do
-	for ARCH in amd64 i386
+	for ARCH in $ARCHLIST
 	do
+	    [ "$RELEASE" = sid-x32 -a "$ARCH" = i386 ] && continue # Just wrong
+
 	    # Not compiled for i386 or always compiled for i386
 	    [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
 	    [ "$RELEASE" = potato -a "$ARCH" = i386 ] && continue # Is default
@@ -91,21 +87,9 @@ build_images() {
 	    [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue
 	    [ "$RELEASE" = hoary -a "$ARCH" = i386 ] && continue
 
-	    if [ "$forkcount" -le 1 ]
-	    then
-		build_image "$RELEASE" "$ARCH" $Q
-	    else
-		build_image "$RELEASE" "$ARCH" $Q &
-
-		runcount=$((runcount + 1))
-		[ "$runcount" -ge "$forkcount" ] && {
-		    wait -n
-		    runcount=$((runcount - 1)) ;:
-		}
-	    fi
+	    build_image "$RELEASE" "$ARCH"
 	done
     done
-    [ "$forkcount" -ne 0 ] && wait
     exit 0
 }
 
@@ -121,7 +105,14 @@ build_image() {
 
     case $RELEASE in
     potato|woody|sarge|etch|lenny|squeeze|wheezy|jessie ) ;;
-    stretch|buster|bullseye|bookworm|trixie|unstable ) ;;
+    stretch|buster|bullseye|bookworm|trixie|sid|unstable ) ;;
+
+    sid-x32 )
+	RELEASE=sid
+	DEBOPTIONS='--no-check-gpg --include=debian-ports-archive-keyring'
+	MIRROR=http://ftp.ports.debian.org/debian-ports
+	ARCH=x32
+	;;
 
     aequorea|bartholomea|chromodoris|dasyatis)
 	DISTRO=tanglu
@@ -141,6 +132,8 @@ build_image() {
 	}
 	;;
     esac
+
+    [ "$ARCH" = default ] && ARCH=amd64
 
     local DOCKERFILE="$(dirname "$0")/Dockerfile"
     local NARCH="$ARCH"; [ "$NARCH" = amd64 ] && NARCH=
@@ -172,6 +165,12 @@ build_image() {
     [ "$DOPUSH" = yes ] &&
 	docker push $REPOPREFIX$DISTRO:${RELEASE%:*}${NARCH:+-$ARCH}
 
+    # tag_stages
+
+    echo "Done $RELEASE${NARCH:+-$ARCH}"
+}
+
+tag_stages() {
     for STAGE in $(sed -n 's/^FROM.*AS \+//p' "$DOCKERFILE")
     do
 	docker build -q --target=$STAGE \
@@ -183,7 +182,6 @@ build_image() {
 	    ${DEBOPTIONS:+--build-arg=DEBOPTIONS="$DEBOPTIONS"} \
 	    -< "$DOCKERFILE"
     done
-    echo "Done $RELEASE${NARCH:+-$ARCH}"
 }
 
     # 4.10 -- Warty Warthog
@@ -252,7 +250,7 @@ devuan_versions() {
     jessie|jessie:devuan )
 	DISTRO=devuan
 	;;
-    ascii|beowulf|chimaera|ceres )
+    ascii|beowulf|chimaera|daedalus|excalibur|ceres )
 	DISTRO=devuan
 	;;
     devuan ) # Alias for devuan/stable

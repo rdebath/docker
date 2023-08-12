@@ -23,7 +23,7 @@ From Ubuntu:
   * warty hoary breezy dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid maverick natty oneiric precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty artful bionic cosmic disco eoan focal groovy
 
 From Devuan:
-  * jessie:devuan ascii beowulf chimaera ceres
+  * jessie:devuan ascii beowulf chimaera daedalus excalibur ceres
 
 From Kali:
   * kali-dev kali-rolling kali-last-snapshot

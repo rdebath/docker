@@ -4,6 +4,8 @@
 # space taken up by the repos.
 #
 # Pipelining does not help.
+#
+# I guess it's be better to create a private repository and push eveything.
 
 set -e
 # Beware, there isn't a wildcard that matches everything with a name.

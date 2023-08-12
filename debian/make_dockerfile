@@ -48,7 +48,7 @@ cat <<\@
 #   oneiric precise quantal raring saucy trusty
 #   utopic vivid wily xenial yakkety zesty
 # From Devuan:
-#   jessie:devuan ascii beowulf chimaera ceres
+#   jessie:devuan ascii beowulf chimaera daedalus excalibur ceres
 # From Kali:
 #   kali-dev kali-rolling kali-last-snapshot
 # From PureOS:
@@ -135,10 +135,9 @@ cat <<\@
 	    -e 's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
 	    -e '4i default_mirror http://deb.devuan.org/merged'
 
-	ln -fs devuan $DIR/ascii
-	ln -fs devuan $DIR/beowulf
-	ln -fs devuan $DIR/chimaera
-	ln -fs devuan $DIR/ceres
+	for r in ascii beowulf chimaera daedalus excalibur ceres
+	do ln -fs devuan $DIR/$r
+	done
 
 	: Devuan keys
 	{
@@ -325,7 +324,7 @@ cat <<\@
 	gutsy|hardy ) INCEXTRA='gpgv' ;;
 	intrepid|jaunty|karmic|lucid|maverick|natty ) INCEXTRA='gpgv' ;;
 
-	ascii|beowulf|chimaera|ceres|*:devuan ) INCEXTRA='devuan-keyring' ;;
+	ascii|beowulf|chimaera|daedalus|excalibur|ceres|*:devuan ) INCEXTRA='devuan-keyring' ;;
 	kali-* ) INCEXTRA='kali-archive-keyring' ;;
 	amber ) INCEXTRA='pureos-archive-keyring,gnupg' ;;
 	esac

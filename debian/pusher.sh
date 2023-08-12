@@ -4,12 +4,12 @@ set -e
 cd "$(dirname "$0")"
 
 TAGS="buster bullseye bookworm trixie sid sid-x32"
-./update-builds.sh i386 $TAGS
-./update-builds.sh $TAGS
+./make_images $TAGS
 
 for i in $(docker images reg.xz/*:* --format='{{.Repository}}:{{.Tag}}' |
     grep -v '<')
-do docker push "$i"
+do echo "Pushing $i"
+   docker push "$i"
 done
 
 for i in \
@@ -21,9 +21,3 @@ done
 
 docker push rdebath/debian:sid-x32 reg.xz/debian-x32:sid
 
-# for i in focal groovy
-# do docker push rdebath/ubuntu-i386:$i reg.xz/ubuntu-i386:$i
-# done
-# for i in ceres chimaera
-# do docker push rdebath/devuan:$i-i386 reg.xz/devuan-i386:$i
-# done
