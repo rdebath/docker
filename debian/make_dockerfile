@@ -77,10 +77,10 @@ cat <<\@
     docker_cmd WORKDIR '/root'
 
     docker_start || {
-	apk add --no-cache debootstrap perl git
+	apk add --no-cache debootstrap perl git make
     } ; docker_commit "Configure host"
 
-    # Note: https://salsa.debian.org/installer-team/debootstrap.git
+    docker_cmd # Note: https://salsa.debian.org/installer-team/debootstrap.git
 
     # shellcheck disable=SC2016
     docker_start || {
@@ -92,9 +92,9 @@ cat <<\@
 	DIR=/usr/share/debootstrap/scripts
 
 	: 'Repair Debian scripts'
-	sed -e '4a default_mirror http://archive.debian.org/debian' \
-	    < "$DIR/wheezy" > "$DIR/wheezy.2"
-	mv "$DIR/wheezy.2" "$DIR/wheezy"
+	sed -i -e '5a default_mirror http://archive.debian.org/debian' "$DIR/wheezy"
+	sed -i -e '5a default_mirror http://archive.debian.org/debian' "$DIR/jessie"
+	sed -i -e '5a default_mirror http://archive.debian.org/debian' "$DIR/stretch"
 
 	: 'Not-revoked Debian key for potato'
 	sed -i -e 's@^\(keyring\) .*@\1 /root/potato-key.gpg@' "$DIR/potato"
@@ -103,26 +103,22 @@ cat <<\@
 	for SCRIPT in warty hoary warty.buildd hoary.buildd
 	do sed -i -e '4i force_md5' "$DIR/$SCRIPT"
 	done
-	ln -fs gutsy "$DIR/groovy"
 	sed -i -e 's/archive\.ubuntu/old-releases.ubuntu/' "$DIR/dapper"
 
-	: Fix Ubuntu archive keyrings
+	: "Add scripts for old Ubuntu suites"
+	cp "$DIR/gutsy" "$DIR/ubuntu.old"
+	sed -i -e 's@^keyring .*@keyring /usr/share/keyrings/ubuntu-archive-removed-keys.gpg@' "$DIR/ubuntu.old"
+	sed -i -e 's@default_mirror.*archive\.ubuntu.*@default_mirror http://old-releases.ubuntu.com/ubuntu@' "$DIR/ubuntu.old"
+
+	cp "$DIR/gutsy" "$DIR/ubuntu.newold"
+	# sed -i -e 's@^keyring .*@keyring /usr/share/keyrings/ubuntu-archive-removed-keys.gpg@' "$DIR/ubuntu.old"
+	sed -i -e 's@default_mirror.*archive\.ubuntu.*@default_mirror http://old-releases.ubuntu.com/ubuntu@' "$DIR/ubuntu.newold"
+
+	: Fix Ubuntu archive keyrings in gutsy script
 	sed -i -e 's/^\(keyring\)/#\1 /' "$DIR/gutsy"
 	sed -i -e '/default_mirror.*old-releases\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-removed-keys.gpg' "$DIR/gutsy"
 	sed -i -e '/default_mirror.*archive\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg' "$DIR/gutsy"
 	sed -i -e '/default_mirror.*ports\.ubuntu/a keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg' "$DIR/gutsy"
-
-	: Add newer Ubuntu releases
-	awk < "$DIR/gutsy" > "$DIR/gutsy.2" \
-	'F==1{print;next;}
-	 /zesty)/ {
-	    print "artful|cosmic|disco|zesty)"
-	    print "default_mirror http://old-releases.ubuntu.com/ubuntu"
-	    print "keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg"
-	    print ";;"
-	    F=1; }
-	 {print;}'
-	mv "$DIR/gutsy.2" "$DIR/gutsy"
 
 	: Ubuntu keys
 	git clone \
@@ -135,13 +131,23 @@ cat <<\@
 	    -e 's:^keyring .*:keyring /usr/share/keyrings/devuan-archive-keyring.gpg:' \
 	    -e '4i default_mirror http://deb.devuan.org/merged'
 
-	for r in ascii beowulf chimaera daedalus excalibur ceres
+	for r in beowulf chimaera daedalus excalibur ceres
 	do ln -fs devuan $DIR/$r
 	done
+
+	# ascii:devuan and jessie:devuan have moved.
+	cp -p $DIR/devuan $DIR/jessie:devuan
+	sed -i 's@^default_mirror.*@default_mirror http://archive.devuan.org/merged@' \
+	    $DIR/jessie:devuan
+	cp -p $DIR/devuan $DIR/ascii
+	sed -i \
+	    -e 's@^default_mirror.*@default_mirror http://archive.devuan.org/merged@' \
+	    $DIR/ascii
 
 	: Devuan keys
 	{
 	    git clone https://git.devuan.org/devuan/devuan-keyring.git ||:
+	    make -C devuan-keyring ||:
 	    cp -a devuan-keyring/keyrings/*.gpg /usr/share/keyrings/. ||:
 	    cp -a devuan-keyring/public_keys/*/*.gpg /usr/share/keyrings/. ||:
 	}
@@ -206,8 +212,28 @@ cat <<\@
 		esac
 	    fi
 	    ;;
+	esac
+
+	# shellcheck disable=SC2221,SC2222
+	case "$RELEASE" in
+	# Current Ubuntu live list
+	bionic|devel|focal|jammy|kinetic|lunar|mantic|trusty|xenial)
+	    [ "$DEBSCRIPT" = '' ] && DEBSCRIPT=gutsy
+	    ;;
+	# Currently are in archive but keys still in live
+	zesty|artful|cosmic|disco|eoan|groovy|hirsute|impish)
+	    [ "$DEBSCRIPT" = '' ] && DEBSCRIPT=ubuntu.newold
+	    ;;
+
+	# In archive but gutsy script says otherwise
+	artful|cosmic|disco|eoan|groovy|hirsute|impish)
+	    [ "$DEBSCRIPT" = '' ] && DEBSCRIPT=ubuntu.old
+	    ;;
 
 	*:* )
+	    [ "$DEBSCRIPT" = '' ] &&
+		[ -e "$DIR/${RELEASE}" ] &&
+		    DEBSCRIPT="${RELEASE}"
 	    [ "$DEBSCRIPT" = '' ] &&
 		[ -e "$DIR/${RELEASE##*:}" ] &&
 		    DEBSCRIPT="${RELEASE##*:}"
@@ -317,16 +343,34 @@ cat <<\@
 		EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
 		;;
 
+	    ascii|beowulf|chimaera )
+		EXTRA="--exclude=usr-is-merged"
+		;;
+
 	    esac
 	}
+
+	# --*-check-gpg processing
+	RELEASESIGBROKEN=
+	case "$ARCH" in
+	x32 ) RELEASESIGBROKEN=1 ; INCEXTRA=debian-ports-archive-keyring ;;
+	esac
+	case "$RELEASE" in
+	wheezy ) RELEASESIGBROKEN=1 ;;
+	jessie ) RELEASESIGBROKEN=1 ;;
+	esac
+
+	case "$DEBOPTIONS" in
+	*check-gpg* ) RELEASESIGBROKEN= ;; # Handled by caller
+	esac
 
 	case "$RELEASE" in
 	gutsy|hardy ) INCEXTRA='gpgv' ;;
 	intrepid|jaunty|karmic|lucid|maverick|natty ) INCEXTRA='gpgv' ;;
 
-	ascii|beowulf|chimaera|daedalus|excalibur|ceres|*:devuan ) INCEXTRA='devuan-keyring' ;;
+	ascii|beowulf|chimaera|daedalus|excalibur|ceres|*:devuan )
+	    INCEXTRA='devuan-keyring' ;;
 	kali-* ) INCEXTRA='kali-archive-keyring' ;;
-	amber ) INCEXTRA='pureos-archive-keyring,gnupg' ;;
 	esac
 
 	[ "$INCEXTRA$INCLUDE" != '' ] && {
@@ -338,8 +382,26 @@ cat <<\@
 
 	[ "$VARIANT" = default ] && VARIANT=''
 
+	[ "$RELEASESIGBROKEN" = 1 ] &&
+	    echo RELEASESIGBROKEN=1 > /tmp/stage3.vars
+
+	set |
+	grep '^\(RELEASE\|ARCH\|VARIANT\|RELEASESIGBROKEN\|COMP\|DEBOPTIONS\|EXTRA\|INCEXTRA\|MIRROR\|DEBSCRIPT\)' \
+	    > /tmp/stage1.vars
+
+    } ; docker_save "Stage 1" /tmp/stage1a
+
+    docker_cmd
+
+    # shellcheck disable=SC2086,SC1091
+    docker_start || {
+
+	. /tmp/stage1.vars
+	rm -f /tmp/stage1.vars
+
 	debootstrap --foreign ${ARCH:+--arch="$ARCH"} \
 	    ${VARIANT:+--variant="$VARIANT"} \
+	    ${RELEASESIGBROKEN:+--no-check-gpg} \
 	    $COMP $DEBOPTIONS $EXTRA $INCEXTRA \
 	    "${RELEASE%:*}" chroot "$MIRROR" "$DEBSCRIPT"
 
@@ -354,7 +416,7 @@ cat <<\@
 	echo export RELEASE="'$RELEASE'" > tmp/release
 	echo "-- $DEBOPTIONS $INCEXTRA"  > tmp/packages
 
-	mv /tmp/stage* tmp
+	mv /tmp/stage2* tmp
 
 	# /proc must exist and be empty
 	rm -rf proc ||:
@@ -362,7 +424,9 @@ cat <<\@
 
 	: "Stage 1 complete for $RELEASE"
 
-    } ; docker_save "Stage 1" /tmp/stage1
+    } ; docker_save "Stage 1" /tmp/stage1b
+
+    docker_cmd
 
     # shellcheck disable=SC2015,SC2016,SC1091,SC2046,SC2086
     docker_start || {
@@ -391,8 +455,10 @@ cat <<\@
 	# The script policy-rc.d is used by debootstrap
 	mv /usr/sbin/policy-rc.d /usr/sbin/policy-rc.d-docker
 
-	/debootstrap/debootstrap --second-stage ||
+	/debootstrap/debootstrap --second-stage || {
 	    echo "WARNING: Exit status from debootstrap --second-stage is $?" >&2
+	    cat /debootstrap/debootstrap.log >&2 ||:
+	}
 
 	# Install correctly.
 	update-alternatives --install /usr/sbin/policy-rc.d policy-rc.d \
@@ -423,13 +489,6 @@ cat <<\@
 	    : Allow sysvinit to be reinstalled, but disable restart.
 	    ln -s /bin/true /usr/local/sbin/init
 	    ;;
-
-	lenny|squeeze )
-	    # It appears lenny and squeeze cannot be convinced to ignore
-	    # the expired timestamp on the key. Debootstrap did, so INCLUDE=
-	    # packages will be authenticated.
-	    echo 'APT::Get::AllowUnauthenticated "true";' \
-		> /etc/apt/apt.conf.d/insecure-repository
 	esac
 
 	dpkg --configure --pending
@@ -480,6 +539,8 @@ cat <<\@
 
 	: "Stage 2 complete for $RELEASE"
     } ; docker_save "Stage 2" /tmp/stage2
+
+    docker_cmd
 
     docker_start || {
 
@@ -583,8 +644,25 @@ exit 0
 
     } ; docker_save "Stage 2a" /tmp/stage2a
 
-    # shellcheck disable=SC2046,SC2086
+    docker_cmd
+
+    # shellcheck disable=SC2046,SC2086,SC1091
     docker_start || {
+	[ -f /tmp/stage3.vars ] && { . /tmp/stage3.vars ; rm -f /tmp/stage3.vars; }
+
+	case "$RELEASE" in
+	lenny|squeeze )
+	    # It appears lenny and squeeze cannot be convinced to ignore
+	    # the expired timestamp on the key. Debootstrap did, so INCLUDE=
+	    # packages will be authenticated.
+	    RELEASESIGBROKEN=1
+	    ;;
+	esac
+
+	[ "$RELEASESIGBROKEN" = 1 ] &&
+	    echo 'APT::Get::AllowUnauthenticated "true";' \
+		> /etc/apt/apt.conf.d/insecure-repository
+
 	[ "$INSTALL" != - ] && {
 	    # Test that apt is working
 	    ulimit -n 128 ||: Docker gives us 1M fds, Jessie cries.
@@ -656,14 +734,23 @@ exit 0
     docker_cmd ARG 'INCLUDE'
     docker_cmd
 
-    docker_cmd RUN 'sh -ex /tmp/stage1 && rm -f /tmp/stage1'
+    docker_cmd RUN 'sh -ex /tmp/stage1a && rm -f /tmp/stage1a'
+    docker_cmd
+    docker_cmd '#--------------------------------------------------------------------------#'
+    docker_cmd FROM 'scratch AS runstage1'
+    docker_cmd COPY '--from=unpack / /'
+    docker_cmd WORKDIR '/opt'
+
+    docker_cmd RUN 'sh -ex /tmp/stage1b && rm -f /tmp/stage1b'
 
     docker_cmd
     docker_cmd '#--------------------------------------------------------------------------#'
     docker_cmd FROM 'scratch AS stage2'
-    docker_cmd COPY '--from=unpack /opt/chroot /'
+    docker_cmd COPY '--from=runstage1 /opt/chroot /'
     docker_cmd RUN 'sh -ex /tmp/stage2 && rm -f /tmp/stage2'
     docker_cmd
+    docker_cmd COPY '--from=unpack /tmp/stage3* /tmp/'
+    docker_cmd ARG 'RELEASE'
     docker_cmd ARG 'INSTALL'
     docker_cmd RUN 'sh -ex /tmp/stage3 && rm -f /tmp/stage3'
     docker_cmd

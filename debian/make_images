@@ -5,6 +5,7 @@ build_images() {
     REPOPREFIX=reg.xz/
     DOPUSH=
     ARCHLIST='default i386'
+    STOPONFIRSTERROR=1
     while [ "${1#-}" != "$1" ]
     do
 	case "$1" in
@@ -14,6 +15,7 @@ build_images() {
 	-3|-i386 ) ARCHLIST=i386 ; shift ;;
 	-amd64 ) ARCHLIST=amd64 ; shift ;;
 	-d ) ARCHLIST=default ; shift ;;
+	-k ) STOPONFIRSTERROR=0 ; shift ;;
 	* ) echo >&2 "Unknown Option $1" ; exit 1;;
 	esac
     done
@@ -24,24 +26,25 @@ build_images() {
 
     [ "$#" -ge 1 -a "$1" = alldebian ] &&
 	set -- \
-	    potato woody sarge etch lenny squeeze wheezy \
-	    jessie stretch buster bullseye bookworm trixie unstable
+	    potato woody sarge etch lenny squeeze wheezy jessie stretch \
+	    buster bullseye bookworm trixie unstable sid-x32
 
     [ "$#" -ge 1 -a "$1" = debian ] &&
 	set -- unstable bookworm bullseye buster
 
     [ "$#" -ge 1 -a "$1" = ubuntu ] &&
-	set -- groovy focal bionic xenial trusty
+	set -- mantic jammy
 
     [ "$#" -ge 1 -a "$1" = ubuntults ] &&
-	set -- dapper hardy lucid precise trusty xenial bionic focal
+	set -- dapper hardy lucid precise trusty xenial bionic focal jammy
 
     [ "$#" -ge 1 -a "$1" = allubuntu ] &&
 	set -- \
 	    warty hoary breezy dapper edgy feisty gutsy hardy intrepid \
 	    jaunty karmic lucid maverick natty oneiric precise \
 	    quantal raring saucy trusty utopic vivid wily xenial \
-	    yakkety zesty artful bionic cosmic disco eoan focal groovy
+	    yakkety zesty artful bionic cosmic disco eoan focal groovy \
+	    hirsute impish jammy kinetic lunar mantic
 
     [ "$#" -ge 1 -a "$1" = alldevuan ] &&
 	set -- ascii beowulf chimaera daedalus excalibur ceres
@@ -56,13 +59,18 @@ build_images() {
     [ "$#" -ge 1 -a "$1" = all ] &&
 	set -- \
 	    potato woody sarge etch lenny squeeze wheezy \
-	    jessie stretch buster bullseye trixie unstable \
+	    jessie stretch buster bullseye bookworm trixie unstable \
+	    \
 	    warty hoary breezy dapper edgy feisty gutsy hardy intrepid \
 	    jaunty karmic lucid maverick natty oneiric precise \
 	    quantal raring saucy trusty utopic vivid wily xenial \
 	    yakkety zesty artful bionic cosmic disco eoan focal groovy \
+	    hirsute impish jammy kinetic lunar mantic \
+	    \
 	    kali-dev kali-rolling kali-last-snapshot \
-	    ascii beowulf chimaera daedalus excalibur ceres amber
+	    ascii beowulf chimaera daedalus excalibur ceres \
+	    \
+	    amber byzantium crimson
 
     local RELEASE ARCH
     local runcount
@@ -75,6 +83,9 @@ build_images() {
 
 	    # Not compiled for i386 or always compiled for i386
 	    [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
+	    [ "$RELEASE" = byzantium -a "$ARCH" = i386 ] && continue # Missing
+	    [ "$RELEASE" = crimson -a "$ARCH" = i386 ] && continue # Missing
+
 	    [ "$RELEASE" = potato -a "$ARCH" = i386 ] && continue # Is default
 	    [ "$RELEASE" = woody -a "$ARCH" = i386 ] && continue # Is default
 	    [ "$RELEASE" = sarge -a "$ARCH" = i386 ] && continue # Is default
@@ -87,7 +98,10 @@ build_images() {
 	    [ "$RELEASE" = warty -a "$ARCH" = i386 ] && continue
 	    [ "$RELEASE" = hoary -a "$ARCH" = i386 ] && continue
 
-	    build_image "$RELEASE" "$ARCH"
+	    build_image "$RELEASE" "$ARCH" || {
+		RV=$?
+		[ "$STOPONFIRSTERROR" = 0 ] || exit $RV
+	    }
 	done
     done
     exit 0
@@ -109,7 +123,6 @@ build_image() {
 
     sid-x32 )
 	RELEASE=sid
-	DEBOPTIONS='--no-check-gpg --include=debian-ports-archive-keyring'
 	MIRROR=http://ftp.ports.debian.org/debian-ports
 	ARCH=x32
 	;;
@@ -119,7 +132,7 @@ build_image() {
 	echo >&2 WARNING: Distro Tanglu is discontinued
 	;;
 
-    amber ) DISTRO=pureos ;;
+    amber|byzantium|crimson ) DISTRO=pureos ;;
 
     kali-rolling|kali-last-snapshot|kali-dev ) DISTRO=kali ;;
 
@@ -128,7 +141,7 @@ build_image() {
 	[ -z "$DISTRO" ] && devuan_versions "$RELEASE"
 	[ -z "$DISTRO" ] && {
 	    echo "WARNING: Unknown release $RELEASE-$ARCH">&2
-	    DISTRO=unknown
+	    DISTRO=linux
 	}
 	;;
     esac
@@ -228,7 +241,7 @@ ubuntu_versions() {
 
     local RELEASE="$1"
     case "$RELEASE" in
-    dapper|hardy|lucid|precise|trusty|xenial|bionic|focal )
+    dapper|hardy|lucid|precise|trusty|xenial|bionic|focal|jammy )
 	# LTS
 	DISTRO=ubuntu
 	;;
@@ -241,6 +254,8 @@ ubuntu_versions() {
 	DISTRO=ubuntu ;;
 
     groovy ) DISTRO=ubuntu ;;
+
+    hirsute|impish|jammy|kinetic|lunar|mantic ) DISTRO=ubuntu ;;
     esac
 }
 
