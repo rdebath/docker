@@ -16,7 +16,7 @@ for i in \
     buster bullseye bookworm trixie testing sid unstable stable latest
 do
     docker push rdebath/debian:$i reg.xz/debian:$i
-    docker push rdebath/debian-i386:$i reg.xz/debian-i386:$i
+    docker push rdebath/debian-i386:$i reg.xz/debian:${i}-i386
 done
 
 docker push rdebath/debian:sid-x32 reg.xz/debian-x32:sid
