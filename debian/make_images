@@ -68,9 +68,7 @@ build_images() {
 	    hirsute impish jammy kinetic lunar mantic \
 	    \
 	    kali-dev kali-rolling kali-last-snapshot \
-	    ascii beowulf chimaera daedalus excalibur ceres \
-	    \
-	    amber byzantium crimson
+	    ascii beowulf chimaera daedalus excalibur ceres
 
     local RELEASE ARCH
     local runcount
@@ -82,10 +80,6 @@ build_images() {
 	    [ "$RELEASE" = sid-x32 -a "$ARCH" = i386 ] && continue # Just wrong
 
 	    # Not compiled for i386 or always compiled for i386
-	    [ "$RELEASE" = amber -a "$ARCH" = i386 ] && continue # Missing
-	    [ "$RELEASE" = byzantium -a "$ARCH" = i386 ] && continue # Missing
-	    [ "$RELEASE" = crimson -a "$ARCH" = i386 ] && continue # Missing
-
 	    [ "$RELEASE" = potato -a "$ARCH" = i386 ] && continue # Is default
 	    [ "$RELEASE" = woody -a "$ARCH" = i386 ] && continue # Is default
 	    [ "$RELEASE" = sarge -a "$ARCH" = i386 ] && continue # Is default

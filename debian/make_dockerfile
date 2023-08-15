@@ -77,7 +77,23 @@ cat <<\@
     docker_cmd WORKDIR '/root'
 
     docker_start || {
-	apk add --no-cache debootstrap perl git make
+	# apk add --no-cache debootstrap perl git zstd make
+
+	# shellcheck disable=SC2046
+#	apk add --no-cache --virtual .debootstrap \
+#	    --repositories-file /dev/null \
+#	    $(apk info --depends debootstrap 2>&1 | grep -v ' ')
+
+#	apk del --repositories-file /dev/null debootstrap
+
+	apk add --no-cache \
+	    dpkg perl tar git zstd make debian-archive-keyring
+
+	git clone https://salsa.debian.org/installer-team/debootstrap.git
+	make -C debootstrap install
+
+#	git clone https://salsa.debian.org/release-team/debian-archive-keyring.git
+
     } ; docker_commit "Configure host"
 
     docker_cmd # Note: https://salsa.debian.org/installer-team/debootstrap.git
@@ -343,10 +359,6 @@ cat <<\@
 		EXTRA='--exclude=initscripts,upstart-compat-sysv,system-services'
 		;;
 
-	    ascii|beowulf|chimaera )
-		EXTRA="--exclude=usr-is-merged"
-		;;
-
 	    esac
 	}
 
@@ -358,6 +370,22 @@ cat <<\@
 	case "$RELEASE" in
 	wheezy ) RELEASESIGBROKEN=1 ;;
 	jessie ) RELEASESIGBROKEN=1 ;;
+	esac
+
+	case "$RELEASE" in
+
+	ascii|beowulf|chimaera )
+	    EXTRA="--exclude=usr-is-merged"
+	    ;;
+
+	amber|byzantium|crimson )
+	    sed -i \
+		-e 's@^\(default_mirror\).*@\1 http://repo.pureos.net/pureos/@' \
+		"/usr/share/debootstrap/scripts/amber"
+	    EXTRA="--exclude=pureos-archive-keyring"
+	    RELEASESIGBROKEN=1
+	    INCEXTRA='debconf'
+	    ;;
 	esac
 
 	case "$DEBOPTIONS" in
