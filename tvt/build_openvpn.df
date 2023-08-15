@@ -45,12 +45,13 @@ OPENVPNCONF="${OPENVPN}/openvpn.conf"
 [ -f "${OPENVPN}/configure.sh" ] &&
     . "${OPENVPN}/configure.sh"
 
+: > /etc/inittab
 for i in "${OPENVPNCONF}" "${OPENVPN}"/*/openvpn.conf
 do  [ -e "$i" ] || continue
     j=$(dirname "$i")
-    echo "::respawn:/usr/local/bin/startup '$j'"
+    echo "::respawn:/usr/local/bin/startup '$j'" >> /etc/inittab
     [ -f "$j"/startup.sh ] && sh "$j"/startup.sh
-done > /etc/inittab
+done
 
 [ -s /etc/inittab ] && {
     echo '::ctrlaltdel:/sbin/halt' >> /etc/inittab
