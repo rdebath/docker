@@ -47,8 +47,8 @@ main() {
 	$SUDO "$DOCKER" image prune "$@"
 	;;
 
-    * ) $SUDO "$DOCKER" "$@"
-	;;
+    df ) $SUDO "$DOCKER" system "$@" ;;
+    * ) $SUDO "$DOCKER" "$@" ;;
     esac
 }
 
