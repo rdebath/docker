@@ -139,30 +139,38 @@ install_os() {
     fi
 
     case "$ID" in
-    alpine ) install_alpine; return ;;
-    arch )   install_arch; return ;;
-    centos ) install_centos; return ;;
-    debian ) install_debian; return ;;
+    alpine ) install_alpine; return ;;	# 2023-09
+    arch )   install_arch; return ;; # 2023-09
+    centos ) install_centos; return ;; # 2023-09
+    debian ) install_debian; return ;;	# 2023-09
     fedora ) install_fedora; return ;;
     ubuntu ) install_apt; return ;;
 
     pureos ) install_apt; return ;;
-    rhel )   install_centos; return ;;
     amzn )   install_centos; return ;;
+    ol )     install_centos; return ;; # 2023-09
+    scientific ) install_centos; return ;; # 2023-09
     opensuse*) install_opensuse; return ;;
+    alt )    install_apt_get; return ;; # 2023-09
     clear-linux-os ) install_clear_linux_os; return ;;
     esac
 
     echo >&2 "OS not supported: $PRETTY_NAME"
 
-    [ -x /usr/bin/apt-get ] && {
+    [ -x /usr/bin/apt-get ] && [ -x /usr/bin/dpkg ] && {
 	echo But trying Debian style for "$ID"
 	install_apt
 	exit
     }
 
-    [ -x /usr/bin/yum ] && {
-	echo But trying Redhat style for "$ID"
+    [ -x /usr/bin/apt-get ] && {
+	echo But trying apt-get style for "$ID"
+	install_apt_get
+	exit
+    }
+
+    [ -x /usr/bin/yum ] && [ ! -x /usr/bin/tdnf ] && {
+	echo But trying Centos style for "$ID"
 	install_centos
 	exit
     }
@@ -185,6 +193,19 @@ install_alpine() {
 
 install_centos() {
     echo >&2 "Installing 'Development Tools' with yum for $PRETTY_NAME"
+
+    case "$ID" in
+    centos )
+	# Versions of centos with dnf ship with broken repos lists.
+	# So I have to do some reconfigure weirdness.
+	[ -x /usr/bin/dnf ] && {
+	    dnf --disablerepo '*' --enablerepo extras \
+		swap ${ID}-linux-repos ${ID}-stream-repos \
+		-y ||:
+	}
+    esac
+
+    # For list see: "yum grouplist"
     yum groupinstall -y "Development Tools"
     yum install -y sudo which gmp-devel openssl-devel cmake
     yum clean all
@@ -211,7 +232,28 @@ install_arch() {
 
 install_clear_linux_os() {
     echo >&2 "Installing packages with swupd for $PRETTY_NAME"
-    swupd bundle-add  dev-utils
+    swupd bundle-add dev-utils
+}
+
+install_apt_get() {
+    # For example "Alt" linux uses apt on rpm.
+    echo >&2 "Installing packages with apt-get for $PRETTY_NAME"
+    apt-get update -y || exit
+
+    PKGLIST='build-essential rpm-build'
+    FOUND=$(apt-cache show $PKGLIST 2>/dev/null | sed -n 's/^Package: //p' 2>/dev/null)
+
+    [ "$FOUND" = '' ] && {
+	echo>&2 "None of '$PKGLIST' found"
+	exit 1
+    }
+
+    apt-get install -y $FOUND
+
+    # Cleanup
+    apt-get update -qq --list-cleanup \
+        -oDir::Etc::SourceList=/dev/null
+    apt-get clean
 }
 
 install_debian() {
