@@ -51,10 +51,10 @@ host_main() {
     [ "$1" = deblist ] && {
 	shift
 	set -- "$@" \
-	    unstable-i386 unstable bullseye bullseye-i386 buster-i386 \
-	    jessie-i386 jessie buster wheezy-i386 squeeze-i386 wheezy \
-	    stretch-i386 stretch squeeze lenny-i386 lenny etch-i386 etch \
-	    sarge woody potato
+	    potato woody sarge etch etch-i386 lenny lenny-i386 squeeze \
+	    squeeze-i386 wheezy wheezy-i386 jessie jessie-i386 stretch \
+	    stretch-i386 buster buster-i386 bullseye bullseye-i386 bookworm \
+	    bookworm-i386 trixie trixie-i386 unstable unstable-i386 sid-x32
 
 	SRCREPO="${SRCREPO:-reg.xz/debian}"
     }
@@ -86,8 +86,9 @@ build_one() {
 	;;
 
     *suse*|amazonlinux ) DISABLE_ENCODE=yes ;;
-    *etch*|*sarge*|*woody*|*potato*) DISABLE_ENCODE=yes ;;
-    * ) DISABLE_ENCODE="$ENC_OFF" ;;
+    *:etch*|*:sarge*|*:woody*|*:potato*) DISABLE_ENCODE=yes ;;
+
+    * ) DISABLE_ENCODE="$ENC_OFF" ; echo "# $1" ;;
     esac
 
     if [ "$BUILD" = yes ]
@@ -146,12 +147,33 @@ install_os() {
     ubuntu ) install_apt; return ;;
 
     pureos ) install_apt; return ;;
-    opensuse*) install_opensuse; return ;;
+    rhel )   install_centos; return ;;
     amzn )   install_centos; return ;;
+    opensuse*) install_opensuse; return ;;
     clear-linux-os ) install_clear_linux_os; return ;;
     esac
 
     echo >&2 "OS not supported: $PRETTY_NAME"
+
+    [ -x /usr/bin/apt-get ] && {
+	echo But trying Debian style for "$ID"
+	install_apt
+	exit
+    }
+
+    [ -x /usr/bin/yum ] && {
+	echo But trying Redhat style for "$ID"
+	install_centos
+	exit
+    }
+
+    [ -x /usr/bin/pacman ] && {
+	echo But trying Arch style for "$ID"
+	install_arch
+	exit
+    }
+
+    exit 1
 }
 
 install_alpine() {
@@ -264,22 +286,24 @@ install_apt() {
     }
 
     PKGLIST="
-    sudo build-essential
+    build-essential sudo
 
     autoconf automake beef bison bzip2 ccache debhelper flex g++-multilib
     gawk gcc-multilib gdb gdc gnu-lightning ksh libgmp-dev libgmp3-dev
     liblmdb-dev liblua5.2-dev libluajit-5.1-dev libnetpbm10-dev
     libpng++-dev libssl-dev libtcc-dev lua-bitop lua-bitop-dev lua5.2
-    luajit mawk nasm nickle pkgconf rsync ruby rustc tcc tcl-dev
+    luajit mawk nasm nickle pkgconf rsync ruby rustc cargo tcc tcl-dev
     valac yasm
 
-    python2 python2-dev python3 python3-dev pypy python-setuptools
+    python2 python2-dev python3 python3-dev pypy pypy3 python-setuptools
 
     csh dc default-jdk-headless gfortran gnat htop language-pack-en
     libinline-c-perl libinline-perl mono-mcs nodejs nodejs-legacy
     open-cobol php-cli php5-cli tcsh
 
     libx11-dev libxi-dev libgl1-mesa-dev
+
+    git-core
     "
 
     for PKG in \
@@ -292,13 +316,29 @@ install_apt() {
 
     FOUND=$(apt-cache show $PKGLIST 2>/dev/null | sed -n 's/^Package: //p' 2>/dev/null)
 
-    if ! apt-mark auto gzip 2>/dev/null
-    then
-	# Simple way ...
-	apt-get install -y $FOUND
+    if apt-mark auto gzip 2>/dev/null
+    then EQUIVS=equivs
+    else EQUIVS=
+    fi
 
-    else
-	apt-get install -y $FOUND equivs
+    apt-get install -y $FOUND $EQUIVS || {
+	echo>&2 "Something's wrong; Trying to install packages one by one"
+	OLDFOUND="$FOUND" ; FOUND=
+	OLDEQUIVS="$EQUIVS" ; EQUIVS=
+	for PKG in $OLDFOUND $OLDEQUIVS
+	do  echo >&2 "Installing $PKG"
+	    apt-get install -y $PKG || {
+		[ "$PKG" = build-essential ] && exit 1 # Okay, that's not good.
+		continue
+	    }
+	    [ "$PKG" = "$OLDEQUIVS" ] && EQUIVS="$PKG"
+	    FOUND="$FOUND $PKG"
+	done
+    }
+
+    if [ "$EQUIVS" != "" ]
+    then
+	echo Making a packagelist-local package.
 
 	mkdir /tmp/build
 	cd /tmp/build
@@ -462,6 +502,9 @@ make_docker_runcmd() {
 	# Note the sed command might break your script; maybe.
 	# It reduces the size of the Dockerfile and if in DISABLE_ENCODE mode
 	# significantly reduces the occurance of $'...' strings.
+	#
+	# Note also that @Q doesn't quote \n for the echo command so some
+	# variants of echo (that always interpret '\') will corrupt stuff.
 	echo "RUN ${1:+: $1 ;}(\\"
 	sed -e 's/^[\t ]\+//' -e 's/^#.*//' -e '/^$/d' |
 	    while IFS= read -r line
