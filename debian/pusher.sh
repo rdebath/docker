@@ -27,6 +27,6 @@ pushit bookworm stable
 pushit trixie testing
 pushit sid unstable
 
-docker push rdebath/debian:sid-x32 reg.xz/debian-x32:sid
+docker push rdebath/debian:sid-x32 reg.xz/debian:sid-x32
 
 pushit bookworm latest
