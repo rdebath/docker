@@ -13,10 +13,10 @@ do echo "Pushing $i"
 done
 
 pushit() {
-    echo "Push ${2}"
-    docker push rdebath/debian:$2 reg.xz/debian:$1
     echo "Push ${2}-386"
     docker push rdebath/debian-i386:$2 reg.xz/debian:${1}-i386
+    echo "Push ${2}"
+    docker push rdebath/debian:$2 reg.xz/debian:$1
 }
 
 for i in $TAGS
@@ -28,5 +28,6 @@ pushit trixie testing
 pushit sid unstable
 
 docker push rdebath/debian:sid-x32 reg.xz/debian:sid-x32
+docker push rdebath/debian-x32:sid reg.xz/debian:sid-x32
 
 pushit bookworm latest
