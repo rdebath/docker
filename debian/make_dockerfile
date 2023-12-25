@@ -638,6 +638,12 @@ cat << '@' > '/etc/apt/apt.conf.d/docker-gzip-indexes'
 
 Acquire::GzipIndexes "true";
 @
+# ============= etc/apt/apt.conf.d/99NoRecommends ==============
+cat << '@' > '/etc/apt/apt.conf.d/99NoRecommends'
+// Only install packages that are depends or requested.
+APT::Install-Recommends "false";
+APT::AutoRemove::RecommendsImportant "false";
+@
 # ============= etc/dpkg/dpkg.cfg.d/docker-apt-speedup ==============
 cat << '@' > '/etc/dpkg/dpkg.cfg.d/docker-apt-speedup'
 # For most Docker users, package installs happen during "docker build", which

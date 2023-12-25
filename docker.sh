@@ -188,6 +188,7 @@ docker_untag() {
 docker_colours() {
     [ ! -t 2 ] && return
     [ "$BUILDKIT_PROGRESS" = plain ] && return
+    [ "$(tput colors 2>/dev/null)" -lt 16 ] && return
     # I000000 K000000 L00ff00
     for C in \
 	0000000 1ff0000 200ff00 3ffff00 40000ff 5ff00ff 600ffff 7ffffff \
@@ -200,6 +201,7 @@ docker_colours() {
 docker_defcols() {
     [ ! -t 2 ] && return
     [ "$BUILDKIT_PROGRESS" = plain ] && return
+    [ "$(tput colors 2>/dev/null)" -lt 16 ] && return
     # PuTTY colours
     for C in \
 	0000000 1bb0000 200bb00 3bbbb00 40000bb 5bb00bb 600bbbb 7bbbbbb \

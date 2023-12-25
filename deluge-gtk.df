@@ -1,0 +1,50 @@
+FROM debian:bookworm
+
+ARG UID=1000
+BEGIN
+export DEBIAN_FRONTEND=noninteractive
+apt-get update || exit
+
+useradd debian-deluged -u $UID -d /home/deluge
+
+cat > /usr/local/bin/startup <<\!
+mkdir -p /home/deluge
+mkdir -p /home/deluge/log
+mkdir -p /home/deluge/Downloads
+mkdir -p /home/deluge/.config/deluge
+chown -R debian-deluged:debian-deluged /home/deluge
+!
+sh /usr/local/bin/startup
+
+# ln -s /home/deluge /var/lib/deluged
+# ln -s /home/deluge/.config/deluge /var/lib/deluged/config
+# ln -s /home/deluge/log /var/log/deluged
+
+apt-get install -y --no-install-recommends \
+    deluge-gtk deluged gconf-gsettings-backend \
+    openssh-server xauth
+
+sed -i '/ENABLE_DELUGED/s/0/1/' /etc/default/deluged
+echo AddressFamily inet > /etc/ssh/sshd_config.d/docker-af.conf
+
+cat >> /etc/default/deluged <<\!
+DAEMON_ARGS="-d -c /home/deluge/.config/deluge -l /home/deluge/log/daemon.log -L info"
+!
+
+apt-get update -qq --list-cleanup \
+    -oDir::Etc::SourceList=/dev/null
+apt-get clean
+dpkg --clear-avail; dpkg --clear-avail
+
+cat >> /usr/local/bin/startup <<\!
+/etc/init.d/deluged start
+/etc/init.d/ssh start
+tail -F log/daemon.log ||:
+exec bash -i
+!
+chmod +x /usr/local/bin/startup
+COMMIT
+
+WORKDIR /home/deluge
+CMD /usr/local/bin/startup
+
